@@ -1,3 +1,3 @@
 # rustframe
 
-A simple and lightweight Rust library for handling dataframes for numerical data analysis and manipulation.
+A simple dataframe library.
