@@ -1,0 +1,7 @@
+/target
+
+dev/
+data/
+*.log
+*.pkl
+.env
