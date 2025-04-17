@@ -6,4 +6,11 @@ license = "GPL-3.0-or-later"
 readme = "README.md"
 description = "A simple dataframe library"
 
+[lib]
+name = "rustframe"
+path = "src/lib.rs"
+crate-type = ["cdylib", "lib"]
+
 [dependencies]
+chrono = "0.4.38"
+rayon = "1.5"
