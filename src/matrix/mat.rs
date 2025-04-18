@@ -85,14 +85,20 @@ impl<T> Matrix<T> {
             "column index out of bounds"
         );
         if c1 == c2 {
-            return;
+            return; // No-op if indices are the same
         }
 
+        // Loop through each row
         for r in 0..self.rows {
-            self.data.swap(c1 * self.rows + r, c2 * self.rows + r);
+            // Calculate the flat index for the element in row r, column c1
+            let idx1 = c1 * self.rows + r;
+            // Calculate the flat index for the element in row r, column c2
+            let idx2 = c2 * self.rows + r;
+
+            // Swap the elements directly in the data vector
+            self.data.swap(idx1, idx2);
         }
     }
-
     /// Deletes a column from the matrix.
     pub fn delete_column(&mut self, col: usize) {
         assert!(col < self.cols, "column index out of bounds");
