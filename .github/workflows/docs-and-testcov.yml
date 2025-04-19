@@ -45,7 +45,7 @@ jobs:
         
       - name: Check for tarpaulin-report.html
         run: |
-          if [ ! -f target/tarpaulin-report.html ]; then
+          if [ ! -f tarpaulin-report.html ]; then
             echo "tarpaulin-report.html not found!"
             exit 1
           fi
