@@ -24,8 +24,11 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Install cargo-binstall
+        run: cargo install cargo-binstall
+
+      - name: Install cargo-tarpaulin via binstall
+        run: cargo binstall cargo-tarpaulin --no-confirm --locked
 
       - name: Generate coverage report
         run: |
@@ -40,6 +43,12 @@ jobs:
         run: |
           mkdir -p docs
           cp -r target/doc/* docs/
+
+      - name: Copy files to output directory
+        run: |
+          mkdir output
+          cp -r testcov/* output/
+          cp -r docs/* output/
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
