@@ -1410,10 +1410,7 @@ mod tests {
         // Year ends >= start_date AND <= end_date: 2023
         // 2023 end bday (Dec 29th) >= start_date (Jun 1st) -> Included
         // 2024 end bday (Dec 31st) > end_date (Jun 1st) -> Included
-        assert_eq!(
-            collect_yearly(start, end, false),
-            vec![date(2023, 12, 29)]
-        );
+        assert_eq!(collect_yearly(start, end, false), vec![date(2023, 12, 29)]);
         Ok(())
     }
 
