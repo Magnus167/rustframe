@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
+jobs:
+  coverage-and-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Generate coverage report
+        run: |
+          mkdir -p testcov
+          cargo tarpaulin --out Html
+          mv tarpaulin-report.html testcov/index.html
+
+      - name: Build documentation
+        run: cargo doc --no-deps
+
+      - name: Prepare documentation for Pages
+        run: |
+          mkdir -p docs
+          cp -r target/doc/* docs/
+
+      - name: Upload Pages artifact
+        # if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: |
+            testcov
+            docs
+
+      - name: Deploy to GitHub Pages
+        # if: github.event_name == 'push'
+        uses: actions/deploy-pages@v1
