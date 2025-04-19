@@ -24,6 +24,15 @@ jobs:
           toolchain: stable
           override: true
     
+
+      - name: Build documentation
+        run: cargo doc --no-deps
+  
+      - name: Prepare documentation for Pages
+        run: |
+          mkdir -p docs
+          cp -r target/doc/* docs/
+
       - name: Install Cargo binstall
         uses: cargo-bins/cargo-binstall@main
 
@@ -36,19 +45,12 @@ jobs:
           cargo tarpaulin --out Html
           mv tarpaulin-report.html testcov/index.html
 
-      - name: Build documentation
-        run: cargo doc --no-deps
-
-      - name: Prepare documentation for Pages
-        run: |
-          mkdir -p docs
-          cp -r target/doc/* docs/
-
       - name: Copy files to output directory
         run: |
           mkdir output
+          mkdir -p output/docs
           cp -r testcov output/
-          cp -r docs/rustframe output/   
+          cp -r docs/rustframe output/docs/
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
