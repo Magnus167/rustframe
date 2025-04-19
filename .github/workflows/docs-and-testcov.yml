@@ -48,15 +48,13 @@ jobs:
         run: |
           mkdir output
           cp -r testcov/* output/
-          cp -r docs/* output/
+          cp -r docs/* output/                      
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            testcov
-            docs
+          path: output
 
       - name: Deploy to GitHub Pages
         # if: github.event_name == 'push'
