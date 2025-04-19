@@ -1,4 +1,4 @@
-name: CI
+name: docs-and-testcov
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   pages: write
 
 jobs:
-  coverage-and-docs:
+  docs-and-testcov:
     runs-on: ubuntu-latest
 
     steps:
@@ -47,8 +47,8 @@ jobs:
       - name: Copy files to output directory
         run: |
           mkdir output
-          cp -r testcov/* output/
-          cp -r docs/* output/                      
+          cp -r testcov output/
+          cp -r docs output/   
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
