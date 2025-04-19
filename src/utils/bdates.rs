@@ -2,6 +2,7 @@ use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use std::collections::HashMap;
 use std::error::Error;
 use std::hash::Hash;
+use std::result::Result;
 
 /// Represents the frequency at which business dates should be generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -43,19 +44,19 @@ impl BDateFreq {
 
     /// Attempts to parse a frequency string slice into a `BDateFreq` enum.
     ///
-    /// Supports original codes and some common aliases.
+    /// Supports various frequency codes and common aliases.
     ///
-    /// | Code | Alias | Description         |
-    /// |------|-------|---------------------|
-    /// | D    |       | Daily               |
-    /// | W    | WS    | Weekly Monday       |
-    /// | M    | MS    | Month Start         |
-    /// | Q    | QS    | Quarter Start       |
-    /// | A    | AS    | Year Start          |
-    /// | ME   |       | Month End           |
-    /// | QE   |       | Quarter End         |
-    /// | WF   |       | Weekly Friday       |
-    /// | YE   |       | Year End (Annual)   |
+    /// | Code | Alias   | Description         |
+    /// |------|---------|---------------------|
+    /// | D    |         | Daily               |
+    /// | W    | WS      | Weekly Monday       |
+    /// | M    | MS      | Month Start         |
+    /// | Q    | QS      | Quarter Start       |
+    /// | Y    | A, AS, YS | Year Start        |
+    /// | ME   |         | Month End           |
+    /// | QE   |         | Quarter End         |
+    /// | WF   |         | Weekly Friday       |
+    /// | YE   | AE      | Year End (Annual)   |
     ///
     /// # Arguments
     ///
@@ -65,18 +66,37 @@ impl BDateFreq {
     ///
     /// Returns an error if the string does not match any known frequency.
     pub fn from_str(freq: &str) -> Result<Self, Box<dyn Error>> {
-        match freq {
-            "D" => Ok(BDateFreq::Daily),
-            "W" | "WS" => Ok(BDateFreq::WeeklyMonday),
-            "M" | "MS" => Ok(BDateFreq::MonthStart),
-            "Q" | "QS" => Ok(BDateFreq::QuarterStart),
-            "A" | "AS" => Ok(BDateFreq::YearStart),
-            "ME" => Ok(BDateFreq::MonthEnd),
-            "QE" => Ok(BDateFreq::QuarterEnd),
-            "WF" => Ok(BDateFreq::WeeklyFriday),
-            "YE" => Ok(BDateFreq::YearEnd),
-            _ => Err(format!("Invalid frequency specified: {}", freq).into()),
-        }
+        let r = match freq {
+            "D" => BDateFreq::Daily,
+            "W" | "WS" => BDateFreq::WeeklyMonday,
+            "M" | "MS" => BDateFreq::MonthStart,
+            "Q" | "QS" => BDateFreq::QuarterStart,
+            "Y" | "A" | "AS" | "YS" => BDateFreq::YearStart, // Added Y, YS, A, AS aliases
+            "ME" => BDateFreq::MonthEnd,
+            "QE" => BDateFreq::QuarterEnd,
+            "WF" => BDateFreq::WeeklyFriday,
+            "YE" | "AE" => BDateFreq::YearEnd, // Added AE alias
+            _ => return Err(format!("Invalid frequency specified: {}", freq).into()),
+        };
+        Ok(r)
+    }
+
+    /// Returns the canonical string representation of the frequency.
+    ///
+    /// This returns the primary code (e.g., "D", "W", "Y", "YE"), not the aliases.
+    pub fn to_string(&self) -> String {
+        let r = match self {
+            BDateFreq::Daily => "D",
+            BDateFreq::WeeklyMonday => "W",
+            BDateFreq::MonthStart => "M",
+            BDateFreq::QuarterStart => "Q",
+            BDateFreq::YearStart => "Y", // Changed to "Y"
+            BDateFreq::MonthEnd => "ME",
+            BDateFreq::QuarterEnd => "QE",
+            BDateFreq::WeeklyFriday => "WF",
+            BDateFreq::YearEnd => "YE",
+        };
+        r.to_string()
     }
 
     /// Determines whether the frequency represents a start-of-period or end-of-period aggregation.
@@ -198,7 +218,7 @@ impl BDatesList {
             };
 
             // Add the current date to the vector corresponding to the determined key.
-            // entry().or_insert() gets a mutable reference to the vector for the key,
+            // entry().or_insert_with() gets a mutable reference to the vector for the key,
             // inserting a new empty vector if the key doesn't exist yet.
             groups.entry(key).or_insert_with(Vec::new).push(date); // Using or_insert_with is slightly more idiomatic
         }
@@ -226,9 +246,29 @@ impl BDatesList {
         Ok(result_groups)
     }
 
+    /// Returns the start date parsed as a `NaiveDate`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `chrono::ParseError` if the start date string is not in
+    /// "YYYY-MM-DD" format.
+    pub fn start_date(&self) -> Result<NaiveDate, Box<dyn Error>> {
+        NaiveDate::parse_from_str(&self.start_date_str, "%Y-%m-%d").map_err(|e| e.into())
+    }
+
     /// Returns the start date string.
     pub fn start_date_str(&self) -> &str {
         &self.start_date_str
+    }
+
+    /// Returns the end date parsed as a `NaiveDate`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `chrono::ParseError` if the end date string is not in
+    /// "YYYY-MM-DD" format.
+    pub fn end_date(&self) -> Result<NaiveDate, Box<dyn Error>> {
+        NaiveDate::parse_from_str(&self.end_date_str, "%Y-%m-%d").map_err(|e| e.into())
     }
 
     /// Returns the end date string.
@@ -236,9 +276,14 @@ impl BDatesList {
         &self.end_date_str
     }
 
-    /// Returns the frequency.
+    /// Returns the frequency enum.
     pub fn freq(&self) -> BDateFreq {
         self.freq
+    }
+
+    /// Returns the canonical string representation of the frequency.
+    pub fn freq_str(&self) -> String {
+        self.freq.to_string()
     }
 }
 
@@ -624,18 +669,25 @@ mod tests {
         assert_eq!(BDateFreq::from_str("W")?, BDateFreq::WeeklyMonday);
         assert_eq!(BDateFreq::from_str("M")?, BDateFreq::MonthStart);
         assert_eq!(BDateFreq::from_str("Q")?, BDateFreq::QuarterStart);
+
+        // Test YearStart codes and aliases (Y, A, AS, YS)
+        assert_eq!(BDateFreq::from_str("Y")?, BDateFreq::YearStart);
         assert_eq!(BDateFreq::from_str("A")?, BDateFreq::YearStart);
+        assert_eq!(BDateFreq::from_str("AS")?, BDateFreq::YearStart);
+        assert_eq!(BDateFreq::from_str("YS")?, BDateFreq::YearStart);
+
         assert_eq!(BDateFreq::from_str("ME")?, BDateFreq::MonthEnd);
         assert_eq!(BDateFreq::from_str("QE")?, BDateFreq::QuarterEnd);
         assert_eq!(BDateFreq::from_str("WF")?, BDateFreq::WeeklyFriday);
-        assert_eq!(BDateFreq::from_str("YE")?, BDateFreq::YearEnd);
 
-        // Test aliases
+        // Test YearEnd codes and aliases (YE, AE)
+        assert_eq!(BDateFreq::from_str("YE")?, BDateFreq::YearEnd);
+        assert_eq!(BDateFreq::from_str("AE")?, BDateFreq::YearEnd);
+
+        // Test aliases for other frequencies
         assert_eq!(BDateFreq::from_str("WS")?, BDateFreq::WeeklyMonday);
         assert_eq!(BDateFreq::from_str("MS")?, BDateFreq::MonthStart);
         assert_eq!(BDateFreq::from_str("QS")?, BDateFreq::QuarterStart);
-        assert_eq!(BDateFreq::from_str("AS")?, BDateFreq::YearStart);
-        // YE alias is just YE, already tested above
 
         // Test invalid string
         assert!(BDateFreq::from_str("INVALID").is_err());
@@ -643,6 +695,19 @@ mod tests {
         assert_eq!(err.to_string(), "Invalid frequency specified: INVALID");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_bdatefreq_to_string() {
+        assert_eq!(BDateFreq::Daily.to_string(), "D");
+        assert_eq!(BDateFreq::WeeklyMonday.to_string(), "W");
+        assert_eq!(BDateFreq::MonthStart.to_string(), "M");
+        assert_eq!(BDateFreq::QuarterStart.to_string(), "Q");
+        assert_eq!(BDateFreq::YearStart.to_string(), "Y"); // Assert "Y"
+        assert_eq!(BDateFreq::MonthEnd.to_string(), "ME");
+        assert_eq!(BDateFreq::QuarterEnd.to_string(), "QE");
+        assert_eq!(BDateFreq::WeeklyFriday.to_string(), "WF");
+        assert_eq!(BDateFreq::YearEnd.to_string(), "YE");
     }
 
     #[test]
@@ -664,6 +729,56 @@ mod tests {
         assert_eq!(BDateFreq::MonthEnd.agg_type(), AggregationType::End);
         assert_eq!(BDateFreq::QuarterEnd.agg_type(), AggregationType::End);
         assert_eq!(BDateFreq::YearEnd.agg_type(), AggregationType::End);
+    }
+
+    // --- BDatesList Property Tests ---
+
+    #[test]
+    fn test_bdates_list_properties() -> Result<(), Box<dyn Error>> {
+        let start_str = "2023-01-01".to_string();
+        let end_str = "2023-12-31".to_string();
+        let freq = BDateFreq::QuarterEnd;
+        let dates_list = BDatesList::new(start_str.clone(), end_str.clone(), freq);
+
+        // check start_date_str
+        assert_eq!(dates_list.start_date_str(), start_str);
+        // check end_date_str
+        assert_eq!(dates_list.end_date_str(), end_str);
+        // check frequency enum
+        assert_eq!(dates_list.freq(), freq);
+        // check frequency string
+        assert_eq!(dates_list.freq_str(), "QE");
+
+        // Check parsed dates
+        assert_eq!(dates_list.start_date()?, date(2023, 1, 1));
+        assert_eq!(dates_list.end_date()?, date(2023, 12, 31));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_bdates_list_invalid_date_string() {
+        let dates_list_start_invalid = BDatesList::new(
+            "invalid-date".to_string(),
+            "2023-12-31".to_string(),
+            BDateFreq::Daily,
+        );
+        assert!(dates_list_start_invalid.list().is_err());
+        assert!(dates_list_start_invalid.count().is_err());
+        assert!(dates_list_start_invalid.groups().is_err());
+        assert!(dates_list_start_invalid.start_date().is_err());
+        assert!(dates_list_start_invalid.end_date().is_ok()); // End date is valid
+
+        let dates_list_end_invalid = BDatesList::new(
+            "2023-01-01".to_string(),
+            "invalid-date".to_string(),
+            BDateFreq::Daily,
+        );
+        assert!(dates_list_end_invalid.list().is_err());
+        assert!(dates_list_end_invalid.count().is_err());
+        assert!(dates_list_end_invalid.groups().is_err());
+        assert!(dates_list_end_invalid.start_date().is_ok()); // Start date is valid
+        assert!(dates_list_end_invalid.end_date().is_err());
     }
 
     // --- BDatesList Core Logic Tests (via list and count) ---
@@ -1185,16 +1300,18 @@ mod tests {
     fn test_collect_monthly_range_starts_mid_month_ends_mid_month() {
         let start = date(2023, 10, 15); // Mid Oct
         let end = date(2024, 1, 15); // Mid Jan
-        // Month starts >= start_date AND <= end_date: Dec 2023, Jan 2024
+        // Month starts >= start_date AND <= end_date: Nov 2023, Dec 2023, Jan 2024
         assert_eq!(
             collect_monthly(start, end, true),
             vec![date(2023, 11, 1), date(2023, 12, 1), date(2024, 1, 1)]
-        ); // Dec 1st, Jan 1st
+        );
         // Month ends >= start_date AND <= end_date: Oct 2023, Nov 2023, Dec 2023
+        // Last business day of Oct 2023 is Oct 31st, which is after Oct 15th start.
+        // Last business day of Jan 2024 is Jan 31st, which is after Jan 15th end.
         assert_eq!(
             collect_monthly(start, end, false),
             vec![date(2023, 10, 31), date(2023, 11, 30), date(2023, 12, 29)]
-        ); // Oct 31, Nov 30, Dec 29
+        );
     }
 
     #[test]
@@ -1215,17 +1332,44 @@ mod tests {
         assert_eq!(collect_monthly(start, end, false), vec![]);
     }
 
+    #[test]
+    fn test_collect_monthly_full_year_start() {
+        let start = date(2023, 1, 1);
+        let end = date(2023, 12, 31);
+        let expected: Vec<NaiveDate> = (1..=12)
+            .map(|m| first_business_day_of_month(2023, m))
+            .collect();
+        assert_eq!(collect_monthly(start, end, true), expected);
+    }
+
+    #[test]
+    fn test_collect_monthly_full_year_end() {
+        let start = date(2023, 1, 1);
+        let end = date(2023, 12, 31);
+        let expected: Vec<NaiveDate> = (1..=12)
+            .map(|m| last_business_day_of_month(2023, m))
+            .collect();
+        assert_eq!(collect_monthly(start, end, false), expected);
+    }
+
     // Test `collect_quarterly` edge cases
     #[test]
     fn test_collect_quarterly_range_starts_mid_quarter_ends_mid_quarter() {
         let start = date(2023, 8, 15); // Mid Q3 2023
         let end = date(2024, 2, 15); // Mid Q1 2024
         // Q starts >= start_date AND <= end_date: Q4 2023, Q1 2024
+        // Q3 2023 start bday (Jul 3rd) < start_date (Aug 15th) -> Excluded
+        // Q4 2023 start bday (Oct 2nd) >= start_date (Aug 15th) -> Included
+        // Q1 2024 start bday (Jan 1st) >= start_date (Aug 15th) -> Included
+        // Q2 2024 start bday (Apr 1st) > end_date (Feb 15th) -> Excluded
         assert_eq!(
             collect_quarterly(start, end, true),
             vec![date(2023, 10, 2), date(2024, 1, 1)]
         );
         // Q ends >= start_date AND <= end_date: Q3 2023, Q4 2023
+        // Q3 2023 end bday (Sep 29th) >= start_date (Aug 15th) -> Included
+        // Q4 2023 end bday (Dec 29th) >= start_date (Aug 15th) -> Included
+        // Q1 2024 end bday (Mar 31st) > end_date (Feb 15th) -> Excluded
         assert_eq!(
             collect_quarterly(start, end, false),
             vec![date(2023, 9, 29), date(2023, 12, 29)]
@@ -1255,13 +1399,22 @@ mod tests {
 
     // Test `collect_yearly` edge cases
     #[test]
-    fn test_collect_yearly_range_starts_mid_year_ends_mid_year() {
+    fn test_collect_yearly_range_starts_mid_year_ends_mid_year() -> Result<(), Box<dyn Error>> {
         let start = date(2023, 6, 1); // Mid 2023
         let end = date(2024, 6, 1); // Mid 2024
         // Year starts >= start_date AND <= end_date: 2024
+        // 2023 start bday (Jan 2nd) < start_date (Jun 1st) -> Excluded
+        // 2024 start bday (Jan 1st) >= start_date (Jun 1st) -> Included
+        // 2025 start bday (Jan 1st) > end_date (Jun 1st) -> Excluded
         assert_eq!(collect_yearly(start, end, true), vec![date(2024, 1, 1)]);
         // Year ends >= start_date AND <= end_date: 2023
-        assert_eq!(collect_yearly(start, end, false), vec![date(2023, 12, 29)]);
+        // 2023 end bday (Dec 29th) >= start_date (Jun 1st) -> Included
+        // 2024 end bday (Dec 31st) > end_date (Jun 1st) -> Included
+        assert_eq!(
+            collect_yearly(start, end, false),
+            vec![date(2023, 12, 29)]
+        );
+        Ok(())
     }
 
     #[test]
@@ -1280,5 +1433,21 @@ mod tests {
         // No year starts or ends are within this short range.
         assert_eq!(collect_yearly(start, end, true), vec![]);
         assert_eq!(collect_yearly(start, end, false), vec![]);
+    }
+
+    #[test]
+    fn test_collect_yearly_full_years() {
+        let start = date(2022, 1, 1);
+        let end = date(2024, 12, 31);
+        // Year starts
+        assert_eq!(
+            collect_yearly(start, end, true),
+            vec![date(2022, 1, 3), date(2023, 1, 2), date(2024, 1, 1)]
+        );
+        // Year ends
+        assert_eq!(
+            collect_yearly(start, end, false),
+            vec![date(2022, 12, 30), date(2023, 12, 29), date(2024, 12, 31)]
+        );
     }
 }
