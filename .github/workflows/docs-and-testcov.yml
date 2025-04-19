@@ -50,7 +50,7 @@ jobs:
           mkdir output
           mkdir -p output/docs
           cp -r testcov output/
-          cp -r docs/rustframe output/docs/
+          cp -r docs output/
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
