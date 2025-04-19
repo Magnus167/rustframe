@@ -1,4 +1,4 @@
-name: Tests and Coverage
+name: run-unit-tests
 
 on:
   pull_request:
@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  coverage:
+  run-unit-tests:
+    name: run-unit-tests
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
@@ -29,4 +30,4 @@ jobs:
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
