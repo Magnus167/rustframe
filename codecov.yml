@@ -1,0 +1,17 @@
+coverage:
+  status:
+    # Project coverage status: require ≥ 90% overall, allow up to 2% drop
+    project:
+      default:
+        target: 90%      # overall coverage goal
+        threshold: 2%    # tolerable drop below target before failing
+        base: auto       # compare against default branch
+        only_pulls: true # enforce on PRs only
+
+    # Patch coverage status: require ≥ 95% on new/changed lines, zero tolerance
+    patch:
+      default:
+        target: 95%     # coverage goal for new or changed code
+        threshold: 0%   # no uncovered lines allowed
+        base: auto      # diff against default branch
+        only_pulls: true
