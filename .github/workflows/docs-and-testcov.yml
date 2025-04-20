@@ -55,6 +55,7 @@ jobs:
         run: |
           mkdir output
           cp tarpaulin-report.html target/doc/rustframe/
+          cp tarpaulin-report.json target/doc/rustframe/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
 
       - name: Upload Pages artifact
