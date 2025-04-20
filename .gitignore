@@ -8,4 +8,4 @@ data/
 
 .venv/
 
-tarpaulin-report.html
+tarpaulin-report.*
