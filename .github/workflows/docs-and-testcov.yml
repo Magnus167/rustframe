@@ -55,7 +55,7 @@ jobs:
         run: |
           jq '{schemaVersion: 1,
             label: "tarpaulin",
-            message: (.coverage | tostring),
+            message: (printf("%.2f"; .coverage)),
             color: "blue"}' tarpaulin-report.json > tarpaulin-badge.json
 
       - name: Copy files to output directory
