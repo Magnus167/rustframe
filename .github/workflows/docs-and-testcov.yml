@@ -50,12 +50,20 @@ jobs:
             echo "tarpaulin-report.html not found!"
             exit 1
           fi
+      
+      - name: Export tarpaulin coverage badge JSON
+        run: |
+          jq '{schemaVersion: 1,
+            label: "tarpaulin",
+            message: (.coverage | tostring),
+            color: "blue"}' tarpaulin-report.json > tarpaulin-badge.json
 
       - name: Copy files to output directory
         run: |
           mkdir output
           cp tarpaulin-report.html target/doc/rustframe/
           cp tarpaulin-report.json target/doc/rustframe/
+          cp tarpaulin-badge.json target/doc/rustframe/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
 
       - name: Upload Pages artifact
