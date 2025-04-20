@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -56,14 +57,12 @@ jobs:
           cp tarpaulin-report.html target/doc/rustframe/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
 
-        #   cp -r target/doc/rustframe/* output/
-
       - name: Upload Pages artifact
-        # if: github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc/
 
       - name: Deploy to GitHub Pages
-        # if: github.event_name == 'push'
+        if: github.event_name == 'push'
         uses: actions/deploy-pages@v4
