@@ -441,6 +441,62 @@ impl BDatesList {
 /// frequency, and a specified number of periods.
 ///
 /// This implements the `Iterator` trait, allowing generation of dates one by one.
+/// It's useful when you need to process dates lazily or only need a fixed number
+/// starting from a specific point, without necessarily defining an end date beforehand.
+///
+/// # Examples
+///
+/// **1. Basic Iteration:**
+///
+/// ```rust
+/// use chrono::NaiveDate;
+/// use std::error::Error;
+/// # use bdates::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
+///
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// let start = NaiveDate::from_ymd_opt(2023, 12, 28).unwrap(); // Thursday
+/// let freq = BDateFreq::MonthEnd;
+/// let n_periods = 4; // Dec '23, Jan '24, Feb '24, Mar '24
+///
+/// let mut generator = BDatesGenerator::new(start, freq, n_periods)?;
+///
+/// // First month-end on or after 2023-12-28 is 2023-12-29
+/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2023, 12, 29).unwrap()));
+/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()));
+/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 2, 29).unwrap())); // Leap year
+/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 3, 29).unwrap())); // Mar 31 is Sun
+/// assert_eq!(generator.next(), None); // Exhausted
+/// # Ok(())
+/// # }
+/// ```
+///
+/// **2. Collecting into a Vec:**
+///
+/// ```rust
+/// use chrono::NaiveDate;
+/// use std::error::Error;
+/// # use bdates::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
+///
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
+/// let freq = BDateFreq::Daily;
+/// let n_periods = 5;
+///
+/// let generator = BDatesGenerator::new(start, freq, n_periods)?;
+/// let dates: Vec<NaiveDate> = generator.collect();
+///
+/// let expected_dates = vec![
+///     NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(), // Mon
+///     NaiveDate::from_ymd_opt(2024, 4, 30).unwrap(), // Tue
+///     NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),  // Wed
+///     NaiveDate::from_ymd_opt(2024, 5, 2).unwrap(),  // Thu
+///     NaiveDate::from_ymd_opt(2024, 5, 3).unwrap(),  // Fri
+/// ];
+///
+/// assert_eq!(dates, expected_dates);
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct BDatesGenerator {
     freq: BDateFreq,
