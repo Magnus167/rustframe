@@ -53,11 +53,19 @@ jobs:
       
       - name: Export tarpaulin coverage badge JSON
         run: |
-          jq '{schemaVersion: 1,
-            label: "tarpaulin",
-            message: (printf("%.2f"; .coverage)),
-            color: "blue"}' tarpaulin-report.json > tarpaulin-badge.json
-
+            # extract raw coverage
+            coverage=$(jq '.coverage' tarpaulin-report.json)
+            # round to 2 decimal places
+            formatted=$(printf "%.2f" "$coverage")
+            # build the badge JSON using the pre-formatted string
+            jq --arg message "$formatted" \
+              '{schemaVersion:1,
+                label:"tarpaulin",
+                message:$message,
+                color:"blue"}' \
+              tarpaulin-report.json \
+            > tarpaulin-badge.json
+  
       - name: Copy files to output directory
         run: |
           mkdir output
