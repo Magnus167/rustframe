@@ -54,6 +54,8 @@ jobs:
         run: |
           mkdir output
           cp tarpaulin-report.html target/doc/rustframe/
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
+
         #   cp -r target/doc/rustframe/* output/
 
       - name: Upload Pages artifact
