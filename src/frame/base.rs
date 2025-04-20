@@ -398,33 +398,6 @@ mod tests {
         frame.column_mut("Z");
     }
 
-    // #[test]
-    // fn test_swap_columns() {
-    //     let mut frame = create_test_frame_i32();
-    //     let initial_a_data = frame.column("A").to_vec();
-    //     let initial_c_data = frame.column("C").to_vec();
-
-    //     frame.swap_columns("A", "C");
-
-    //     // Check names order
-    //     assert_eq!(frame.column_names, vec!["C", "B", "A"]);
-
-    //     // Check lookup map
-    //     assert_eq!(frame.column_index("A"), Some(2));
-    //     assert_eq!(frame.column_index("B"), Some(1));
-    //     assert_eq!(frame.column_index("C"), Some(0));
-
-    //     // Check data using new names (should be swapped)
-    //     assert_eq!(frame.column("C"), initial_a_data); // "C" now has A's old data
-    //     assert_eq!(frame.column("A"), initial_c_data); // "A" now has C's old data
-    //     assert_eq!(frame.column("B"), &[4, 5, 6]); // "B" should be unchanged
-
-    //     // Test swapping with self
-    //     let state_before_self_swap = frame.clone();
-    //     frame.swap_columns("B", "B");
-    //     assert_eq!(frame, state_before_self_swap);
-    // }
-
     #[test]
     #[should_panic(expected = "unknown column label: Z")]
     fn test_swap_columns_panic_unknown_a() {
