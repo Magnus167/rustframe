@@ -42,7 +42,7 @@ jobs:
       - name: Generate coverage report
         run: |
           mkdir -p testcov
-          cargo tarpaulin --out Html
+          cargo tarpaulin --out Html --out Json
         
       - name: Check for tarpaulin-report.html
         run: |
