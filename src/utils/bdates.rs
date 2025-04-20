@@ -148,6 +148,100 @@ enum GroupKey {
     Yearly(i32),         // Group by year
 }
 
+/// Represents a collection of business dates generated according to specific rules.
+///
+/// It can be defined either by a start and end date range or by a start date
+/// and a fixed number of periods. It provides methods to retrieve the dates
+/// as a flat list, count them, or group them by their natural period
+/// (e.g., month, quarter).
+///
+/// Business days are typically Monday to Friday. Weekend dates are skipped or
+/// adjusted depending on the frequency rules.
+///
+/// # Examples
+///
+/// **1. Using `new` (Start and End Date):**
+///
+/// ```rust
+/// use chrono::NaiveDate;
+/// use std::error::Error;
+/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+///
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// let start_date = "2023-11-01".to_string(); // Wednesday
+/// let end_date = "2023-11-07".to_string();   // Tuesday
+/// let freq = BDateFreq::Daily;
+///
+/// let bdates = BDatesList::new(start_date, end_date, freq);
+///
+/// let expected_dates = vec![
+///     NaiveDate::from_ymd_opt(2023, 11, 1).unwrap(), // Wed
+///     NaiveDate::from_ymd_opt(2023, 11, 2).unwrap(), // Thu
+///     NaiveDate::from_ymd_opt(2023, 11, 3).unwrap(), // Fri
+///     NaiveDate::from_ymd_opt(2023, 11, 6).unwrap(), // Mon
+///     NaiveDate::from_ymd_opt(2023, 11, 7).unwrap(), // Tue
+/// ];
+///
+/// assert_eq!(bdates.list()?, expected_dates);
+/// assert_eq!(bdates.count()?, 5);
+/// # Ok(())
+/// # }
+/// ```
+///
+/// **2. Using `from_n_periods` (Start Date and Count):**
+///
+/// ```rust
+/// use chrono::NaiveDate;
+/// use std::error::Error;
+/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+///
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// let start_date = "2024-02-28".to_string(); // Wednesday
+/// let freq = BDateFreq::WeeklyFriday;
+/// let n_periods = 3;
+///
+/// let bdates = BDatesList::from_n_periods(start_date, freq, n_periods)?;
+///
+/// // The first Friday on or after 2024-02-28 is Mar 1.
+/// // The next two Fridays are Mar 8 and Mar 15.
+/// let expected_dates = vec![
+///     NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+///     NaiveDate::from_ymd_opt(2024, 3, 8).unwrap(),
+///     NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
+/// ];
+///
+/// assert_eq!(bdates.list()?, expected_dates);
+/// assert_eq!(bdates.count()?, 3);
+/// assert_eq!(bdates.start_date_str(), "2024-02-28"); // Keeps original start string
+/// assert_eq!(bdates.end_date_str(), "2024-03-15");   // End date is the last generated date
+/// # Ok(())
+/// # }
+/// ```
+///
+/// **3. Using `groups()`:**
+///
+/// ```rust
+/// use chrono::NaiveDate;
+/// use std::error::Error;
+/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+///
+/// # fn main() -> Result<(), Box<dyn Error>> {
+/// let start_date = "2023-11-20".to_string(); // Mon, Week 47
+/// let end_date = "2023-12-08".to_string();   // Fri, Week 49
+/// let freq = BDateFreq::WeeklyMonday;
+///
+/// let bdates = BDatesList::new(start_date, end_date, freq);
+///
+/// // Mondays in range: Nov 20, Nov 27, Dec 4
+/// let groups = bdates.groups()?;
+///
+/// assert_eq!(groups.len(), 3); // One group per week containing a Monday
+/// assert_eq!(groups[0], vec![NaiveDate::from_ymd_opt(2023, 11, 20).unwrap()]); // Week 47
+/// assert_eq!(groups[1], vec![NaiveDate::from_ymd_opt(2023, 11, 27).unwrap()]); // Week 48
+/// assert_eq!(groups[2], vec![NaiveDate::from_ymd_opt(2023, 12, 4).unwrap()]);  // Week 49
+/// # Ok(())
+/// # }
+/// ```
 impl BDatesList {
     /// Creates a new `BDatesList` instance defined by a start and end date.
     ///
