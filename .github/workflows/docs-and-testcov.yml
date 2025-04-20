@@ -60,7 +60,7 @@ jobs:
             # build the badge JSON using the pre-formatted string
             jq --arg message "$formatted" \
               '{schemaVersion:1,
-                label:"tarpaulin",
+                label:"tarpaulin-report",
                 message:$message,
                 color:"blue"}' \
               tarpaulin-report.json \
