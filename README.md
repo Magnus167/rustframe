@@ -9,15 +9,3 @@ A simple dataframe library.
 `tarpaulin` coverage report: [tarpaulin-report](tarpaulin-report.html).
 
 ---
-
-## Build
-
-```bash
-cargo build
-```
-
-## Test
-
-```bash
-cargo test
-```
