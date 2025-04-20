@@ -602,6 +602,7 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<usize> for Frame<T> {
                 panic!("Frame index: incompatible key type usize for Date index")
             }
             // Ensure state consistency
+            #[allow(unreachable_patterns)]
             (RowIndex::Int(_), RowIndexLookup::None)
             | (RowIndex::Int(_), RowIndexLookup::Date(_))
             | (RowIndex::Date(_), RowIndexLookup::Int(_))
@@ -634,6 +635,7 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<NaiveDate> for Frame<T> {
                 panic!("Frame index: incompatible key type NaiveDate for Int or Range index")
             }
             // Ensure state consistency
+            #[allow(unreachable_patterns)]
             (RowIndex::Date(_), RowIndexLookup::None)
             | (RowIndex::Date(_), RowIndexLookup::Int(_))
             | (RowIndex::Int(_), RowIndexLookup::Date(_))
