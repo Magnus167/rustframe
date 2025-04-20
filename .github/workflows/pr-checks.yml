@@ -1,0 +1,29 @@
+name: pr-checks
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+concurrency:
+  group: pr-checks-${{ github.event.number }}
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+jobs:
+  pr-checks:
+    name: pr-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PR checks
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          python .github/scripts/pr_checks.py $PR_NUMBER
