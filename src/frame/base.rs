@@ -701,4 +701,51 @@ mod tests {
         assert_eq!(frame_not["P"].to_vec(), &[false, true]);
         assert_eq!(frame_not["Q"].to_vec(), &[true, false]);
     }
+
+    #[test]
+    fn test_swap_columns() {
+        let mut frame = create_test_frame_i32();
+        let initial_a_data = frame.column("A").to_vec(); // [1, 2, 3]
+        let initial_c_data = frame.column("C").to_vec(); // [7, 8, 9]
+
+        frame.swap_columns("A", "C");
+
+        // Check names order
+        assert_eq!(frame.column_names, vec!["C", "B", "A"]);
+
+        // Check lookup map
+        assert_eq!(frame.column_index("A"), Some(2));
+        assert_eq!(frame.column_index("B"), Some(1));
+        assert_eq!(frame.column_index("C"), Some(0));
+
+        // Check data using new names (should be swapped)
+
+        // Accessing by name "C" (now at index 0) should retrieve the data
+        // that was swapped INTO index 0, which was the *original C data*.
+        assert_eq!(
+            frame.column("C"),
+            initial_c_data.as_slice(),
+            "Data for name 'C' should be original C data"
+        );
+
+        // Accessing by name "A" (now at index 2) should retrieve the data
+        // that was swapped INTO index 2, which was the *original A data*.
+        assert_eq!(
+            frame.column("A"),
+            initial_a_data.as_slice(),
+            "Data for name 'A' should be original A data"
+        );
+
+        // Column "B" should remain unchanged in data and position.
+        assert_eq!(
+            frame.column("B"),
+            &[4, 5, 6],
+            "Column 'B' should be unchanged"
+        );
+
+        // Test swapping with self
+        let state_before_self_swap = frame.clone();
+        frame.swap_columns("B", "B");
+        assert_eq!(frame, state_before_self_swap);
+    }
 }
