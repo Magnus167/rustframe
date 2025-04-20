@@ -54,13 +54,13 @@ jobs:
         run: |
           mkdir output
           cp tarpaulin-report.html target/doc/rustframe/
-          cp -r target/doc/rustframe/* output/
+        #   cp -r target/doc/rustframe/* output/
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: output
+          path: target/doc/
 
       - name: Deploy to GitHub Pages
         # if: github.event_name == 'push'
