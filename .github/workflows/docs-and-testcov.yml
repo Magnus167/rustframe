@@ -1,5 +1,9 @@
 name: docs-and-testcov
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -25,13 +29,11 @@ jobs:
           toolchain: stable
           override: true
     
-
       - name: Build documentation
         run: cargo doc --no-deps
   
       - name: Prepare documentation for Pages
         run: |
-
 
       - name: Install Cargo binstall
         uses: cargo-bins/cargo-binstall@main
