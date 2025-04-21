@@ -143,10 +143,10 @@ enum RowIndexLookup {
 /// // --- Example 4: Element-wise Multiplication ---
 /// let f_prod = &f1 * &f2;
 /// // Use approx comparison for floats if necessary
-/// assert!((f_prod["C1"][0] - 0.1).abs() < 1e-9); // 1.0 * 0.1
-/// assert!((f_prod["C1"][1] - 0.4).abs() < 1e-9); // 2.0 * 0.2
-/// assert!((f_prod["C2"][0] - 0.9).abs() < 1e-9); // 3.0 * 0.3
-/// assert!((f_prod["C2"][1] - 1.6).abs() < 1e-9); // 4.0 * 0.4
+/// assert!((f_prod["C1"][0] - 0.1_f64).abs() < 1e-9); // 1.0 * 0.1
+/// assert!((f_prod["C1"][1] - 0.4_f64).abs() < 1e-9); // 2.0 * 0.2
+/// assert!((f_prod["C2"][0] - 0.9_f64).abs() < 1e-9); // 3.0 * 0.3
+/// assert!((f_prod["C2"][1] - 1.6_f64).abs() < 1e-9); // 4.0 * 0.4
 ///
 /// // --- Example 5: Column Manipulation and Sorting ---
 /// let mut frame_manip = Frame::new(
