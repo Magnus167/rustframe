@@ -164,7 +164,7 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use dates::{DatesList, DateFreq}; // Assuming the crate/module is named 'dates'
+/// # use rustframe::utils::{DatesList, DateFreq}; // Assuming the crate/module is named 'dates'
 ///
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2023-11-01".to_string(); // Wednesday
@@ -194,9 +194,9 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use dates::{DatesList, DateFreq};
+/// use rustframe::utils::{DatesList, DateFreq};
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2024-02-28".to_string(); // Wednesday
 /// let freq = DateFreq::WeeklyFriday;
 /// let n_periods = 3;
@@ -224,9 +224,9 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use dates::{DatesList, DateFreq};
+/// use rustframe::utils::{DatesList, DateFreq};
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2023-11-20".to_string(); // Mon, Week 47
 /// let end_date = "2023-12-08".to_string();   // Fri, Week 49
 /// let freq = DateFreq::MonthEnd; // Find month-ends
@@ -238,8 +238,8 @@ enum GroupKey {
 ///
 /// assert_eq!(groups.len(), 1); // Only November's end date falls in the range
 /// assert_eq!(groups[0], vec![NaiveDate::from_ymd_opt(2023, 11, 30).unwrap()]); // Nov 2023 group
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 impl DatesList {
     /// Creates a new `DatesList` instance defined by a start and end date.
@@ -422,10 +422,9 @@ impl DatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # // Replace 'your_crate_name' with the actual name if this is in a library
-/// # use dates::{DatesGenerator, DateFreq};
+/// use rustframe::utils::{DatesGenerator, DateFreq};
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start = NaiveDate::from_ymd_opt(2023, 12, 28).unwrap(); // Thursday
 /// let freq = DateFreq::MonthEnd;
 /// let n_periods = 4; // Dec '23, Jan '24, Feb '24, Mar '24
@@ -438,8 +437,8 @@ impl DatesList {
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 2, 29).unwrap())); // Leap year
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 3, 31).unwrap()));
 /// assert_eq!(generator.next(), None); // Exhausted
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 ///
 /// **2. Collecting into a Vec (Daily):**
@@ -447,9 +446,9 @@ impl DatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use dates::{DatesGenerator, DateFreq};
+/// use rustframe::utils::{DatesGenerator, DateFreq};
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
 /// let freq = DateFreq::Daily;
 /// let n_periods = 5;
@@ -466,8 +465,8 @@ impl DatesList {
 /// ];
 ///
 /// assert_eq!(dates, expected_dates);
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 ///
 /// **3. Starting on the Exact Day (Weekly Monday):**
@@ -475,9 +474,9 @@ impl DatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use dates::{DatesGenerator, DateFreq};
+/// use rustframe::utils::{DatesGenerator, DateFreq};
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(); // Monday
 /// let freq = DateFreq::WeeklyMonday;
 /// let n_periods = 3;
@@ -488,8 +487,8 @@ impl DatesList {
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 1, 8).unwrap()));
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
 /// assert_eq!(generator.next(), None);
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 #[derive(Debug, Clone)]
 pub struct DatesGenerator {
