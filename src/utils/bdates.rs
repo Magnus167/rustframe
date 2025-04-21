@@ -165,9 +165,9 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2023-11-01".to_string(); // Wednesday
 /// let end_date = "2023-11-07".to_string();   // Tuesday
 /// let freq = BDateFreq::Daily;
@@ -184,8 +184,8 @@ enum GroupKey {
 ///
 /// assert_eq!(bdates.list()?, expected_dates);
 /// assert_eq!(bdates.count()?, 5);
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 ///
 /// **2. Using `from_n_periods` (Start Date and Count):**
@@ -193,9 +193,9 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2024-02-28".to_string(); // Wednesday
 /// let freq = BDateFreq::WeeklyFriday;
 /// let n_periods = 3;
@@ -214,8 +214,8 @@ enum GroupKey {
 /// assert_eq!(bdates.count()?, 3);
 /// assert_eq!(bdates.start_date_str(), "2024-02-28"); // Keeps original start string
 /// assert_eq!(bdates.end_date_str(), "2024-03-15");   // End date is the last generated date
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 ///
 /// **3. Using `groups()`:**
@@ -223,9 +223,9 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use bdates::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2023-11-20".to_string(); // Mon, Week 47
 /// let end_date = "2023-12-08".to_string();   // Fri, Week 49
 /// let freq = BDateFreq::WeeklyMonday;
@@ -239,8 +239,8 @@ enum GroupKey {
 /// assert_eq!(groups[0], vec![NaiveDate::from_ymd_opt(2023, 11, 20).unwrap()]); // Week 47
 /// assert_eq!(groups[1], vec![NaiveDate::from_ymd_opt(2023, 11, 27).unwrap()]); // Week 48
 /// assert_eq!(groups[2], vec![NaiveDate::from_ymd_opt(2023, 12, 4).unwrap()]);  // Week 49
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 impl BDatesList {
     /// Creates a new `BDatesList` instance defined by a start and end date.
@@ -451,9 +451,9 @@ impl BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use bdates::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesGenerator, BDateFreq}; 
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start = NaiveDate::from_ymd_opt(2023, 12, 28).unwrap(); // Thursday
 /// let freq = BDateFreq::MonthEnd;
 /// let n_periods = 4; // Dec '23, Jan '24, Feb '24, Mar '24
@@ -466,8 +466,8 @@ impl BDatesList {
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 2, 29).unwrap())); // Leap year
 /// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 3, 29).unwrap())); // Mar 31 is Sun
 /// assert_eq!(generator.next(), None); // Exhausted
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 ///
 /// **2. Collecting into a Vec:**
@@ -475,9 +475,9 @@ impl BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use bdates::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
-/// # fn main() -> Result<(), Box<dyn Error>> {
+/// fn main() -> Result<(), Box<dyn Error>> {
 /// let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
 /// let freq = BDateFreq::Daily;
 /// let n_periods = 5;
@@ -494,8 +494,8 @@ impl BDatesList {
 /// ];
 ///
 /// assert_eq!(dates, expected_dates);
-/// # Ok(())
-/// # }
+/// Ok(())
+/// }
 /// ```
 #[derive(Debug, Clone)]
 pub struct BDatesGenerator {
