@@ -511,9 +511,6 @@ impl<T: Clone + PartialEq> Frame<T> {
     }
 }
 
-
-
-
 // Trait for resolving logical to physical row indices
 /// Internal trait to abstract the logic for looking up physical row indices.
 trait RowIndexLookupHelper<Idx> {
@@ -607,9 +604,6 @@ impl<'a, T: Clone + PartialEq + fmt::Debug> fmt::Debug for FrameRowView<'a, T> {
             .finish()
     }
 }
-
-
-
 
 impl<'a, T: Clone + PartialEq> FrameRowView<'a, T> {
     /// Returns a reference to the element at the given physical column index.
@@ -765,12 +759,7 @@ impl<'a, T: Clone + PartialEq> IndexMut<usize> for FrameRowViewMut<'a, T> {
     }
 }
 
-
-
-
-
-/* ---------- Frame Indexing Implementation ---------- */
-/// Allows accessing a column's data as a slice using `frame["col_name"]`.
+/// Enables immutable access to a column's data via `frame["col_name"]`.
 impl<T: Clone + PartialEq> Index<&str> for Frame<T> {
     type Output = [T];
     #[inline]
@@ -778,7 +767,8 @@ impl<T: Clone + PartialEq> Index<&str> for Frame<T> {
         self.column(name)
     }
 }
-/// Allows mutating a column's data as a slice using `frame["col_name"]`.
+
+/// Enables mutable access to a column's data via `frame["col_name"]`.
 impl<T: Clone + PartialEq> IndexMut<&str> for Frame<T> {
     #[inline]
     fn index_mut(&mut self, name: &str) -> &mut Self::Output {
@@ -786,8 +776,9 @@ impl<T: Clone + PartialEq> IndexMut<&str> for Frame<T> {
     }
 }
 
-/* ---------- Element-wise numerical ops ---------- */
-/// Macro to implement element-wise binary operations (+, -, *, /) for Frames.
+/* ---------- Element-wise Arithmetic Operations ---------- */
+/// Generates implementations for element-wise arithmetic (`+`, `-`, `*`, `/`) on `Frame<T>`.
+/// Panics if column labels or row indices differ between operands.
 macro_rules! impl_elementwise_frame_op {
     ($OpTrait:ident, $method:ident) => {
         impl<'a, 'b, T> std::ops::$OpTrait<&'b Frame<T>> for &'a Frame<T>
@@ -795,11 +786,12 @@ macro_rules! impl_elementwise_frame_op {
             T: Clone + PartialEq + std::ops::$OpTrait<Output = T>,
         {
             type Output = Frame<T>;
+
             fn $method(self, rhs: &'b Frame<T>) -> Frame<T> {
-                // 1. Check for compatibility
+                // Verify matching schema
                 if self.column_names != rhs.column_names {
                     panic!(
-                        "Element-wise op ({}): column names mismatch. Left: {:?}, Right: {:?}",
+                        "Element-wise {}: column names do not match. Left: {:?}, Right: {:?}",
                         stringify!($method),
                         self.column_names,
                         rhs.column_names
@@ -807,22 +799,22 @@ macro_rules! impl_elementwise_frame_op {
                 }
                 if self.index != rhs.index {
                     panic!(
-                        "Element-wise op ({}): row indices mismatch. Left: {:?}, Right: {:?}",
+                        "Element-wise {}: row indices do not match. Left: {:?}, Right: {:?}",
                         stringify!($method),
                         self.index,
                         rhs.index
                     );
                 }
 
-                // 2. Perform operation on underlying matrices
+                // Apply the matrix operation
                 let result_matrix = (&self.matrix).$method(&rhs.matrix);
 
-                // 3. Construct the new Frame
-                // Clone index unless it's Range, then pass None to use default construction
+                // Determine index for the result
                 let new_index = match self.index {
-                    RowIndex::Range(_) => None, // Frame::new handles None correctly
-                    _ => Some(self.index.clone()), // Clone Int or Date index
+                    RowIndex::Range(_) => None,
+                    _ => Some(self.index.clone()),
                 };
+
                 Frame::new(result_matrix, self.column_names.clone(), new_index)
             }
         }
@@ -833,17 +825,19 @@ impl_elementwise_frame_op!(Sub, sub);
 impl_elementwise_frame_op!(Mul, mul);
 impl_elementwise_frame_op!(Div, div);
 
-/* ---------- Boolean-specific bitwise ops ---------- */
-/// Macro to implement element-wise binary bitwise operations (&, |, ^) for Frames of bool.
+/* ---------- Boolean Bitwise Operations ---------- */
+/// Generates implementations for element-wise bitwise operations (`&`, `|`, `^`) on `Frame<bool>`.
+/// Panics if column labels or row indices differ between operands.
 macro_rules! impl_bitwise_frame_op {
     ($OpTrait:ident, $method:ident) => {
         impl<'a, 'b> std::ops::$OpTrait<&'b Frame<bool>> for &'a Frame<bool> {
             type Output = Frame<bool>;
+
             fn $method(self, rhs: &'b Frame<bool>) -> Frame<bool> {
-                // 1. Check for compatibility
+                // Verify matching schema
                 if self.column_names != rhs.column_names {
                     panic!(
-                        "Bitwise op ({}): column names mismatch. Left: {:?}, Right: {:?}",
+                        "Bitwise {}: column names do not match. Left: {:?}, Right: {:?}",
                         stringify!($method),
                         self.column_names,
                         rhs.column_names
@@ -851,21 +845,22 @@ macro_rules! impl_bitwise_frame_op {
                 }
                 if self.index != rhs.index {
                     panic!(
-                        "Bitwise op ({}): row indices mismatch. Left: {:?}, Right: {:?}",
+                        "Bitwise {}: row indices do not match. Left: {:?}, Right: {:?}",
                         stringify!($method),
                         self.index,
                         rhs.index
                     );
                 }
 
-                // 2. Perform operation on underlying matrices
+                // Apply the matrix operation
                 let result_matrix = (&self.matrix).$method(&rhs.matrix);
 
-                // 3. Construct the new Frame
+                // Determine index for the result
                 let new_index = match self.index {
                     RowIndex::Range(_) => None,
                     _ => Some(self.index.clone()),
                 };
+
                 Frame::new(result_matrix, self.column_names.clone(), new_index)
             }
         }
@@ -875,19 +870,21 @@ impl_bitwise_frame_op!(BitAnd, bitand);
 impl_bitwise_frame_op!(BitOr, bitor);
 impl_bitwise_frame_op!(BitXor, bitxor);
 
-/// Implements element-wise logical NOT (!) for Frames of bool. Consumes the frame.
+/// Implements logical NOT (`!`) for `Frame<bool>`, consuming the frame.
 impl Not for Frame<bool> {
     type Output = Frame<bool>;
+
     fn not(self) -> Frame<bool> {
-        // Perform operation on underlying matrix (Matrix::not consumes the matrix)
+        // Apply NOT to the underlying matrix
         let result_matrix = !self.matrix;
 
-        // Construct the new Frame (index can be moved as self is consumed)
+        // Determine index for the result
         let new_index = match self.index {
             RowIndex::Range(_) => None,
-            _ => Some(self.index), // Move index
+            _ => Some(self.index),
         };
-        Frame::new(result_matrix, self.column_names, new_index) // Move column names
+
+        Frame::new(result_matrix, self.column_names, new_index)
     }
 }
 
