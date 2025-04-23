@@ -85,20 +85,22 @@ impl<T> Matrix<T> {
             "column index out of bounds"
         );
         if c1 == c2 {
-            return; // No-op if indices are the same
+            // Indices are equal; no operation required
+            return;
         }
 
-        // Loop through each row
+        // Iterate over each row to swap corresponding elements
         for r in 0..self.rows {
-            // Calculate the flat index for the element in row r, column c1
+            // Compute the one-dimensional index for (row r, column c1)
             let idx1 = c1 * self.rows + r;
-            // Calculate the flat index for the element in row r, column c2
+            // Compute the one-dimensional index for (row r, column c2)
             let idx2 = c2 * self.rows + r;
 
-            // Swap the elements directly in the data vector
+            // Exchange the two elements in the internal data buffer
             self.data.swap(idx1, idx2);
         }
     }
+
     /// Deletes a column from the matrix.
     pub fn delete_column(&mut self, col: usize) {
         assert!(col < self.cols, "column index out of bounds");
@@ -144,35 +146,45 @@ impl<T: Clone> Matrix<T> {
 
 impl<T> Index<(usize, usize)> for Matrix<T> {
     type Output = T;
+
     #[inline]
     fn index(&self, (r, c): (usize, usize)) -> &T {
+        // Validate that the requested indices are within bounds
         assert!(r < self.rows && c < self.cols, "index out of bounds");
+        // Compute column-major offset and return reference
         &self.data[c * self.rows + r]
     }
 }
+
 impl<T> IndexMut<(usize, usize)> for Matrix<T> {
     #[inline]
     fn index_mut(&mut self, (r, c): (usize, usize)) -> &mut T {
+        // Validate that the requested indices are within bounds
         assert!(r < self.rows && c < self.cols, "index out of bounds");
+        // Compute column-major offset and return mutable reference
         &mut self.data[c * self.rows + r]
     }
 }
 
-/// A view of one row
+/// Represents an immutable view of a single row in the matrix.
 pub struct MatrixRow<'a, T> {
     matrix: &'a Matrix<T>,
     row: usize,
 }
+
 impl<'a, T> MatrixRow<'a, T> {
+    /// Returns a reference to the element at the given column in this row.
     pub fn get(&self, c: usize) -> &T {
         &self.matrix[(self.row, c)]
     }
+
+    /// Returns an iterator over all elements in this row.
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         (0..self.matrix.cols).map(move |c| &self.matrix[(self.row, c)])
     }
 }
 
-/// Macro to generate element‐wise impls for +, -, *, /
+/// Generates element-wise arithmetic implementations for matrices.
 macro_rules! impl_elementwise_op {
     ($OpTrait:ident, $method:ident, $op:tt) => {
         impl<'a, 'b, T> std::ops::$OpTrait<&'b Matrix<T>> for &'a Matrix<T>
@@ -182,8 +194,10 @@ macro_rules! impl_elementwise_op {
             type Output = Matrix<T>;
 
             fn $method(self, rhs: &'b Matrix<T>) -> Matrix<T> {
+                // Ensure both matrices have identical dimensions
                 assert_eq!(self.rows, rhs.rows, "row count mismatch");
                 assert_eq!(self.cols, rhs.cols, "col count mismatch");
+                // Apply the operation element-wise and collect into a new matrix
                 let data = self
                     .data
                     .iter()
@@ -197,7 +211,7 @@ macro_rules! impl_elementwise_op {
     };
 }
 
-// invoke it 4 times:
+// Instantiate element-wise addition, subtraction, multiplication, and division
 impl_elementwise_op!(Add, add, +);
 impl_elementwise_op!(Sub, sub, -);
 impl_elementwise_op!(Mul, mul, *);
@@ -208,16 +222,17 @@ pub type BoolMatrix = Matrix<bool>;
 pub type IntMatrix = Matrix<i32>;
 pub type StringMatrix = Matrix<String>;
 
-// implement bit ops - and, or, xor, not -- using Macros
-
+/// Generates element-wise bitwise operations for boolean matrices.
 macro_rules! impl_bitwise_op {
     ($OpTrait:ident, $method:ident, $op:tt) => {
         impl<'a, 'b> std::ops::$OpTrait<&'b Matrix<bool>> for &'a Matrix<bool> {
             type Output = Matrix<bool>;
 
             fn $method(self, rhs: &'b Matrix<bool>) -> Matrix<bool> {
+                // Ensure both matrices have identical dimensions
                 assert_eq!(self.rows, rhs.rows, "row count mismatch");
                 assert_eq!(self.cols, rhs.cols, "col count mismatch");
+                // Apply the bitwise operation element-wise
                 let data = self
                     .data
                     .iter()
@@ -230,6 +245,8 @@ macro_rules! impl_bitwise_op {
         }
     };
 }
+
+// Instantiate bitwise AND, OR, and XOR for boolean matrices
 impl_bitwise_op!(BitAnd, bitand, &);
 impl_bitwise_op!(BitOr, bitor, |);
 impl_bitwise_op!(BitXor, bitxor, ^);
@@ -238,6 +255,7 @@ impl Not for Matrix<bool> {
     type Output = Matrix<bool>;
 
     fn not(self) -> Matrix<bool> {
+        // Invert each boolean element in the matrix
         let data = self.data.iter().map(|&v| !v).collect();
         Matrix {
             rows: self.rows,
@@ -247,12 +265,12 @@ impl Not for Matrix<bool> {
     }
 }
 
-/// Axis along which to apply a reduction.
+/// Specifies the axis along which to perform a reduction operation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Axis {
-    /// Operate column‑wise (vertical).
+    /// Apply reduction along columns (vertical axis).
     Col,
-    /// Operate row‑wise (horizontal).
+    /// Apply reduction along rows (horizontal axis).
     Row,
 }
 
