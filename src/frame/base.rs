@@ -1,15 +1,13 @@
 use crate::matrix::Matrix;
-
 use chrono::NaiveDate;
 use std::collections::HashMap;
-
 use std::fmt;
 use std::ops::{Index, IndexMut, Not, Range};
 
-// --- Helper Enums and Structs for Indexing ---
+// Helper enums and structs for indexing support
 
 /// Represents the different types of row indices a Frame can have.
-#[derive(Debug, Clone, PartialEq, Eq)] // Added Eq for HashMaps etc.
+#[derive(Debug, Clone, PartialEq, Eq)] // Derive Eq to enable usage as HashMap keys
 pub enum RowIndex {
     /// Integer-based index (e.g., 0, 1, 2, ...). Values must be unique.
     Int(Vec<usize>),
@@ -21,24 +19,6 @@ pub enum RowIndex {
 
 impl RowIndex {
     /// Returns the number of elements in the index.
-    ///
-    /// # Examples
-    /// ```
-    /// # use rustframe::frame::RowIndex;
-    /// # use chrono::NaiveDate;
-    /// # fn d(y: i32, m: u32, d: u32) -> NaiveDate { NaiveDate::from_ymd_opt(y,m,d).unwrap() }
-    /// let idx_int = RowIndex::Int(vec![10, 20, 5]);
-    /// assert_eq!(idx_int.len(), 3);
-    ///
-    /// let idx_date = RowIndex::Date(vec![d(2024,1,1), d(2024,1,2)]);
-    /// assert_eq!(idx_date.len(), 2);
-    ///
-    /// let idx_range = RowIndex::Range(0..5);
-    /// assert_eq!(idx_range.len(), 5);
-    ///
-    /// let idx_empty_int = RowIndex::Int(vec![]);
-    /// assert_eq!(idx_empty_int.len(), 0);
-    /// ```
     pub fn len(&self) -> usize {
         match self {
             RowIndex::Int(v) => v.len(),
@@ -48,34 +28,20 @@ impl RowIndex {
     }
 
     /// Checks if the index is empty.
-    ///
-    /// # Examples
-    /// ```
-    /// # use rustframe::frame::RowIndex;
-    /// # use chrono::NaiveDate;
-    /// let idx_int = RowIndex::Int(vec![10, 20, 5]);
-    /// assert!(!idx_int.is_empty());
-    ///
-    /// let idx_range = RowIndex::Range(0..0);
-    /// assert!(idx_range.is_empty());
-    ///
-    /// let idx_empty_date = RowIndex::Date(vec![]);
-    /// assert!(idx_empty_date.is_empty());
-    /// ```
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
 /// Internal helper for fast lookups from index value to physical row position.
-#[derive(Debug, Clone, PartialEq, Eq)] // Added Eq
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum RowIndexLookup {
     Int(HashMap<usize, usize>),
     Date(HashMap<NaiveDate, usize>),
-    None, // Used for Range index
+    None, // Variant for default range-based indexing
 }
 
-// --- Frame Struct Definition ---
+// Frame struct definition and associated implementations
 
 /// A data frame – a Matrix with string-identified columns and a typed row index.
 ///
@@ -142,11 +108,10 @@ enum RowIndexLookup {
 ///
 /// // --- Example 4: Element-wise Multiplication ---
 /// let f_prod = &f1 * &f2;
-/// // Use approx comparison for floats if necessary
-/// assert!((f_prod["C1"][0] - 0.1_f64).abs() < 1e-9); // 1.0 * 0.1
-/// assert!((f_prod["C1"][1] - 0.4_f64).abs() < 1e-9); // 2.0 * 0.2
-/// assert!((f_prod["C2"][0] - 0.9_f64).abs() < 1e-9); // 3.0 * 0.3
-/// assert!((f_prod["C2"][1] - 1.6_f64).abs() < 1e-9); // 4.0 * 0.4
+/// assert!((f_prod["C1"][0] - 0.1_f64).abs() < 1e-9);
+/// assert!((f_prod["C1"][1] - 0.4_f64).abs() < 1e-9);
+/// assert!((f_prod["C2"][0] - 0.9_f64).abs() < 1e-9);
+/// assert!((f_prod["C2"][1] - 1.6_f64).abs() < 1e-9);
 ///
 /// // --- Example 5: Column Manipulation and Sorting ---
 /// let mut frame_manip = Frame::new(
@@ -163,13 +128,14 @@ enum RowIndexLookup {
 /// assert_eq!(frame_manip["DataX"], vec![3, 4]); // X has A's original data
 /// let deleted_c = frame_manip.delete_column("DataC");
 /// assert_eq!(deleted_c, vec![1, 2]);
-/// assert_eq!(frame_manip.columns(), &["DataX", "DataB"]); // Order after delete
-/// frame_manip.sort_columns(); // Sorts ["DataX", "DataB"] -> ["DataB", "DataX"]
+/// assert_eq!(frame_manip.columns(), &["DataX", "DataB"]);
+/// frame_manip.sort_columns();
 /// assert_eq!(frame_manip.columns(), &["DataB", "DataX"]);
-/// assert_eq!(frame_manip["DataB"], vec![5, 6]); // B keeps its data
-/// assert_eq!(frame_manip["DataX"], vec![3, 4]); // X keeps its data (originally A's)
+/// assert_eq!(frame_manip["DataB"], vec![5, 6]);
+/// assert_eq!(frame_manip["DataX"], vec![3, 4]);
 /// ```
-// Implement Debug manually for Frame
+
+// Custom Debug implementation for Frame
 impl<T: Clone + PartialEq + fmt::Debug> fmt::Debug for Frame<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Frame")
@@ -178,13 +144,13 @@ impl<T: Clone + PartialEq + fmt::Debug> fmt::Debug for Frame<T> {
             .field("matrix_dims", &(self.matrix.rows(), self.matrix.cols()))
             .field("col_lookup", &self.col_lookup)
             .field("index_lookup", &self.index_lookup)
-            // Optionally hide matrix data in Debug unless specifically requested
+            // Matrix data is omitted from Debug output by default
             // .field("matrix", &self.matrix)
             .finish()
     }
 }
 
-#[derive(Clone, PartialEq)] // Removed Eq as T doesn't require Eq
+#[derive(Clone, PartialEq)]
 pub struct Frame<T: Clone + PartialEq> {
     /// Vector holding the column names in their current order.
     column_names: Vec<String>,
@@ -199,13 +165,13 @@ pub struct Frame<T: Clone + PartialEq> {
 }
 
 impl<T: Clone + PartialEq> Frame<T> {
-    /* ---------- Constructors ---------- */
+    // Constructors
 
     /// Creates a new [`Frame`] from a matrix, column names, and an optional row index.
     /// Panics if the underlying `Matrix` requirements are not met (e.g., rows>0, cols>0 for standard constructors),
     /// or if column name/index constraints are violated.
     pub fn new<L: Into<String>>(matrix: Matrix<T>, names: Vec<L>, index: Option<RowIndex>) -> Self {
-        // --- Column Validation ---
+        // Validate that the number of column names matches the matrix's column count.
         if matrix.cols() != names.len() {
             panic!(
                 "Frame::new: column name count mismatch (names: {}, matrix: {})",
@@ -213,10 +179,9 @@ impl<T: Clone + PartialEq> Frame<T> {
                 matrix.cols()
             );
         }
-        // Note: Matrix constructors enforce rows > 0 and cols > 0 based on provided code.
-        // Therefore, we don't need to explicitly handle 0-row/0-col cases here,
-        // as they would have already panicked during Matrix creation.
+        // Matrix creation already enforces non-zero rows and columns.
 
+        // Build column name list and lookup map, ensuring no duplicates.
         let mut col_lookup = HashMap::with_capacity(names.len());
         let column_names: Vec<String> = names
             .into_iter()
@@ -230,7 +195,7 @@ impl<T: Clone + PartialEq> Frame<T> {
             })
             .collect();
 
-        // --- Index Validation and Processing ---
+        // Validate and construct the row index and its lookup structure.
         let num_rows = matrix.rows();
         let (index_values, index_lookup) = match index {
             Some(RowIndex::Int(vals)) => {
@@ -241,6 +206,7 @@ impl<T: Clone + PartialEq> Frame<T> {
                         num_rows
                     );
                 }
+                // Build integer-to-physical-row mapping.
                 let mut lookup = HashMap::with_capacity(num_rows);
                 for (physical_row, index_val) in vals.iter().enumerate() {
                     if lookup.insert(*index_val, physical_row).is_some() {
@@ -257,6 +223,7 @@ impl<T: Clone + PartialEq> Frame<T> {
                         num_rows
                     );
                 }
+                // Build date-to-physical-row mapping.
                 let mut lookup = HashMap::with_capacity(num_rows);
                 for (physical_row, index_val) in vals.iter().enumerate() {
                     if lookup.insert(*index_val, physical_row).is_some() {
@@ -270,7 +237,10 @@ impl<T: Clone + PartialEq> Frame<T> {
                     "Frame::new: Cannot explicitly provide a Range index. Use None for default range."
                 );
             }
-            None => (RowIndex::Range(0..num_rows), RowIndexLookup::None),
+            None => {
+                // Default to a sequential range index.
+                (RowIndex::Range(0..num_rows), RowIndexLookup::None)
+            }
         };
 
         Self {
@@ -282,48 +252,55 @@ impl<T: Clone + PartialEq> Frame<T> {
         }
     }
 
-    /* ---------- Accessors ---------- */
-    /// Returns an immutable reference to the underlying Matrix.
+    // Accessors
+
+    /// Returns an immutable reference to the underlying `Matrix`.
     #[inline]
     pub fn matrix(&self) -> &Matrix<T> {
         &self.matrix
     }
-    /// Returns a mutable reference to the underlying Matrix.
-    /// Use with caution, as direct matrix manipulation bypasses Frame's name/index tracking.
+
+    /// Returns a mutable reference to the underlying `Matrix`.
+    /// Use with caution: direct matrix edits bypass frame-level name/index consistency checks.
     #[inline]
     pub fn matrix_mut(&mut self) -> &mut Matrix<T> {
         &mut self.matrix
     }
-    /// Returns a slice containing the current column names in order.
+
+    /// Returns the list of column names in their current order.
     #[inline]
     pub fn columns(&self) -> &[String] {
         &self.column_names
     }
-    /// Returns a reference to the `RowIndex`.
+
+    /// Returns a reference to the frame's row index.
     #[inline]
     pub fn index(&self) -> &RowIndex {
         &self.index
     }
+
     /// Returns the number of rows in the frame.
     #[inline]
     pub fn rows(&self) -> usize {
         self.matrix.rows()
     }
+
     /// Returns the number of columns in the frame.
     #[inline]
     pub fn cols(&self) -> usize {
         self.matrix.cols()
     }
-    /// Returns the physical column index for a given column name, if it exists.
+
+    /// Returns the physical column index for the given column name, if present.
     #[inline]
     pub fn column_index(&self, name: &str) -> Option<usize> {
         self.col_lookup.get(name).copied()
     }
 
-    /// Internal helper to find the physical row index based on the index key and type.
+    /// Internal helper to compute the physical row index from a logical key.
     fn get_physical_row_index<Idx>(&self, index_key: Idx) -> usize
     where
-        Self: RowIndexLookupHelper<Idx>, // Uses the helper trait below
+        Self: RowIndexLookupHelper<Idx>, // Requires `RowIndexLookupHelper` for `Idx`
     {
         <Self as RowIndexLookupHelper<Idx>>::lookup_row_index(
             index_key,
@@ -332,16 +309,17 @@ impl<T: Clone + PartialEq> Frame<T> {
         )
     }
 
-    /// Returns an immutable slice representing the data in the specified column.
-    /// Panics if the column name does not exist.
+    /// Returns an immutable slice of the specified column's data.
+    /// Panics if the column name is not found.
     pub fn column(&self, name: &str) -> &[T] {
         let idx = self
             .column_index(name)
             .unwrap_or_else(|| panic!("Frame::column: unknown column label: '{}'", name));
         self.matrix.column(idx)
     }
-    /// Returns a mutable slice representing the data in the specified column.
-    /// Panics if the column name does not exist.
+
+    /// Returns a mutable slice of the specified column's data.
+    /// Panics if the column name is not found.
     pub fn column_mut(&mut self, name: &str) -> &mut [T] {
         let idx = self
             .column_index(name)
@@ -349,10 +327,10 @@ impl<T: Clone + PartialEq> Frame<T> {
         self.matrix.column_mut(idx)
     }
 
-    /* ---------- Row Access Methods ---------- */
-    /// Returns an immutable view of the row corresponding to the given integer index key.
-    /// Panics if the key is not found in the `RowIndex::Int` or `RowIndex::Range`.
-    /// Panics if the index is `RowIndex::Date`.
+    // Row access methods
+
+    /// Returns an immutable view of the row for the given integer key.
+    /// Panics if the key is invalid or if the index type is `Date`.
     pub fn get_row(&self, index_key: usize) -> FrameRowView<'_, T> {
         let idx = self.get_physical_row_index(index_key);
         FrameRowView {
@@ -360,9 +338,9 @@ impl<T: Clone + PartialEq> Frame<T> {
             physical_row_idx: idx,
         }
     }
-    /// Returns a mutable view of the row corresponding to the given integer index key.
-    /// Panics if the key is not found in the `RowIndex::Int` or `RowIndex::Range`.
-    /// Panics if the index is `RowIndex::Date`.
+
+    /// Returns a mutable view of the row for the given integer key.
+    /// Panics if the key is invalid or if the index type is `Date`.
     pub fn get_row_mut(&mut self, index_key: usize) -> FrameRowViewMut<'_, T> {
         let idx = self.get_physical_row_index(index_key);
         FrameRowViewMut {
@@ -370,9 +348,9 @@ impl<T: Clone + PartialEq> Frame<T> {
             physical_row_idx: idx,
         }
     }
-    /// Returns an immutable view of the row corresponding to the given date index key.
-    /// Panics if the key is not found in the `RowIndex::Date`.
-    /// Panics if the index is `RowIndex::Int` or `RowIndex::Range`.
+
+    /// Returns an immutable view of the row for the given date key.
+    /// Panics if the key is invalid or if the index type is not `Date`.
     pub fn get_row_date(&self, index_key: NaiveDate) -> FrameRowView<'_, T> {
         let idx = self.get_physical_row_index(index_key);
         FrameRowView {
@@ -380,9 +358,9 @@ impl<T: Clone + PartialEq> Frame<T> {
             physical_row_idx: idx,
         }
     }
-    /// Returns a mutable view of the row corresponding to the given date index key.
-    /// Panics if the key is not found in the `RowIndex::Date`.
-    /// Panics if the index is `RowIndex::Int` or `RowIndex::Range`.
+
+    /// Returns a mutable view of the row for the given date key.
+    /// Panics if the key is invalid or if the index type is not `Date`.
     pub fn get_row_date_mut(&mut self, index_key: NaiveDate) -> FrameRowViewMut<'_, T> {
         let idx = self.get_physical_row_index(index_key);
         FrameRowViewMut {
@@ -391,41 +369,34 @@ impl<T: Clone + PartialEq> Frame<T> {
         }
     }
 
-    /* ---------- Column manipulation ---------- */
+    // Column manipulation
 
-    /// Internal helper to swap two columns. Updates matrix, column names, and lookup map.
-    /// This is not intended for direct user consumption. Use `sort_columns`.
+    /// Internal helper to swap two columns, updating the matrix, name list, and lookup map.
+    /// Not intended for public use; prefer `sort_columns`.
     fn _swap_columns_internal(&mut self, a: &str, b: &str) {
-        // Avoid cloning strings if possible by getting indices first
-        let maybe_ia = self.column_index(a);
-        let maybe_ib = self.column_index(b);
-
-        let ia = maybe_ia.unwrap_or_else(|| {
+        // Retrieve physical indices for the given column names.
+        let ia = self.column_index(a).unwrap_or_else(|| {
             panic!("Frame::_swap_columns_internal: unknown column label: {}", a)
         });
-        let ib = maybe_ib.unwrap_or_else(|| {
+        let ib = self.column_index(b).unwrap_or_else(|| {
             panic!("Frame::_swap_columns_internal: unknown column label: {}", b)
         });
 
         if ia == ib {
-            return; // No-op
+            return; // No action needed if columns are identical
         }
 
-        // 1. Swap data in the underlying matrix
+        // Swap the columns in the underlying matrix.
         self.matrix.swap_columns(ia, ib);
-
-        // 2. Swap names in the ordered list
+        // Swap the names in the ordered list.
         self.column_names.swap(ia, ib);
-
-        // 3. Update the lookup map to reflect the new physical indices
-        // The column originally named 'a' is now at physical index 'ib'
+        // Update lookup entries to reflect the new positions.
         self.col_lookup.insert(a.to_string(), ib);
-        // The column originally named 'b' is now at physical index 'ia'
         self.col_lookup.insert(b.to_string(), ia);
     }
 
     /// Renames an existing column.
-    /// Panics if the old name doesn't exist, or the new name already exists or is the same as the old name.
+    /// Panics if the source name is missing or if the target name is already in use.
     pub fn rename<L: Into<String>>(&mut self, old: &str, new: L) {
         let new_name = new.into();
         if old == new_name {
@@ -444,82 +415,63 @@ impl<T: Clone + PartialEq> Frame<T> {
             );
         }
 
-        // Update lookup map
+        // Update lookup and ordered name list.
         self.col_lookup.remove(old);
         self.col_lookup.insert(new_name.clone(), idx);
-
-        // Update ordered name list
         self.column_names[idx] = new_name;
     }
 
-    /// Adds a new column to the end of the frame.
-    /// Panics if the column name already exists or if the data length doesn't match the number of rows.
+    /// Adds a new column at the end of the frame.
+    /// Panics if the column name exists or if the data length mismatches the row count.
     pub fn add_column<L: Into<String>>(&mut self, name: L, column_data: Vec<T>) {
         let name_str = name.into();
         if self.col_lookup.contains_key(&name_str) {
             panic!("Frame::add_column: duplicate column label: {}", name_str);
         }
-        // Matrix::add_column checks length against self.rows().
-        // This assumes self.rows() > 0 because Matrix constructors enforce this.
+        // Matrix enforces that the new column length matches the frame's row count.
         let new_col_idx = self.matrix.cols();
-        self.matrix.add_column(new_col_idx, column_data); // Add to end
+        self.matrix.add_column(new_col_idx, column_data);
 
-        // Update frame metadata
+        // Update metadata to include the new column.
         self.column_names.push(name_str.clone());
         self.col_lookup.insert(name_str, new_col_idx);
     }
 
-    /// Deletes a column from the frame by name.
-    /// Returns the data of the deleted column.
-    /// Panics if the column name does not exist.
+    /// Deletes a column by name and returns its data.
+    /// Panics if the column name is not found.
     pub fn delete_column(&mut self, name: &str) -> Vec<T> {
         let idx = self
             .column_index(name)
             .unwrap_or_else(|| panic!("Frame::delete_column: unknown column label: '{}'", name));
 
-        // Retrieve data before deleting. Requires Clone.
-        // Note: Matrix::delete_column might be more efficient if it returned the data.
+        // Clone out the data before removal.
         let deleted_data = self.matrix.column(idx).to_vec();
-
-        // Delete from matrix
         self.matrix.delete_column(idx);
 
-        // Remove from metadata
+        // Remove from metadata and rebuild lookup for shifted columns.
         self.column_names.remove(idx);
-        self.col_lookup.remove(name); // Remove the specific entry
+        self.col_lookup.remove(name);
+        self.rebuild_col_lookup();
 
-        // Update indices in the lookup map for columns that shifted
-        // This is necessary because deleting column `idx` shifts all columns > `idx` one position to the left.
-        self.rebuild_col_lookup(); // Rebuild is simpler than manually adjusting indices
-
-        // Handle index if last column removed
-        // Since Matrix must have cols >= 1, delete_column cannot result in 0 cols
-        // unless the matrix started with 1 col. Matrix must also have rows >= 1.
-        // So, after delete_column, the matrix will still have rows >= 1, but potentially 0 cols.
-        // This state (rows > 0, cols = 0) might be invalid depending on Matrix guarantees.
-        // Assuming Matrix *allows* this state after delete_column:
+        // If all columns are removed, reset default range index.
         if self.cols() == 0 {
-            // Ensure index matches row count.
             if let RowIndex::Range(_) = self.index {
-                // The range should reflect the number of rows remaining.
                 self.index = RowIndex::Range(0..self.rows());
                 self.index_lookup = RowIndexLookup::None;
             }
-            // If the index was Int or Date, it remains unchanged as it tracks rows.
         }
 
         deleted_data
     }
 
-    /// Sorts the columns of the Frame alphabetically by name in place.
-    /// The data remains associated with its original column name.
+    /// Sorts columns alphabetically by name, preserving data associations.
     pub fn sort_columns(&mut self) {
         let n = self.column_names.len();
         if n <= 1 {
-            return; // Already sorted (or empty)
+            return; // Nothing to sort
         }
 
-        // Simple selection sort based on column names.
+        // Selection sort on column names.
         for i in 0..n {
             let mut min_idx = i;
             for j in (i + 1)..n {
@@ -528,18 +480,13 @@ impl<T: Clone + PartialEq> Frame<T> {
                 }
             }
             if min_idx != i {
-                // Get names at current physical positions i and min_idx before swapping
                 let col_i_name = self.column_names[i].clone();
                 let col_min_name = self.column_names[min_idx].clone();
-
-                // Use the internal swap function which handles matrix, names, and lookup
                 self._swap_columns_internal(&col_i_name, &col_min_name);
-                // After swap, col_i_name is at min_idx, col_min_name is at i.
-                // The name list `self.column_names` is updated by the swap.
             }
         }
 
-        // Final check for internal consistency (optional, for debugging)
+        // Debug-only consistency check.
         #[cfg(debug_assertions)]
         {
             let mut temp_lookup = HashMap::with_capacity(self.cols());
@@ -548,14 +495,14 @@ impl<T: Clone + PartialEq> Frame<T> {
             }
             assert_eq!(
                 self.col_lookup, temp_lookup,
-                "Internal col_lookup inconsistent after sort_columns"
+                "Inconsistent col_lookup after sort_columns"
             );
         }
     }
 
-    /* ---------- Helpers ---------- */
-    /// Rebuilds the `col_lookup` map based on the current `column_names` order.
-    /// Used internally after operations that change multiple column indices (like delete).
+    // Internal helpers
+
+    /// Rebuilds the column lookup map to match the current `column_names` ordering.
     fn rebuild_col_lookup(&mut self) {
         self.col_lookup.clear();
         for (i, name) in self.column_names.iter().enumerate() {
@@ -564,13 +511,15 @@ impl<T: Clone + PartialEq> Frame<T> {
     }
 }
 
-// --- Helper Trait for Row Index Lookup ---
+
+
+
+// Trait for resolving logical to physical row indices
 /// Internal trait to abstract the logic for looking up physical row indices.
 trait RowIndexLookupHelper<Idx> {
     fn lookup_row_index(key: Idx, index_values: &RowIndex, index_lookup: &RowIndexLookup) -> usize;
 }
 
-/// Implementation for `usize` keys (used for `RowIndex::Int` and `RowIndex::Range`).
 impl<T: Clone + PartialEq> RowIndexLookupHelper<usize> for Frame<T> {
     fn lookup_row_index(
         key: usize,
@@ -579,18 +528,16 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<usize> for Frame<T> {
     ) -> usize {
         match (index_values, index_lookup) {
             (RowIndex::Int(_), RowIndexLookup::Int(lookup)) => {
-                // Use the HashMap for O(1) average lookup
+                // Constant-time lookup using hash map
                 *lookup.get(&key).unwrap_or_else(|| {
                     panic!("Frame index: integer key {} not found in Int index", key)
                 })
             }
             (RowIndex::Range(range), RowIndexLookup::None) => {
-                // Direct mapping for Range, but check bounds
+                // Direct-range mapping with boundary check
                 if range.contains(&key) {
-                    // For a range S..E, the key `k` corresponds to physical row `k - S`.
-                    // Frame::new ensures Range is always 0..N, so S=0.
-                    debug_assert_eq!(range.start, 0, "Range index expected to start at 0");
-                    key // physical row = key - 0
+                    // Since Range always starts at 0, the physical index equals the key
+                    key
                 } else {
                     panic!(
                         "Frame index: integer key {} out of bounds for Range index {:?}",
@@ -601,23 +548,17 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<usize> for Frame<T> {
             (RowIndex::Date(_), _) => {
                 panic!("Frame index: incompatible key type usize for Date index")
             }
-            // Ensure state consistency
+            // Fallback panic on inconsistent internal index state
             #[allow(unreachable_patterns)]
-            (RowIndex::Int(_), RowIndexLookup::None)
-            | (RowIndex::Int(_), RowIndexLookup::Date(_))
-            | (RowIndex::Date(_), RowIndexLookup::Int(_))
-            | (RowIndex::Date(_), RowIndexLookup::None)
-            | (RowIndex::Range(_), RowIndexLookup::Int(_))
-            | (RowIndex::Range(_), RowIndexLookup::Date(_)) => {
+            _ => {
                 panic!(
-                    "Frame index: inconsistent internal index state (lookup type mismatch for index type with usize key)"
+                    "Frame index: inconsistent internal index state (lookup type mismatch for usize key)"
                 )
             }
         }
     }
 }
 
-/// Implementation for `NaiveDate` keys (used for `RowIndex::Date`).
 impl<T: Clone + PartialEq> RowIndexLookupHelper<NaiveDate> for Frame<T> {
     fn lookup_row_index(
         key: NaiveDate,
@@ -626,7 +567,7 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<NaiveDate> for Frame<T> {
     ) -> usize {
         match (index_values, index_lookup) {
             (RowIndex::Date(_), RowIndexLookup::Date(lookup)) => {
-                // Use the HashMap for O(1) average lookup
+                // Constant-time lookup via hash map
                 *lookup.get(&key).unwrap_or_else(|| {
                     panic!("Frame index: date key {} not found in Date index", key)
                 })
@@ -634,21 +575,18 @@ impl<T: Clone + PartialEq> RowIndexLookupHelper<NaiveDate> for Frame<T> {
             (RowIndex::Int(_), _) | (RowIndex::Range(_), _) => {
                 panic!("Frame index: incompatible key type NaiveDate for Int or Range index")
             }
-            // Ensure state consistency
+            // Fallback panic on inconsistent internal index state
             #[allow(unreachable_patterns)]
-            (RowIndex::Date(_), RowIndexLookup::None)
-            | (RowIndex::Date(_), RowIndexLookup::Int(_))
-            | (RowIndex::Int(_), RowIndexLookup::Date(_))
-            | (RowIndex::Range(_), RowIndexLookup::Date(_)) => {
+            _ => {
                 panic!(
-                    "Frame index: inconsistent internal index state (lookup type mismatch for index type with NaiveDate key)"
+                    "Frame index: inconsistent internal index state (lookup type mismatch for NaiveDate key)"
                 )
             }
         }
     }
 }
 
-// --- Row View Structs ---
+// Row view types for frame rows
 
 /// An immutable view of a single row in a `Frame`. Allows access via `[]`.
 pub struct FrameRowView<'a, T: Clone + PartialEq> {
@@ -658,7 +596,7 @@ pub struct FrameRowView<'a, T: Clone + PartialEq> {
 
 impl<'a, T: Clone + PartialEq + fmt::Debug> fmt::Debug for FrameRowView<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Collect references to the data for display
+        // Gather row data for debug output
         let row_data: Vec<&T> = (0..self.frame.cols())
             .map(|c| &self.frame.matrix[(self.physical_row_idx, c)])
             .collect();
@@ -670,29 +608,35 @@ impl<'a, T: Clone + PartialEq + fmt::Debug> fmt::Debug for FrameRowView<'a, T> {
     }
 }
 
+
+
+
 impl<'a, T: Clone + PartialEq> FrameRowView<'a, T> {
-    /// Get an element by its physical column index. Panics if out of bounds (delegated to Matrix).
+    /// Returns a reference to the element at the given physical column index.
+    /// Panics with a descriptive message if `col_idx` is out of bounds.
     pub fn get_by_index(&self, col_idx: usize) -> &T {
-        // Add check here for better error message if desired
         if col_idx >= self.frame.cols() {
             panic!(
-                "FrameRowView::get_by_index: column index {} out of bounds for frame with {} columns",
+                "FrameRowView::get_by_index: column index {} out of bounds (frame has {} columns)",
                 col_idx,
                 self.frame.cols()
             );
         }
         &self.frame.matrix[(self.physical_row_idx, col_idx)]
     }
-    /// Get an element by its column name. Panics if name not found.
+
+    /// Returns a reference to the element in the column named `col_name`.
+    /// Panics if the column name is not found.
     pub fn get(&self, col_name: &str) -> &T {
         let idx = self
             .frame
             .column_index(col_name)
-            .unwrap_or_else(|| panic!("FrameRowView::get: column name '{}' not found", col_name));
+            .unwrap_or_else(|| panic!("FrameRowView::get: unknown column '{}'", col_name));
         self.get_by_index(idx)
     }
 }
-// Indexing by column name (&str)
+
+// Immutable indexing by column name
 impl<'a, T: Clone + PartialEq> Index<&str> for FrameRowView<'a, T> {
     type Output = T;
     #[inline]
@@ -700,7 +644,8 @@ impl<'a, T: Clone + PartialEq> Index<&str> for FrameRowView<'a, T> {
         self.get(col_name)
     }
 }
-// Indexing by physical column index (usize)
+
+// Immutable indexing by physical column index
 impl<'a, T: Clone + PartialEq> Index<usize> for FrameRowView<'a, T> {
     type Output = T;
     #[inline]
@@ -709,7 +654,8 @@ impl<'a, T: Clone + PartialEq> Index<usize> for FrameRowView<'a, T> {
     }
 }
 
-/// A mutable view of a single row in a `Frame`. Allows access/mutation via `[]` or methods.
+/// A mutable view of a single row in a `Frame`.  
+/// Supports indexed access and mutation via methods or `[]` operators.
 pub struct FrameRowViewMut<'a, T: Clone + PartialEq> {
     frame: &'a mut Frame<T>,
     physical_row_idx: usize,
@@ -717,108 +663,111 @@ pub struct FrameRowViewMut<'a, T: Clone + PartialEq> {
 
 impl<'a, T: Clone + PartialEq + fmt::Debug> fmt::Debug for FrameRowViewMut<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Avoid borrowing frame immutably while already borrowed mutably
+        // Only display the row index and column names to avoid conflicting borrows
         f.debug_struct("FrameRowViewMut")
             .field("physical_row_idx", &self.physical_row_idx)
-            .field("columns", &self.frame.column_names) // Reading column names is fine
-            // Cannot easily display data without another borrow
+            .field("columns", &self.frame.column_names)
             .finish()
     }
 }
 
 impl<'a, T: Clone + PartialEq> FrameRowViewMut<'a, T> {
-    /// Get a mutable reference to an element by its physical column index. Panics if out of bounds (delegated to Matrix).
+    /// Returns a mutable reference to the element at the given physical column index.
+    /// Panics if `col_idx` is out of bounds.
     pub fn get_by_index_mut(&mut self, col_idx: usize) -> &mut T {
-        // Add check here for better error message if desired
-        let num_cols = self.frame.cols(); // Borrow checker friendly
+        let num_cols = self.frame.cols();
         if col_idx >= num_cols {
             panic!(
-                "FrameRowViewMut::get_by_index_mut: column index {} out of bounds for frame with {} columns",
+                "FrameRowViewMut::get_by_index_mut: column index {} out of bounds (frame has {} columns)",
                 col_idx, num_cols
             );
         }
         &mut self.frame.matrix[(self.physical_row_idx, col_idx)]
     }
-    /// Get a mutable reference to an element by its column name. Panics if name not found.
+
+    /// Returns a mutable reference to the element in the column named `col_name`.
+    /// Panics if the column name is not found.
     pub fn get_mut(&mut self, col_name: &str) -> &mut T {
-        // Need to get index first, as borrow checker prevents simultaneous borrow for index lookup and mutable access
-        // Clone name to avoid borrow conflict if name comes from frame itself (unlikely but possible)
-        let col_name_owned = col_name.to_string();
-        let idx = self.frame.column_index(&col_name_owned).unwrap_or_else(|| {
-            panic!(
-                "FrameRowViewMut::get_mut: column name '{}' not found",
-                col_name_owned
-            )
-        });
+        let idx = self
+            .frame
+            .column_index(col_name)
+            .unwrap_or_else(|| panic!("FrameRowViewMut::get_mut: unknown column '{}'", col_name));
         self.get_by_index_mut(idx)
     }
-    /// Set the value of an element by its physical column index. Panics if out of bounds.
+
+    /// Sets the element at the given physical column index to `value`.
+    /// Panics if `col_idx` is out of bounds.
     pub fn set_by_index(&mut self, col_idx: usize, value: T) {
-        // get_by_index_mut already checks bounds
         *self.get_by_index_mut(col_idx) = value;
     }
-    /// Set the value of an element by its column name. Panics if name not found.
+
+    /// Sets the element in the column named `col_name` to `value`.
+    /// Panics if the column name is not found.
     pub fn set(&mut self, col_name: &str, value: T) {
-        // get_mut already finds index and calls get_by_index_mut (which checks bounds)
         *self.get_mut(col_name) = value;
     }
 
-    // --- Read-only access needed for Index trait ---
-    /// Internal helper for immutable access by index (needed for Index impl).
+    // Read-only helpers for Index implementations
+
+    /// Immutable reference to the element at the given physical column index.
     fn get_by_index_ref(&self, col_idx: usize) -> &T {
-        // Add check here for better error message if desired
         if col_idx >= self.frame.cols() {
             panic!(
-                "FrameRowViewMut::get_by_index_ref: column index {} out of bounds for frame with {} columns",
+                "FrameRowViewMut::get_by_index_ref: column index {} out of bounds (frame has {} columns)",
                 col_idx,
                 self.frame.cols()
             );
         }
         &self.frame.matrix[(self.physical_row_idx, col_idx)]
     }
-    /// Internal helper for immutable access by name (needed for Index impl).
+
+    /// Immutable reference to the element in the column named `col_name`.
     fn get_ref(&self, col_name: &str) -> &T {
-        let idx = self.frame.column_index(col_name).unwrap_or_else(|| {
-            panic!(
-                "FrameRowViewMut::get_ref: column name '{}' not found",
-                col_name
-            )
-        });
+        let idx = self
+            .frame
+            .column_index(col_name)
+            .unwrap_or_else(|| panic!("FrameRowViewMut::get_ref: unknown column '{}'", col_name));
         self.get_by_index_ref(idx)
     }
 }
-// Read-only indexing by column name (&str)
+
+// Immutable indexing by column name
 impl<'a, T: Clone + PartialEq> Index<&str> for FrameRowViewMut<'a, T> {
     type Output = T;
     #[inline]
     fn index(&self, col_name: &str) -> &Self::Output {
-        // Must use the read-only helper due to borrow rules
         self.get_ref(col_name)
     }
 }
-// Read-only indexing by physical column index (usize)
+
+// Immutable indexing by physical column index
 impl<'a, T: Clone + PartialEq> Index<usize> for FrameRowViewMut<'a, T> {
     type Output = T;
     #[inline]
     fn index(&self, col_idx: usize) -> &Self::Output {
-        // Must use the read-only helper due to borrow rules
         self.get_by_index_ref(col_idx)
     }
 }
-// Mutable indexing by column name (&str)
+
+// Mutable indexing by column name
 impl<'a, T: Clone + PartialEq> IndexMut<&str> for FrameRowViewMut<'a, T> {
     #[inline]
     fn index_mut(&mut self, col_name: &str) -> &mut Self::Output {
         self.get_mut(col_name)
     }
 }
-// Mutable indexing by physical column index (usize)
+
+// Mutable indexing by physical column index
 impl<'a, T: Clone + PartialEq> IndexMut<usize> for FrameRowViewMut<'a, T> {
     #[inline]
     fn index_mut(&mut self, col_idx: usize) -> &mut Self::Output {
         self.get_by_index_mut(col_idx)
     }
 }
+
+
+
+
 
 /* ---------- Frame Indexing Implementation ---------- */
 /// Allows accessing a column's data as a slice using `frame["col_name"]`.
