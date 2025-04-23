@@ -43,7 +43,7 @@ enum RowIndexLookup {
 
 // Frame struct definition and associated implementations
 
-/// A data frame – a Matrix with string-identified columns and a typed row index.
+/// A data frame - a Matrix with string-identified columns and a typed row index.
 ///
 /// `Frame` extends the concept of a `Matrix` by adding named columns
 /// and an index for rows, which can be integers, dates, or a default range.
