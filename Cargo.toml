@@ -1,6 +1,6 @@
 [package]
 name = "rustframe"
-version = "0.0.1"
+version = "0.0.1-a.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 readme = "README.md"
