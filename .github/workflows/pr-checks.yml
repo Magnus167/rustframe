@@ -6,7 +6,6 @@ on:
     types:
       - opened
       # - synchronize
-      # disable to save resources
       - reopened
       - edited
       - ready_for_review
