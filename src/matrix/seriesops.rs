@@ -1,6 +1,6 @@
 use crate::matrix::{Axis, BoolMatrix, FloatMatrix};
 
-/// “Series–like” helpers that work along a single axis.
+/// "Series-like" helpers that work along a single axis.
 ///
 /// *All* the old methods (`sum_*`, `prod_*`, `is_nan`, …) are exposed
 /// through this trait, so nothing needs to stay on an `impl Matrix<f64>`;
@@ -100,7 +100,7 @@ impl SeriesOps for FloatMatrix {
     }
 
     fn cumsum_horizontal(&self) -> FloatMatrix {
-        // 1. Store row-wise cumulative sums temporarily
+        // Compute cumulative sums for each row and store in a temporary buffer
         let mut row_results: Vec<Vec<f64>> = Vec::with_capacity(self.rows());
         for r in 0..self.rows() {
             let mut row_data = Vec::with_capacity(self.cols());
@@ -115,16 +115,15 @@ impl SeriesOps for FloatMatrix {
             row_results.push(row_data);
         }
 
-        // 2. Build the final data vector in column-major order
+        // Assemble the final data vector in column-major format
         let mut final_data = Vec::with_capacity(self.rows() * self.cols());
         for c in 0..self.cols() {
             for r in 0..self.rows() {
-                // Get the element from row 'r', column 'c' of the row_results
+                // Extract the element at (r, c) from the temporary row-wise results
                 final_data.push(row_results[r][c]);
             }
         }
 
-        // 3. Construct the matrix using the correctly ordered data
         FloatMatrix::from_vec(final_data, self.rows(), self.cols())
     }
 
@@ -146,7 +145,7 @@ impl SeriesOps for FloatMatrix {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // Helper function to create a FloatMatrix for SeriesOps testing
     fn create_float_test_matrix() -> FloatMatrix {
         // 3x3 matrix (column-major) with some NaNs

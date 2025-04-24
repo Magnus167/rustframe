@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::hash::Hash;
 use std::result::Result;
-use std::str::FromStr; // Import FromStr trait
+use std::str::FromStr;
 
 /// Represents the frequency at which business dates should be generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -23,8 +23,8 @@ pub enum BDateFreq {
 /// is selected for the frequency.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AggregationType {
-    Start, // Indicates picking the first valid business date in a group's period.
-    End,   // Indicates picking the last valid business day in a group's period.
+    Start, // Select the first valid business day in the period
+    End,   // Select the last valid business day in the period
 }
 
 impl BDateFreq {
@@ -40,7 +40,7 @@ impl BDateFreq {
     ///
     /// Returns an error if the string does not match any known frequency.
     pub fn from_string(freq: String) -> Result<Self, Box<dyn Error>> {
-        // Use the FromStr implementation directly
+        // Delegate parsing to the FromStr implementation
         freq.parse()
     }
 
@@ -53,7 +53,7 @@ impl BDateFreq {
             BDateFreq::WeeklyMonday => "W",
             BDateFreq::MonthStart => "M",
             BDateFreq::QuarterStart => "Q",
-            BDateFreq::YearStart => "Y", // Changed to "Y"
+            BDateFreq::YearStart => "Y",
             BDateFreq::MonthEnd => "ME",
             BDateFreq::QuarterEnd => "QE",
             BDateFreq::WeeklyFriday => "WF",
@@ -112,11 +112,11 @@ impl FromStr for BDateFreq {
             "W" | "WS" => BDateFreq::WeeklyMonday,
             "M" | "MS" => BDateFreq::MonthStart,
             "Q" | "QS" => BDateFreq::QuarterStart,
-            "Y" | "A" | "AS" | "YS" => BDateFreq::YearStart, // Added Y, YS, A, AS aliases
+            "Y" | "A" | "AS" | "YS" => BDateFreq::YearStart, // Support standard aliases for year start
             "ME" => BDateFreq::MonthEnd,
             "QE" => BDateFreq::QuarterEnd,
             "WF" => BDateFreq::WeeklyFriday,
-            "YE" | "AE" => BDateFreq::YearEnd, // Added AE alias
+            "YE" | "AE" => BDateFreq::YearEnd, // Include 'AE' alias for year end
             _ => return Err(format!("Invalid frequency specified: {}", freq).into()),
         };
         Ok(r)
@@ -131,21 +131,19 @@ pub struct BDatesList {
     start_date_str: String,
     end_date_str: String,
     freq: BDateFreq,
-    // Optional: Cache the generated list to avoid re-computation?
-    // For now, we recompute each time list(), count(), or groups() is called.
+    // TODO: cache the generated date list to reduce repeated computation.
+    // Currently, list(), count(), and groups() regenerate the list on every invocation.
     // cached_list: Option<Vec<NaiveDate>>,
 }
 
-// Helper enum to represent the key for grouping dates into periods.
-// Deriving traits for comparison and hashing allows using it as a HashMap key
-// and for sorting groups chronologically.
+// Enumeration of period keys used for grouping dates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum GroupKey {
-    Daily(NaiveDate),    // Group by the specific date (for Daily frequency)
-    Weekly(i32, u32),    // Group by year and ISO week number
-    Monthly(i32, u32),   // Group by year and month (1-12)
-    Quarterly(i32, u32), // Group by year and quarter (1-4)
-    Yearly(i32),         // Group by year
+    Daily(NaiveDate),    // Daily grouping: use the exact date
+    Weekly(i32, u32),    // Weekly grouping: use year and ISO week number
+    Monthly(i32, u32),   // Monthly grouping: use year and month (1-12)
+    Quarterly(i32, u32), // Quarterly grouping: use year and quarter (1-4)
+    Yearly(i32),         // Yearly grouping: use year
 }
 
 /// Represents a collection of business dates generated according to specific rules.
@@ -168,23 +166,23 @@ enum GroupKey {
 /// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-/// let start_date = "2023-11-01".to_string(); // Wednesday
-/// let end_date = "2023-11-07".to_string();   // Tuesday
-/// let freq = BDateFreq::Daily;
+///     let start_date = "2023-11-01".to_string(); // Wednesday
+///     let end_date = "2023-11-07".to_string();   // Tuesday
+///     let freq = BDateFreq::Daily;
 ///
-/// let bdates = BDatesList::new(start_date, end_date, freq);
+///     let bdates = BDatesList::new(start_date, end_date, freq);
 ///
-/// let expected_dates = vec![
-///     NaiveDate::from_ymd_opt(2023, 11, 1).unwrap(), // Wed
-///     NaiveDate::from_ymd_opt(2023, 11, 2).unwrap(), // Thu
-///     NaiveDate::from_ymd_opt(2023, 11, 3).unwrap(), // Fri
-///     NaiveDate::from_ymd_opt(2023, 11, 6).unwrap(), // Mon
-///     NaiveDate::from_ymd_opt(2023, 11, 7).unwrap(), // Tue
-/// ];
+///     let expected_dates = vec![
+///         NaiveDate::from_ymd_opt(2023, 11, 1).unwrap(), // Wed
+///         NaiveDate::from_ymd_opt(2023, 11, 2).unwrap(), // Thu
+///         NaiveDate::from_ymd_opt(2023, 11, 3).unwrap(), // Fri
+///         NaiveDate::from_ymd_opt(2023, 11, 6).unwrap(), // Mon
+///         NaiveDate::from_ymd_opt(2023, 11, 7).unwrap(), // Tue
+///     ];
 ///
-/// assert_eq!(bdates.list()?, expected_dates);
-/// assert_eq!(bdates.count()?, 5);
-/// Ok(())
+///     assert_eq!(bdates.list()?, expected_dates);
+///     assert_eq!(bdates.count()?, 5);
+///     Ok(())
 /// }
 /// ```
 ///
@@ -196,25 +194,25 @@ enum GroupKey {
 /// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-/// let start_date = "2024-02-28".to_string(); // Wednesday
-/// let freq = BDateFreq::WeeklyFriday;
-/// let n_periods = 3;
+///     let start_date = "2024-02-28".to_string(); // Wednesday
+///     let freq = BDateFreq::WeeklyFriday;
+///     let n_periods = 3;
 ///
-/// let bdates = BDatesList::from_n_periods(start_date, freq, n_periods)?;
+///     let bdates = BDatesList::from_n_periods(start_date, freq, n_periods)?;
 ///
-/// // The first Friday on or after 2024-02-28 is Mar 1.
-/// // The next two Fridays are Mar 8 and Mar 15.
-/// let expected_dates = vec![
-///     NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
-///     NaiveDate::from_ymd_opt(2024, 3, 8).unwrap(),
-///     NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
-/// ];
+///     // The first Friday on or after 2024-02-28 is Mar 1.
+///     // The next two Fridays are Mar 8 and Mar 15.
+///     let expected_dates = vec![
+///         NaiveDate::from_ymd_opt(2024, 3, 1).unwrap(),
+///         NaiveDate::from_ymd_opt(2024, 3, 8).unwrap(),
+///         NaiveDate::from_ymd_opt(2024, 3, 15).unwrap(),
+///     ];
 ///
-/// assert_eq!(bdates.list()?, expected_dates);
-/// assert_eq!(bdates.count()?, 3);
-/// assert_eq!(bdates.start_date_str(), "2024-02-28"); // Keeps original start string
-/// assert_eq!(bdates.end_date_str(), "2024-03-15");   // End date is the last generated date
-/// Ok(())
+///     assert_eq!(bdates.list()?, expected_dates);
+///     assert_eq!(bdates.count()?, 3);
+///     assert_eq!(bdates.start_date_str(), "2024-02-28"); // Keeps original start string
+///     assert_eq!(bdates.end_date_str(), "2024-03-15");   // End date is the last generated date
+///     Ok(())
 /// }
 /// ```
 ///
@@ -226,20 +224,20 @@ enum GroupKey {
 /// use rustframe::utils::{BDatesList, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-/// let start_date = "2023-11-20".to_string(); // Mon, Week 47
-/// let end_date = "2023-12-08".to_string();   // Fri, Week 49
-/// let freq = BDateFreq::WeeklyMonday;
+///     let start_date = "2023-11-20".to_string(); // Mon, Week 47
+///     let end_date = "2023-12-08".to_string();   // Fri, Week 49
+///     let freq = BDateFreq::WeeklyMonday;
 ///
-/// let bdates = BDatesList::new(start_date, end_date, freq);
+///     let bdates = BDatesList::new(start_date, end_date, freq);
 ///
-/// // Mondays in range: Nov 20, Nov 27, Dec 4
-/// let groups = bdates.groups()?;
+///     // Mondays in range: Nov 20, Nov 27, Dec 4
+///     let groups = bdates.groups()?;
 ///
-/// assert_eq!(groups.len(), 3); // One group per week containing a Monday
-/// assert_eq!(groups[0], vec![NaiveDate::from_ymd_opt(2023, 11, 20).unwrap()]); // Week 47
-/// assert_eq!(groups[1], vec![NaiveDate::from_ymd_opt(2023, 11, 27).unwrap()]); // Week 48
-/// assert_eq!(groups[2], vec![NaiveDate::from_ymd_opt(2023, 12, 4).unwrap()]);  // Week 49
-/// Ok(())
+///     assert_eq!(groups.len(), 3); // One group per week containing a Monday
+///     assert_eq!(groups[0], vec![NaiveDate::from_ymd_opt(2023, 11, 20).unwrap()]); // Week 47
+///     assert_eq!(groups[1], vec![NaiveDate::from_ymd_opt(2023, 11, 27).unwrap()]); // Week 48
+///     assert_eq!(groups[2], vec![NaiveDate::from_ymd_opt(2023, 12, 4).unwrap()]);  // Week 49
+///     Ok(())
 /// }
 /// ```
 impl BDatesList {
@@ -286,19 +284,19 @@ impl BDatesList {
 
         let start_date = NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")?;
 
-        // Use the generator to find all the dates
+        // Instantiate the date generator to compute the sequence of business dates.
         let generator = BDatesGenerator::new(start_date, freq, n_periods)?;
         let dates: Vec<NaiveDate> = generator.collect();
 
-        // Should always have at least one date if n_periods > 0 and generator construction succeeded
+        // Confirm that the generator returned at least one date when n_periods > 0.
         let last_date = dates
             .last()
-            .ok_or("Generator failed to produce dates even though n_periods > 0")?;
+            .ok_or("Generator failed to produce dates for the specified periods")?;
 
         let end_date_str = last_date.format("%Y-%m-%d").to_string();
 
         Ok(BDatesList {
-            start_date_str, // Keep the original start date string
+            start_date_str,
             end_date_str,
             freq,
         })
@@ -312,7 +310,7 @@ impl BDatesList {
     ///
     /// Returns an error if the start or end date strings cannot be parsed.
     pub fn list(&self) -> Result<Vec<NaiveDate>, Box<dyn Error>> {
-        // Delegate the core logic to the internal helper function
+        // Retrieve the list of business dates via the shared helper function.
         get_bdates_list_with_freq(&self.start_date_str, &self.end_date_str, self.freq)
     }
 
@@ -320,41 +318,33 @@ impl BDatesList {
     ///
     /// # Errors
     ///
-    /// Returns an error if the start or end date strings cannot be parsed (as it
-    /// calls `list` internally).
+    /// Returns an error if the start or end date strings cannot be parsed.
     pub fn count(&self) -> Result<usize, Box<dyn Error>> {
-        // Get the list and return its length. Uses map to handle the Result elegantly.
+        // Compute the total number of business dates by invoking `list()` and returning its length.
         self.list().map(|list| list.len())
     }
 
     /// Returns a list of date lists, where each inner list contains dates
     /// belonging to the same period (determined by frequency).
     ///
-    /// The outer list (groups) is sorted by period chronologically, and the
-    /// inner lists (dates within groups) are also sorted chronologically.
-    ///
-    /// For `Daily` frequency, each date forms its own group. For `Weekly`
-    /// frequencies, grouping is by ISO week number. For `Monthly`, `Quarterly`,
-    /// and `Yearly` frequencies, grouping is by the respective period.
+    /// The outer list (groups) is sorted chronologically by period, and the
+    /// inner lists (dates within each period) are also sorted.
     ///
     /// # Errors
     ///
     /// Returns an error if the start or end date strings cannot be parsed.
     pub fn groups(&self) -> Result<Vec<Vec<NaiveDate>>, Box<dyn Error>> {
-        // Get the sorted list of all dates first. This sorted order is crucial
-        // for ensuring the inner vectors (dates within groups) are also sorted
-        // as we insert into the HashMap.
+        // Retrieve all business dates in chronological order.
         let dates = self.list()?;
 
-        // Use a HashMap to collect dates into their respective groups.
+        // Aggregate dates into buckets keyed by period.
         let mut groups: HashMap<GroupKey, Vec<NaiveDate>> = HashMap::new();
 
         for date in dates {
-            // Determine the grouping key based on frequency.
+            // Derive the appropriate GroupKey for the current date based on the configured frequency.
             let key = match self.freq {
                 BDateFreq::Daily => GroupKey::Daily(date),
                 BDateFreq::WeeklyMonday | BDateFreq::WeeklyFriday => {
-                    // Use ISO week number for consistent weekly grouping across year boundaries
                     let iso_week = date.iso_week();
                     GroupKey::Weekly(iso_week.year(), iso_week.week())
                 }
@@ -367,30 +357,19 @@ impl BDatesList {
                 BDateFreq::YearStart | BDateFreq::YearEnd => GroupKey::Yearly(date.year()),
             };
 
-            // Add the current date to the vector corresponding to the determined key.
-            // entry().or_insert_with() gets a mutable reference to the vector for the key,
-            // inserting a new empty vector if the key doesn't exist yet.
-            groups.entry(key).or_insert_with(Vec::new).push(date); // Using or_insert_with is slightly more idiomatic
+            // Append the date to its period group.
+            groups.entry(key).or_insert_with(Vec::new).push(date);
         }
 
-        // Convert the HashMap into a vector of (key, vector_of_dates) tuples.
+        // Transform the group map into a vector of (GroupKey, Vec<NaiveDate>) tuples.
         let mut sorted_groups: Vec<(GroupKey, Vec<NaiveDate>)> = groups.into_iter().collect();
 
-        // Sort the vector of groups by the `GroupKey`. Since `GroupKey` derives `Ord`,
-        // this sorts the groups chronologically (Yearly < Quarterly < Monthly < Weekly < Daily,
-        // then by year, quarter, month, week, or date within each category).
+        // Sort groups chronologically using the derived `Ord` implementation on `GroupKey`.
         sorted_groups.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
 
-        // The dates *within* each group (`Vec<NaiveDate>`) are already sorted
-        // because they were pushed in the order they appeared in the initially
-        // sorted `dates` vector obtained from `self.list()`.
-        // If the source `dates` wasn't guaranteed sorted, or for clarity,
-        // an inner sort could be added here:
-        // for (_, dates_in_group) in sorted_groups.iter_mut() {
-        //     dates_in_group.sort();
-        // }
+        // Note: Dates within each group remain sorted due to initial ordered input.
 
-        // Extract just the vectors of dates from the sorted tuples, discarding the keys.
+        // Discard group keys to return only the list of date vectors.
         let result_groups = sorted_groups.into_iter().map(|(_, dates)| dates).collect();
 
         Ok(result_groups)
@@ -435,7 +414,7 @@ impl BDatesList {
     }
 }
 
-// --- Business Date Generator (Iterator) ---
+// Business date iterator: generates a sequence of business dates for a given frequency and period count.
 
 /// An iterator that generates a sequence of business dates based on a start date,
 /// frequency, and a specified number of periods.
@@ -451,22 +430,22 @@ impl BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// use rustframe::utils::{BDatesGenerator, BDateFreq}; 
+/// use rustframe::utils::{BDatesGenerator, BDateFreq};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-/// let start = NaiveDate::from_ymd_opt(2023, 12, 28).unwrap(); // Thursday
-/// let freq = BDateFreq::MonthEnd;
-/// let n_periods = 4; // Dec '23, Jan '24, Feb '24, Mar '24
+///     let start = NaiveDate::from_ymd_opt(2023, 12, 28).unwrap(); // Thursday
+///     let freq = BDateFreq::MonthEnd;
+///     let n_periods = 4; // Dec '23, Jan '24, Feb '24, Mar '24
 ///
-/// let mut generator = BDatesGenerator::new(start, freq, n_periods)?;
+///     let mut generator = BDatesGenerator::new(start, freq, n_periods)?;
 ///
-/// // First month-end on or after 2023-12-28 is 2023-12-29
-/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2023, 12, 29).unwrap()));
-/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()));
-/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 2, 29).unwrap())); // Leap year
-/// assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 3, 29).unwrap())); // Mar 31 is Sun
-/// assert_eq!(generator.next(), None); // Exhausted
-/// Ok(())
+///     // First month-end on or after 2023-12-28 is 2023-12-29
+///     assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2023, 12, 29).unwrap()));
+///     assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()));
+///     assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 2, 29).unwrap())); // Leap year
+///     assert_eq!(generator.next(), Some(NaiveDate::from_ymd_opt(2024, 3, 29).unwrap())); // Mar 31 is Sun
+///     assert_eq!(generator.next(), None); // Exhausted
+///     Ok(())
 /// }
 /// ```
 ///
@@ -478,31 +457,30 @@ impl BDatesList {
 /// use rustframe::utils::{BDatesGenerator, BDateFreq}; // Replace bdates with your actual crate/module name
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
-/// let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
-/// let freq = BDateFreq::Daily;
-/// let n_periods = 5;
+///     let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
+///     let freq = BDateFreq::Daily;
+///     let n_periods = 5;
 ///
-/// let generator = BDatesGenerator::new(start, freq, n_periods)?;
-/// let dates: Vec<NaiveDate> = generator.collect();
+///     let generator = BDatesGenerator::new(start, freq, n_periods)?;
+///     let dates: Vec<NaiveDate> = generator.collect();
 ///
-/// let expected_dates = vec![
-///     NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(), // Mon
-///     NaiveDate::from_ymd_opt(2024, 4, 30).unwrap(), // Tue
-///     NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),  // Wed
-///     NaiveDate::from_ymd_opt(2024, 5, 2).unwrap(),  // Thu
-///     NaiveDate::from_ymd_opt(2024, 5, 3).unwrap(),  // Fri
-/// ];
+///     let expected_dates = vec![
+///         NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(), // Mon
+///         NaiveDate::from_ymd_opt(2024, 4, 30).unwrap(), // Tue
+///         NaiveDate::from_ymd_opt(2024, 5, 1).unwrap(),  // Wed
+///         NaiveDate::from_ymd_opt(2024, 5, 2).unwrap(),  // Thu
+///         NaiveDate::from_ymd_opt(2024, 5, 3).unwrap(),  // Fri
+///     ];
 ///
-/// assert_eq!(dates, expected_dates);
-/// Ok(())
+///     assert_eq!(dates, expected_dates);
+///     Ok(())
 /// }
 /// ```
 #[derive(Debug, Clone)]
 pub struct BDatesGenerator {
     freq: BDateFreq,
     periods_remaining: usize,
-    // Stores the *next* date to be yielded by the iterator.
-    // This is None initially or when the iterator is exhausted.
+    // Next business date candidate to yield; None when iteration is complete.
     next_date_candidate: Option<NaiveDate>,
 }
 
@@ -532,7 +510,8 @@ impl BDatesGenerator {
         let first_date = if n_periods > 0 {
             Some(find_first_bdate_on_or_after(start_date, freq))
         } else {
-            None // No dates to generate if n_periods is 0
+            // No dates when period count is zero.
+            None
         };
 
         Ok(BDatesGenerator {
@@ -546,29 +525,29 @@ impl BDatesGenerator {
 impl Iterator for BDatesGenerator {
     type Item = NaiveDate;
 
-    /// Returns the next business date in the sequence, or `None` if `n_periods`
-    /// dates have already been generated.
+    /// Returns the next business date in the sequence, or `None` if the specified
+    /// number of periods has been generated.
     fn next(&mut self) -> Option<Self::Item> {
-        // Check if exhausted or if there was no initial date
+        // Terminate if no periods remain or no initial date is set.
         if self.periods_remaining == 0 || self.next_date_candidate.is_none() {
             return None;
         }
 
-        // Get the date to return (unwrap is safe due to the check above)
+        // Retrieve and store the current date for output.
         let current_date = self.next_date_candidate.unwrap();
 
-        // Prepare the *next* candidate for the subsequent call
+        // Compute and queue the subsequent date for the next call.
         self.next_date_candidate = Some(find_next_bdate(current_date, self.freq));
 
-        // Decrement the count
+        // Decrement the remaining period count.
         self.periods_remaining -= 1;
 
-        // Return the stored current date
+        // Yield the current business date.
         Some(current_date)
     }
 }
 
-// --- Internal helper functions (not part of the public API) ---
+// Internal helper functions (private implementation)
 
 /// Generates the flat list of business dates for the given range and frequency.
 ///
@@ -589,70 +568,58 @@ fn get_bdates_list_with_freq(
     end_date_str: &str,
     freq: BDateFreq,
 ) -> Result<Vec<NaiveDate>, Box<dyn Error>> {
-    // Parse the start and end dates, returning error if parsing fails.
+    // Parse input date strings; propagate parsing errors.
     let start_date = NaiveDate::parse_from_str(start_date_str, "%Y-%m-%d")?;
     let end_date = NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d")?;
 
-    // Handle edge case where end date is before start date.
+    // Return empty list immediately if the date range is invalid.
     if start_date > end_date {
         return Ok(Vec::new());
     }
 
-    // Collect dates based on the specified frequency.
+    // Generate dates according to the requested frequency.
     let mut dates = match freq {
         BDateFreq::Daily => collect_daily(start_date, end_date),
         BDateFreq::WeeklyMonday => collect_weekly(start_date, end_date, Weekday::Mon),
         BDateFreq::WeeklyFriday => collect_weekly(start_date, end_date, Weekday::Fri),
-        BDateFreq::MonthStart => {
-            collect_monthly(start_date, end_date, /*want_first_day=*/ true)
-        }
-        BDateFreq::MonthEnd => {
-            collect_monthly(start_date, end_date, /*want_first_day=*/ false)
-        }
-        BDateFreq::QuarterStart => {
-            collect_quarterly(start_date, end_date, /*want_first_day=*/ true)
-        }
-        BDateFreq::QuarterEnd => {
-            collect_quarterly(start_date, end_date, /*want_first_day=*/ false)
-        }
-        BDateFreq::YearStart => collect_yearly(start_date, end_date, /*want_first_day=*/ true),
-        BDateFreq::YearEnd => collect_yearly(start_date, end_date, /*want_first_day=*/ false),
+        BDateFreq::MonthStart => collect_monthly(start_date, end_date, true),
+        BDateFreq::MonthEnd => collect_monthly(start_date, end_date, false),
+        BDateFreq::QuarterStart => collect_quarterly(start_date, end_date, true),
+        BDateFreq::QuarterEnd => collect_quarterly(start_date, end_date, false),
+        BDateFreq::YearStart => collect_yearly(start_date, end_date, true),
+        BDateFreq::YearEnd => collect_yearly(start_date, end_date, false),
     };
 
-    // Filter out any weekend days. While the core logic aims for business days,
-    // this ensures robustness against edge cases where computed dates might fall
-    // on a weekend (e.g., first day of month being Saturday).
-    // Note: This retain is redundant if collect_* functions are correct, but adds safety.
-    // It's essential for Daily, less so for others if they always return bdays.
+    // Exclude weekends to ensure only business days remain.
     dates.retain(|d| is_weekday(*d));
 
-    // Ensure the final list is sorted. The `collect_*` functions generally
-    // produce sorted output, but an explicit sort guarantees it.
+    // Guarantee chronological order of the result.
     dates.sort();
 
     Ok(dates)
 }
 
-/* ---------------------- Low-Level Date Collection Functions (Internal) ---------------------- */
-// These functions generate dates within a *range* [start_date, end_date]
+/* Low-level date collection routines (private) */
 
-/// Returns all business days (Mon-Fri) day-by-day within the range.
+/// Returns all weekdays from `start_date` through `end_date`, inclusive.
 fn collect_daily(start_date: NaiveDate, end_date: NaiveDate) -> Vec<NaiveDate> {
     let mut result = Vec::new();
     let mut current = start_date;
+
+    // Iterate one day at a time.
     while current <= end_date {
         if is_weekday(current) {
             result.push(current);
         }
-        // Use succ_opt() and expect(), assuming valid date range and no overflow in practical scenarios
         current = current
             .succ_opt()
-            .expect("date overflow near end of supported range");
+            .expect("Date overflow near end of supported range");
     }
+
     result
 }
 
-/// Returns the specified `target_weekday` in each week within the range.
+/// Returns each occurrence of `target_weekday` within the date range.
 fn collect_weekly(
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -660,79 +627,70 @@ fn collect_weekly(
 ) -> Vec<NaiveDate> {
     let mut result = Vec::new();
 
-    // Find the first target_weekday on or after the start date.
+    // Find the first matching weekday on or after the start date.
     let mut current = move_to_weekday_on_or_after(start_date, target_weekday);
 
-    // Step through the range in 7-day increments.
+    // Step through each week until exceeding the end date.
     while current <= end_date {
-        // Ensure the found date is actually a weekday (should be Mon/Fri but belt-and-suspenders)
+        // Only include if still a weekday.
         if is_weekday(current) {
             result.push(current);
         }
-        // Use checked_add_signed for safety, though basic addition is likely fine for 7 days.
         current = current
             .checked_add_signed(Duration::days(7))
-            .expect("date overflow adding 7 days");
+            .expect("Date overflow when advancing by one week");
     }
+
     result
 }
 
-/// Returns either the first or last business day in each month of the range.
+/// Returns either the first or last business day of each month in the range.
 fn collect_monthly(
     start_date: NaiveDate,
     end_date: NaiveDate,
     want_first_day: bool,
 ) -> Vec<NaiveDate> {
     let mut result = Vec::new();
-
     let mut year = start_date.year();
     let mut month = start_date.month();
 
-    // Helper closure to advance year and month by one month.
-    let next_month =
-        |(yr, mo): (i32, u32)| -> (i32, u32) { if mo == 12 { (yr + 1, 1) } else { (yr, mo + 1) } };
+    // Advance (year, month) by one month.
+    let next_month = |(yr, mo): (i32, u32)| {
+        if mo == 12 { (yr + 1, 1) } else { (yr, mo + 1) }
+    };
 
-    // Iterate month by month from the start date's month up to or past the end date's month.
+    // Iterate months from the start date until past the end date.
     loop {
-        // Compute the candidate date (first or last business day) for the current month.
-        // Use _opt and expect(), expecting valid month/year combinations within realistic ranges.
+        // Determine the candidate business date for this month.
         let candidate = if want_first_day {
             first_business_day_of_month(year, month)
         } else {
             last_business_day_of_month(year, month)
         };
 
-        // If the candidate is after the end date, we've gone past the range, so stop.
+        // Stop if the candidate is beyond the allowed range.
         if candidate > end_date {
             break;
         }
 
-        // If the candidate is within the specified range [start_date, end_date], add it.
-        if candidate >= start_date {
-            // Ensure it's actually a weekday (should be, but adds safety)
-            if is_weekday(candidate) {
-                result.push(candidate);
-            }
+        // Include candidate if it falls within [start_date, end_date].
+        if candidate >= start_date && is_weekday(candidate) {
+            result.push(candidate);
         }
-        // Note: We don't break if candidate < start_date because a later month's candidate
-        // might be within the range.
 
-        // Check if the current month is the last month we should process
+        // If we've processed the end date's month, terminate.
         if year > end_date.year() || (year == end_date.year() && month >= end_date.month()) {
-            // If we just processed the end_date's month, stop.
-            // Need >= because we need to include the end date's month itself if its candidate is valid.
             break;
         }
 
-        // Advance to the next month.
+        // Move to the next month.
         let (ny, nm) = next_month((year, month));
         year = ny;
         month = nm;
 
-        // Safety break: Stop if we have moved clearly past the end date's year.
-        // This check is technically redundant given the loop condition above, but harmless.
+        // Safety guard against unexpected infinite loops.
         if year > end_date.year() + 1 {
-            break; // Avoid potential infinite loops in unexpected scenarios
+            break;
         }
     }
 
@@ -864,7 +822,7 @@ fn move_to_weekday_on_or_after(date: NaiveDate, target: Weekday) -> NaiveDate {
 fn first_business_day_of_month(year: i32, month: u32) -> NaiveDate {
     // Start with the 1st of the month. Use _opt and expect(), assuming valid Y/M.
     let mut d = NaiveDate::from_ymd_opt(year, month, 1).expect("invalid year-month combination");
-    // If it’s Sat/Sun, move forward until we find a weekday.
+    // If it's Sat/Sun, move forward until we find a weekday.
     while !is_weekday(d) {
         // Use succ_opt() and expect(), assuming valid date and no overflow.
         d = d.succ_opt().expect("date overflow finding first bday");
@@ -872,112 +830,128 @@ fn first_business_day_of_month(year: i32, month: u32) -> NaiveDate {
     d
 }
 
-/// Return the latest business day of the given (year, month).
+/// Returns the last business day (Monday-Friday) of the specified month.
+///
+/// Calculates the number of days in the month, then steps backward from the
+/// month's last day until a weekday is found.
+///
+/// # Panics
+/// Panics if date construction or predecessor operations underflow.
 fn last_business_day_of_month(year: i32, month: u32) -> NaiveDate {
     let last_dom = days_in_month(year, month);
-    // Use _opt and expect(), assuming valid Y/M/D combination.
     let mut d =
-        NaiveDate::from_ymd_opt(year, month, last_dom).expect("invalid year-month-day combination");
-    // If it’s Sat/Sun, move backward until we find a weekday.
+        NaiveDate::from_ymd_opt(year, month, last_dom).expect("Invalid year-month-day combination");
     while !is_weekday(d) {
-        // Use pred_opt() and expect(), assuming valid date and no underflow.
-        d = d.pred_opt().expect("date underflow finding last bday");
+        d = d
+            .pred_opt()
+            .expect("Date underflow finding last business day");
     }
     d
 }
 
-/// Returns the number of days in a given month and year.
+/// Returns the number of days in the specified month, correctly handling leap years.
+///
+/// Determines the first day of the next month and subtracts one day.
+///
+/// # Panics
+/// Panics if date construction or predecessor operations underflow.
 fn days_in_month(year: i32, month: u32) -> u32 {
-    // A common trick: find the first day of the *next* month, then subtract one day.
-    // This correctly handles leap years.
     let (ny, nm) = if month == 12 {
         (year + 1, 1)
     } else {
         (year, month + 1)
     };
-    // Use _opt and expect(), assuming valid Y/M combination (start of next month).
-    let first_of_next = NaiveDate::from_ymd_opt(ny, nm, 1).expect("invalid next year-month");
-    // Use pred_opt() and expect(), assuming valid date and no underflow (first of month - 1).
+    let first_of_next =
+        NaiveDate::from_ymd_opt(ny, nm, 1).expect("Invalid next year-month combination");
     let last_of_this = first_of_next
         .pred_opt()
-        .expect("invalid date before first of month");
+        .expect("Date underflow computing last day of month");
     last_of_this.day()
 }
 
-/// Converts a month number (1-12) to a quarter number (1-4).
+/// Maps a month (1-12) to its corresponding quarter (1-4).
+///
+/// # Panics
+/// Panics if `m` is outside the range 1-12.
 fn month_to_quarter(m: u32) -> u32 {
     match m {
         1..=3 => 1,
         4..=6 => 2,
         7..=9 => 3,
         10..=12 => 4,
-        _ => panic!("Invalid month: {}", m), // Should not happen with valid dates
+        _ => panic!("Invalid month: {}", m),
     }
 }
 
-/// Returns the 1st day of the month that starts a given (year, quarter).
+/// Returns the starting month (1, 4, 7, or 10) for the given quarter (1-4).
+///
+/// # Panics
+/// Panics if `quarter` is not in 1-4.
 fn quarter_start_month(quarter: u32) -> u32 {
     match quarter {
         1 => 1,
         2 => 4,
         3 => 7,
         4 => 10,
-        _ => panic!("invalid quarter: {}", quarter), // This function expects quarter 1-4
+        _ => panic!("Invalid quarter: {}", quarter),
     }
 }
 
-/// Return the earliest business day in the given (year, quarter).
+/// Returns the first business day (Monday-Friday) of the specified quarter.
+///
+/// Delegates to `first_business_day_of_month` using the quarter's start month.
 fn first_business_day_of_quarter(year: i32, quarter: u32) -> NaiveDate {
     let month = quarter_start_month(quarter);
     first_business_day_of_month(year, month)
 }
 
-/// Return the last business day in the given (year, quarter).
+/// Returns the last business day (Monday-Friday) of the specified quarter.
+///
+/// Determines the quarter's final month and delegates to
+/// `last_business_day_of_month`.
 fn last_business_day_of_quarter(year: i32, quarter: u32) -> NaiveDate {
-    // The last month of a quarter is the start month + 2.
-    let last_month_in_quarter = match quarter {
-        1 => 3,
-        2 => 6,
-        3 => 9,
-        4 => 12,
-        _ => panic!("invalid quarter: {}", quarter),
-    };
-    last_business_day_of_month(year, last_month_in_quarter)
+    let last_month = quarter * 3;
+    last_business_day_of_month(year, last_month)
 }
 
-/// Returns the earliest business day (Mon-Fri) of the given year.
+/// Returns the first business day (Monday-Friday) of the specified year.
+///
+/// Starts at January 1st and advances to the next weekday if needed.
+///
+/// # Panics
+/// Panics if date construction or successor operations overflow.
 fn first_business_day_of_year(year: i32) -> NaiveDate {
-    // Start with Jan 1st. Use _opt and expect(), assuming valid Y/M/D combination.
-    let mut d = NaiveDate::from_ymd_opt(year, 1, 1).expect("invalid year for Jan 1st");
-    // If Jan 1st is a weekend, move forward to the next weekday.
+    let mut d = NaiveDate::from_ymd_opt(year, 1, 1).expect("Invalid year for January 1st");
     while !is_weekday(d) {
-        // Use succ_opt() and expect(), assuming valid date and no overflow.
         d = d
             .succ_opt()
-            .expect("date overflow finding first bday of year");
+            .expect("Date overflow finding first business day of year");
     }
     d
 }
 
-/// Returns the last business day (Mon-Fri) of the given year.
+/// Returns the last business day (Monday-Friday) of the specified year.
+///
+/// Starts at December 31st and moves backward to the previous weekday if needed.
+///
+/// # Panics
+/// Panics if date construction or predecessor operations underflow.
 fn last_business_day_of_year(year: i32) -> NaiveDate {
-    // Start with Dec 31st. Use _opt and expect(), assuming valid Y/M/D combination.
-    let mut d = NaiveDate::from_ymd_opt(year, 12, 31).expect("invalid year for Dec 31st");
-    // If Dec 31st is a weekend, move backward to the previous weekday.
+    let mut d = NaiveDate::from_ymd_opt(year, 12, 31).expect("Invalid year for December 31st");
     while !is_weekday(d) {
-        // Use pred_opt() and expect(), assuming valid date and no underflow.
         d = d
             .pred_opt()
-            .expect("date underflow finding last bday of year");
+            .expect("Date underflow finding last business day of year");
     }
     d
 }
 
-// --- Generator Helper Functions ---
-
-/// Finds the *first* valid business date according to the frequency,
-/// starting the search *on or after* the given `start_date`.
-/// Panics on date overflow/underflow in extreme cases, but generally safe.
+/// Finds the first valid business date on or after `start_date` according to `freq`.
+///
+/// This may advance across days, weeks, months, quarters, or years depending on `freq`.
+///
+/// # Panics
+/// Panics on extreme date overflows or underflows.
 fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> NaiveDate {
     match freq {
         BDateFreq::Daily => {
@@ -994,28 +968,24 @@ fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> Naive
         BDateFreq::MonthStart => {
             let mut candidate = first_business_day_of_month(start_date.year(), start_date.month());
             if candidate < start_date {
-                // If the first bday of the current month is before start_date,
-                // we need the first bday of the *next* month.
-                let (next_y, next_m) = if start_date.month() == 12 {
+                let (ny, nm) = if start_date.month() == 12 {
                     (start_date.year() + 1, 1)
                 } else {
                     (start_date.year(), start_date.month() + 1)
                 };
-                candidate = first_business_day_of_month(next_y, next_m);
+                candidate = first_business_day_of_month(ny, nm);
             }
             candidate
         }
         BDateFreq::MonthEnd => {
             let mut candidate = last_business_day_of_month(start_date.year(), start_date.month());
             if candidate < start_date {
-                // If the last bday of current month is before start_date,
-                // we need the last bday of the *next* month.
-                let (next_y, next_m) = if start_date.month() == 12 {
+                let (ny, nm) = if start_date.month() == 12 {
                     (start_date.year() + 1, 1)
                 } else {
                     (start_date.year(), start_date.month() + 1)
                 };
-                candidate = last_business_day_of_month(next_y, next_m);
+                candidate = last_business_day_of_month(ny, nm);
             }
             candidate
         }
@@ -1023,14 +993,12 @@ fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> Naive
             let current_q = month_to_quarter(start_date.month());
             let mut candidate = first_business_day_of_quarter(start_date.year(), current_q);
             if candidate < start_date {
-                // If the first bday of the current quarter is before start_date,
-                // we need the first bday of the *next* quarter.
-                let (next_y, next_q) = if current_q == 4 {
+                let (ny, nq) = if current_q == 4 {
                     (start_date.year() + 1, 1)
                 } else {
                     (start_date.year(), current_q + 1)
                 };
-                candidate = first_business_day_of_quarter(next_y, next_q);
+                candidate = first_business_day_of_quarter(ny, nq);
             }
             candidate
         }
@@ -1038,22 +1006,18 @@ fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> Naive
             let current_q = month_to_quarter(start_date.month());
             let mut candidate = last_business_day_of_quarter(start_date.year(), current_q);
             if candidate < start_date {
-                // If the last bday of the current quarter is before start_date,
-                // we need the last bday of the *next* quarter.
-                let (next_y, next_q) = if current_q == 4 {
+                let (ny, nq) = if current_q == 4 {
                     (start_date.year() + 1, 1)
                 } else {
                     (start_date.year(), current_q + 1)
                 };
-                candidate = last_business_day_of_quarter(next_y, next_q);
+                candidate = last_business_day_of_quarter(ny, nq);
             }
             candidate
         }
         BDateFreq::YearStart => {
             let mut candidate = first_business_day_of_year(start_date.year());
             if candidate < start_date {
-                // If the first bday of the current year is before start_date,
-                // we need the first bday of the *next* year.
                 candidate = first_business_day_of_year(start_date.year() + 1);
             }
             candidate
@@ -1061,8 +1025,6 @@ fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> Naive
         BDateFreq::YearEnd => {
             let mut candidate = last_business_day_of_year(start_date.year());
             if candidate < start_date {
-                // If the last bday of the current year is before start_date,
-                // we need the last bday of the *next* year.
                 candidate = last_business_day_of_year(start_date.year() + 1);
             }
             candidate
@@ -1070,15 +1032,19 @@ fn find_first_bdate_on_or_after(start_date: NaiveDate, freq: BDateFreq) -> Naive
     }
 }
 
-/// Finds the *next* valid business date according to the frequency,
-/// given the `current_date` (which is assumed to be a valid date previously generated).
-/// Panics on date overflow/underflow in extreme cases, but generally safe.
+/// Finds the next business date after `current_date` according to `freq`.
+///
+/// Assumes `current_date` was previously generated. Advances by days, weeks,
+/// months, quarters, or years as specified.
+///
+/// # Panics
+/// Panics on extreme date overflows or underflows.
 fn find_next_bdate(current_date: NaiveDate, freq: BDateFreq) -> NaiveDate {
     match freq {
         BDateFreq::Daily => {
             let mut next_day = current_date
                 .succ_opt()
-                .expect("Date overflow finding next daily");
+                .expect("Date overflow finding next daily date");
             while !is_weekday(next_day) {
                 next_day = next_day
                     .succ_opt()
@@ -1086,45 +1052,42 @@ fn find_next_bdate(current_date: NaiveDate, freq: BDateFreq) -> NaiveDate {
             }
             next_day
         }
-        BDateFreq::WeeklyMonday | BDateFreq::WeeklyFriday => {
-            // Assuming current_date is already a Mon/Fri, the next one is 7 days later.
-            current_date
-                .checked_add_signed(Duration::days(7))
-                .expect("Date overflow adding 7 days")
-        }
+        BDateFreq::WeeklyMonday | BDateFreq::WeeklyFriday => current_date
+            .checked_add_signed(Duration::days(7))
+            .expect("Date overflow adding one week"),
         BDateFreq::MonthStart => {
-            let (next_y, next_m) = if current_date.month() == 12 {
+            let (ny, nm) = if current_date.month() == 12 {
                 (current_date.year() + 1, 1)
             } else {
                 (current_date.year(), current_date.month() + 1)
             };
-            first_business_day_of_month(next_y, next_m)
+            first_business_day_of_month(ny, nm)
         }
         BDateFreq::MonthEnd => {
-            let (next_y, next_m) = if current_date.month() == 12 {
+            let (ny, nm) = if current_date.month() == 12 {
                 (current_date.year() + 1, 1)
             } else {
                 (current_date.year(), current_date.month() + 1)
             };
-            last_business_day_of_month(next_y, next_m)
+            last_business_day_of_month(ny, nm)
         }
         BDateFreq::QuarterStart => {
             let current_q = month_to_quarter(current_date.month());
-            let (next_y, next_q) = if current_q == 4 {
+            let (ny, nq) = if current_q == 4 {
                 (current_date.year() + 1, 1)
             } else {
                 (current_date.year(), current_q + 1)
             };
-            first_business_day_of_quarter(next_y, next_q)
+            first_business_day_of_quarter(ny, nq)
         }
         BDateFreq::QuarterEnd => {
             let current_q = month_to_quarter(current_date.month());
-            let (next_y, next_q) = if current_q == 4 {
+            let (ny, nq) = if current_q == 4 {
                 (current_date.year() + 1, 1)
             } else {
                 (current_date.year(), current_q + 1)
             };
-            last_business_day_of_quarter(next_y, next_q)
+            last_business_day_of_quarter(ny, nq)
         }
         BDateFreq::YearStart => first_business_day_of_year(current_date.year() + 1),
         BDateFreq::YearEnd => last_business_day_of_year(current_date.year() + 1),

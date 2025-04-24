@@ -73,7 +73,6 @@ impl BoolOps for BoolMatrix {
         self.data().iter().filter(|&&v| v).count()
     }
 }
-// use macros to generate the implementations for BitAnd, BitOr, BitXor, and Not
 
 #[cfg(test)]
 mod tests {
