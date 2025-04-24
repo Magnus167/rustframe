@@ -8,3 +8,9 @@ ___
 A simple dataframe library.
 
 Link to documentation: [https://magnus167.github.io/rustframe/](https://magnus167.github.io/rustframe/)
+
+Link to GitHub repo: [https://github.com/Magnus167/rustframe](https://github.com/Magnus167/rustframe)
+
+Link to crates.io: [https://crates.io/crates/rustframe](https://crates.io/crates/rustframe)
+
+Link to Gitea Mirror: [https://gitea.nulltech.uk/Magnus167/rustframe](https://gitea.nulltech.uk/Magnus167/rustframe)
