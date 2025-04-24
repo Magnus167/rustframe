@@ -1345,7 +1345,7 @@ mod tests {
         let _ = row_view[2]; // Access column index 2 (out of bounds)
     }
     #[test]
-    #[should_panic(expected = "column name 'C' not found")]
+    #[should_panic(expected = "unknown column 'C'")]
     fn test_row_view_name_panic() {
         let frame = create_test_frame_f64();
         let row_view = frame.get_row(0);
@@ -1366,7 +1366,7 @@ mod tests {
         row_view_mut[2] = 0.0; // Access column index 2 (out of bounds)
     }
     #[test]
-    #[should_panic(expected = "column name 'C' not found")]
+    #[should_panic(expected = "unknown column 'C'")]
     fn test_row_view_mut_name_panic() {
         let mut frame = create_test_frame_f64();
         let mut row_view_mut = frame.get_row_mut(0);
@@ -1387,7 +1387,7 @@ mod tests {
         row_view_mut.set_by_index(3, 0.0);
     }
     #[test]
-    #[should_panic(expected = "column name 'C' not found")] // Panic from view set -> get_mut
+    #[should_panic(expected = "unknown column 'C'")] // Panic from view set -> get_mut
     fn test_row_view_mut_set_panic() {
         let mut frame = create_test_frame_f64();
         let mut row_view_mut = frame.get_row_mut(0);
@@ -1728,7 +1728,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "row indices mismatch")]
+    #[should_panic(expected = "row indices do not match")]
     fn frame_elementwise_ops_panic_index() {
         let frame1 = create_test_frame_f64(); // Range index 0..3
         let matrix2 = create_test_matrix_f64_alt(); // 3 rows
@@ -1737,7 +1737,7 @@ mod tests {
         let _ = &frame1 + &frame2; // Should panic due to index mismatch
     }
     #[test]
-    #[should_panic(expected = "column names mismatch")]
+    #[should_panic(expected = "column names do not match")]
     fn frame_elementwise_ops_panic_cols() {
         let frame1 = create_test_frame_f64(); // Columns ["A", "B"]
         let matrix2 = create_test_matrix_f64_alt();
@@ -1745,7 +1745,7 @@ mod tests {
         let _ = &frame1 + &frame2; // Should panic due to column name mismatch
     }
     #[test]
-    #[should_panic(expected = "row indices mismatch")]
+    #[should_panic(expected = "row indices do not match")]
     fn frame_bitwise_ops_panic_index() {
         let frame1 = create_test_frame_bool(); // Range index 0..2
         let matrix2 = create_test_matrix_bool_alt(); // 2 rows
@@ -1754,7 +1754,7 @@ mod tests {
         let _ = &frame1 & &frame2;
     }
     #[test]
-    #[should_panic(expected = "column names mismatch")]
+    #[should_panic(expected = "column names do not match")]
     fn frame_bitwise_ops_panic_cols() {
         let frame1 = create_test_frame_bool(); // Cols P, Q
         let matrix2 = create_test_matrix_bool_alt();
