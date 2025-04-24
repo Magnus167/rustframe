@@ -67,6 +67,17 @@ jobs:
                 color:"blue"}' \
               tarpaulin-report.json \
             > tarpaulin-badge.json
+
+      - name: Save last commit date JSON
+        run: |
+          last_commit_date=$(git log -1 --format=%cd --date=short)
+          jq --arg date "$last_commit_date" \
+            '{schemaVersion:1,
+              label:"last-commit-date",
+              message:$date,
+              color:"blue"}' \
+            <(echo '{}') \
+          > last-commit-date.json
   
       - name: Copy files to output directory
         run: |
@@ -74,6 +85,7 @@ jobs:
           cp tarpaulin-report.html target/doc/rustframe/
           cp tarpaulin-report.json target/doc/rustframe/
           cp tarpaulin-badge.json target/doc/rustframe/
+          cp last-commit-date.json target/doc/rustframe/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
 
       - name: Upload Pages artifact
