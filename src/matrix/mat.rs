@@ -192,7 +192,7 @@ impl<'a, T> MatrixRow<'a, T> {
         (0..self.matrix.cols).map(move |c| &self.matrix[(self.row, c)])
     }
 }
-/// A trait to turn either a Matrix<T> or a scalar T into a Vec<T> of 
+/// A trait to turn either a Matrix<T> or a scalar T into a Vec<T> of
 /// length rows*cols (broadcasting the scalar).
 pub trait Broadcastable<T> {
     fn to_vec(&self, rows: usize, cols: usize) -> Vec<T>;
@@ -346,6 +346,8 @@ pub enum Axis {
 
 #[cfg(test)]
 mod tests {
+    use crate::matrix::BoolOps;
+
     use super::{BoolMatrix, FloatMatrix, Matrix, StringMatrix};
 
     // Helper function to create a basic Matrix for testing
@@ -1301,5 +1303,31 @@ mod tests {
         assert_eq!(matrix2.column(1), initial_col0_data_m2.as_slice());
         assert_eq!(matrix2.data(), &[4, 5, 6, 1, 2, 3, 7, 8, 9]);
     }
-    // Axis enum doesn't have logic, no tests needed directly, but its presence is verified by compilation.
+
+    // Test broadcastable operations
+    #[test]
+    fn test_comparision_broadcast() {
+        let matrix = create_test_matrix();
+        // test all > 0
+        let result = matrix.gt_elementwise(0).as_vec();
+        let expected = vec![true; result.len()];
+        assert_eq!(result, expected);
+
+        let ma = create_test_matrix();
+        let mb = create_test_matrix();
+
+        let result = ma.eq_elementwise(mb);
+        assert!(result.all());
+
+        let result = matrix.lt_elementwise(1e10 as i32).all();
+        assert!(result);
+
+        for i in 0..matrix.rows() {
+            for j in 0..matrix.cols() {
+                let vx = matrix[(i, j)];
+                let c = &(matrix.le_elementwise(vx)) & &(matrix.ge_elementwise(vx));
+                assert_eq!(c.count(), 1);
+            }
+        }
+    }
 }
