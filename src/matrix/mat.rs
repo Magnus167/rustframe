@@ -8,7 +8,7 @@ pub struct Matrix<T> {
     data: Vec<T>,
 }
 
-impl<T> Matrix<T> {
+impl<T: Clone> Matrix<T> {
     /// Build from columns (each inner Vec is one column)
     pub fn from_cols(cols_data: Vec<Vec<T>>) -> Self {
         let cols = cols_data.len();
@@ -38,11 +38,20 @@ impl<T> Matrix<T> {
         Matrix { rows, cols, data }
     }
 
-    pub fn rows(&self) -> usize {
-        self.rows
-    }
     pub fn data(&self) -> &[T] {
         &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut [T] {
+        &mut self.data
+    }
+
+    pub fn as_vec(&self) -> Vec<T> {
+        self.data.clone()
+    }
+
+    pub fn rows(&self) -> usize {
+        self.rows
     }
 
     pub fn cols(&self) -> usize {
