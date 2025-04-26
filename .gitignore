@@ -1,3 +1,7 @@
+
+# Adding Cargo.lock as this is a library
+Cargo.lock
+
 /target
 
 dev/
