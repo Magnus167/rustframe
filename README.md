@@ -47,13 +47,13 @@ use rustframe::{
 let n_periods = 4;
 
 // Four business days starting 2024‑01‑02
-a let dates: Vec<NaiveDate> =
-    BDatesList::from_n_periods("2024-01-02", BDateFreq::Daily, n_periods)
+let dates: Vec<NaiveDate> =
+    BDatesList::from_n_periods("2024-01-02".to_string(), BDateFreq::Daily, n_periods)
         .unwrap()
         .list()
         .unwrap();
 
-let col_names = vec!["a".into(), "b".into()];
+let col_names = vec!["a".to_string(), "b".to_string()];
 
 let ma = Matrix::from_cols(vec![
     vec![1.0, 2.0, 3.0, 4.0],
