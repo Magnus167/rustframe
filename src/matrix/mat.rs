@@ -297,11 +297,6 @@ impl_elementwise_op!(Sub, sub, -);
 impl_elementwise_op!(Mul, mul, *);
 impl_elementwise_op!(Div, div, /);
 
-pub type FloatMatrix = Matrix<f64>;
-pub type BoolMatrix = Matrix<bool>;
-pub type IntMatrix = Matrix<i32>;
-pub type StringMatrix = Matrix<String>;
-
 /// Generates element-wise bitwise operations for boolean matrices.
 macro_rules! impl_bitwise_op {
     ($OpTrait:ident, $method:ident, $op:tt) => {
@@ -345,6 +340,10 @@ impl Not for Matrix<bool> {
     }
 }
 
+pub type FloatMatrix = Matrix<f64>;
+pub type BoolMatrix = Matrix<bool>;
+pub type IntMatrix = Matrix<i32>;
+pub type StringMatrix = Matrix<String>;
 
 #[cfg(test)]
 mod tests {
