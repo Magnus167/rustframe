@@ -30,7 +30,7 @@ jobs:
           override: true
     
       - name: Build documentation
-        run: cargo doc --no-deps
+        run: cargo doc --no-deps --release
   
       - name: Prepare documentation for Pages
         run: |
