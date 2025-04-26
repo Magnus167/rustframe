@@ -192,6 +192,16 @@ impl<'a, T> MatrixRow<'a, T> {
         (0..self.matrix.cols).map(move |c| &self.matrix[(self.row, c)])
     }
 }
+
+/// Specifies the axis along which to perform a reduction operation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Axis {
+    /// Apply reduction along columns (vertical axis).
+    Col,
+    /// Apply reduction along rows (horizontal axis).
+    Row,
+}
+
 /// A trait to turn either a Matrix<T> or a scalar T into a Vec<T> of
 /// length rows*cols (broadcasting the scalar).
 pub trait Broadcastable<T> {
@@ -335,14 +345,6 @@ impl Not for Matrix<bool> {
     }
 }
 
-/// Specifies the axis along which to perform a reduction operation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Axis {
-    /// Apply reduction along columns (vertical axis).
-    Col,
-    /// Apply reduction along rows (horizontal axis).
-    Row,
-}
 
 #[cfg(test)]
 mod tests {
