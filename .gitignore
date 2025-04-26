@@ -9,6 +9,7 @@ data/
 *.log
 *.pkl
 .env
+*.info
 
 .venv/
 
