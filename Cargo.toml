@@ -13,4 +13,3 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 chrono = "0.4.38"
-# rayon = "1.5"
