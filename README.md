@@ -75,6 +75,12 @@ let result = &result - 1.0; // subtract scalar
 let result = &result * 2.0; // multiply by scalar
 let result = &result / 2.0; // divide by scalar
 
-let check = result.eq_elementwise(ma).all();
+let check = result.eq_elementwise(ma.clone()).all();
+assert!(check);
+
+// The above math can also be written as:
+let check = &(&(&(&(&ma + 1.0) - 1.0) * 2.0) / 2.0)
+    .eq_elementwise(ma)
+    .all();
 assert!(check);
 ```
