@@ -202,8 +202,8 @@ pub enum Axis {
     Row,
 }
 
-/// A trait to turn either a Matrix<T> or a scalar T into a Vec<T> of
-/// length rows*cols (broadcasting the scalar).
+/// A trait to turn either a `Matrix<T>` or a scalar T into a `Vec<T>` of
+/// length `rows*cols` (broadcasting the scalar).
 pub trait Broadcastable<T> {
     fn to_vec(&self, rows: usize, cols: usize) -> Vec<T>;
 }
@@ -223,7 +223,7 @@ impl<T: Clone> Broadcastable<T> for Matrix<T> {
 }
 
 /// Generates element-wise eq, lt, le, gt and ge methods
-/// where the rhs can be a Matrix<T> or a scalar T.
+/// where the rhs can be a `Matrix<T>` or a scalar T.
 macro_rules! impl_elementwise_cmp {
     (
         $( $method:ident => $op:tt ),* $(,)?
@@ -231,7 +231,7 @@ macro_rules! impl_elementwise_cmp {
         impl<T: PartialOrd + Clone> Matrix<T> {
             $(
             #[doc = concat!("Element-wise comparison `self ", stringify!($op), " rhs`,\n\
-                             where `rhs` may be a Matrix<T> or a scalar T.")]
+                             where `rhs` may be a `Matrix<T>` or a scalar T.")]
             pub fn $method<Rhs>(&self, rhs: Rhs) -> BoolMatrix
             where
                 Rhs: Broadcastable<T>,
