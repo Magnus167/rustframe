@@ -1,8 +1,9 @@
 [package]
 name = "rustframe"
 version = "0.0.1-a.0"
-edition = "2024"
+edition = "2021"
 license = "GPL-3.0-or-later"
+license-file = "LICENSE"
 readme = "README.md"
 description = "A simple dataframe library"
 
@@ -12,4 +13,4 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-chrono = "0.4.38"
+chrono = "^0.4.10"
