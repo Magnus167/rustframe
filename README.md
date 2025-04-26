@@ -55,20 +55,26 @@ let dates: Vec<NaiveDate> =
 
 let col_names = vec!["a".to_string(), "b".to_string()];
 
-let ma = Matrix::from_cols(vec![
-    vec![1.0, 2.0, 3.0, 4.0],
-    vec![5.0, 6.0, 7.0, 8.0],
-]);
-let mb = Matrix::from_cols(vec![
-    vec![4.0, 3.0, 2.0, 1.0],
-    vec![8.0, 7.0, 6.0, 5.0],
-]);
+let ma = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0, 4.0], vec![5.0, 6.0, 7.0, 8.0]]);
+let mb = Matrix::from_cols(vec![vec![4.0, 3.0, 2.0, 1.0], vec![8.0, 7.0, 6.0, 5.0]]);
 
-let fa = Frame::new(ma, col_names.clone(), Some(RowIndex::Date(dates.clone())));
+let fa = Frame::new(
+    ma.clone(),
+    col_names.clone(),
+    Some(RowIndex::Date(dates.clone())),
+);
 let fb = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
 
 // Math that reads like math
-let result = &fa * &fb;            // element‑wise multiply
+let result = &fa * &fb; // element‑wise multiply
 let total = result.matrix().sum_vertical().iter().sum::<f64>();
 assert_eq!(total, 184.0);
+
+let result = &ma + 1.0; // add scalar
+let result = &result - 1.0; // subtract scalar
+let result = &result * 2.0; // multiply by scalar
+let result = &result / 2.0; // divide by scalar
+
+let check = result.eq_elementwise(ma).all();
+assert!(check);
 ```
