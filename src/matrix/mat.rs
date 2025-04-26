@@ -613,6 +613,22 @@ mod tests {
         assert_eq!(rows[1], vec![2, 4, 6, 8]);
     }
 
+    // test data_mut
+    #[test]
+    fn test_data_mut() {
+        let mut matrix = create_test_matrix(); // 3x3
+        // 1 4 7
+        // 2 5 8
+        // 3 6 9
+
+        let data_mut = matrix.data_mut();
+        data_mut[0] = 10;
+        data_mut[1] = 20;
+
+        assert_eq!(matrix[(0, 0)], 10);
+        assert_eq!(matrix[(1, 0)], 20);
+    }
+
     #[test]
     fn test_matrix_row_get_and_iter() {
         let matrix = create_test_matrix_2x4(); // 2x4
