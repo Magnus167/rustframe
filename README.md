@@ -67,7 +67,7 @@ let fb = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
 
 // Math that reads like math
 let result = &fa * &fb; // element‑wise multiply
-let total = result.matrix().sum_vertical().iter().sum::<f64>();
+let total = result.sum_vertical().iter().sum::<f64>();
 assert_eq!(total, 184.0);
 
 let result = &ma + 1.0; // add scalar
