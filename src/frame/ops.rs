@@ -95,3 +95,60 @@ impl BoolOps for Frame<bool> {
 //         self.matrix().is_nan()
 //     }
 // }
+
+mod tests {
+    use crate::frame::*;
+    use crate::matrix::*;
+
+    #[test]
+    fn test_series_ops() {
+        let col_names = vec!["A".to_string(), "B".to_string()];
+        let frame = Frame::new(
+            Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]),
+            col_names,
+            None,
+        );
+        assert_eq!(frame.sum_vertical(), frame.matrix().sum_vertical());
+        assert_eq!(frame.sum_horizontal(), frame.matrix().sum_horizontal());
+        assert_eq!(frame.prod_horizontal(), frame.matrix().prod_horizontal());
+        assert_eq!(frame.prod_vertical(), frame.matrix().prod_vertical());
+        assert_eq!(
+            frame.cumsum_horizontal(),
+            frame.matrix().cumsum_horizontal()
+        );
+        assert_eq!(frame.cumsum_vertical(), frame.matrix().cumsum_vertical());
+        assert_eq!(
+            frame.count_nan_vertical(),
+            frame.matrix().count_nan_vertical()
+        );
+        assert_eq!(
+            frame.count_nan_horizontal(),
+            frame.matrix().count_nan_horizontal()
+        );
+        assert_eq!(frame.is_nan(), frame.matrix().is_nan());
+        assert_eq!(frame.apply_axis(Axis::Row, |x| x[0] + x[1]), vec![4.0, 6.0]);
+    }
+    #[test]
+
+    fn test_bool_ops() {
+        let col_names = vec!["A".to_string(), "B".to_string()];
+        let frame = Frame::new(
+            Matrix::from_cols(vec![vec![true, false], vec![false, true]]),
+            col_names,
+            None,
+        );
+        assert_eq!(frame.any_vertical(), vec![true, true]);
+        assert_eq!(frame.any_horizontal(), vec![true, true]);
+        assert_eq!(frame.all_horizontal(), vec![false, false]);
+        assert_eq!(frame.all_vertical(), vec![false, false]);
+        assert_eq!(frame.count_vertical(), vec![1, 1]);
+        assert_eq!(frame.count_horizontal(), vec![1, 1]);
+        assert_eq!(frame.any(), true);
+        assert_eq!(frame.all(), false);
+        assert_eq!(frame.count(), 2);
+        assert_eq!(
+            frame.apply_axis(Axis::Row, |x| x[0] && x[1]),
+            vec![false, false]
+        );
+    }
+}
