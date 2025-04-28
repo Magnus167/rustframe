@@ -1,6 +1,3 @@
-pub mod bdates;
-pub use bdates::{BDateFreq, BDatesList, BDatesGenerator};
-
-pub mod dates;
-pub use dates::{DateFreq, DatesList, DatesGenerator};
-
+pub mod dateutils;
+pub use dateutils::{BDateFreq, BDatesGenerator, BDatesList};
+pub use dateutils::{DateFreq, DatesGenerator, DatesList};
