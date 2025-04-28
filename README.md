@@ -62,10 +62,10 @@ let mb: Matrix<f64> =
 
 let fa: Frame<f64> = Frame::new(
     ma.clone(),
-    Some(col_names.clone()),
+    col_names.clone(),
     Some(RowIndex::Date(dates.clone())),
 );
-let fb: Frame<f64> = Frame::new(mb, Some(col_names), Some(RowIndex::Date(dates)));
+let fb: Frame<f64> = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
 
 // Math that reads like math
 let result: Frame<f64> = &fa * &fb; // element‑wise multiply
