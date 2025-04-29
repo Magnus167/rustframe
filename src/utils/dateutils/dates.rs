@@ -648,8 +648,13 @@ fn collect_monthly(
     let mut year = start_date.year();
     let mut month = start_date.month();
 
-    let next_month =
-        |(yr, mo): (i32, u32)| -> (i32, u32) { if mo == 12 { (yr + 1, 1) } else { (yr, mo + 1) } };
+    let next_month = |(yr, mo): (i32, u32)| -> (i32, u32) {
+        if mo == 12 {
+            (yr + 1, 1)
+        } else {
+            (yr, mo + 1)
+        }
+    };
 
     loop {
         let candidate = if want_first_day {
@@ -873,6 +878,25 @@ fn last_day_of_year(year: i32) -> Result<NaiveDate, Box<dyn Error>> {
 
 // --- Generator Helper Functions ---
 
+fn get_first_date_helper(freq: DateFreq) -> fn(i32, u32) -> Result<NaiveDate, Box<dyn Error>> {
+    if matches!(
+        freq,
+        DateFreq::Daily | DateFreq::WeeklyMonday | DateFreq::WeeklyFriday
+    ) {
+        panic!("Daily, WeeklyMonday, and WeeklyFriday frequencies are not supported here");
+    }
+
+    match freq {
+        DateFreq::MonthStart => first_day_of_month,
+        DateFreq::MonthEnd => last_day_of_month,
+        DateFreq::QuarterStart => first_day_of_quarter,
+        DateFreq::QuarterEnd => last_day_of_quarter,
+        DateFreq::YearStart => |year, _| first_day_of_year(year),
+        DateFreq::YearEnd => |year, _| last_day_of_year(year),
+        _ => unreachable!(),
+    }
+}
+
 /// Finds the *first* valid date according to the frequency,
 /// starting the search *on or after* the given `start_date`.
 fn find_first_date_on_or_after(
@@ -883,69 +907,42 @@ fn find_first_date_on_or_after(
         DateFreq::Daily => Ok(start_date), // The first daily date is the start date itself
         DateFreq::WeeklyMonday => move_to_day_of_week_on_or_after(start_date, Weekday::Mon),
         DateFreq::WeeklyFriday => move_to_day_of_week_on_or_after(start_date, Weekday::Fri),
-        DateFreq::MonthStart => {
-            let mut candidate = first_day_of_month(start_date.year(), start_date.month())?;
+
+        DateFreq::MonthStart | DateFreq::MonthEnd => {
+            // let mut candidate = first_day_of_month(start_date.year(), start_date.month())?;
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), start_date.month())?;
             if candidate < start_date {
                 let (next_y, next_m) = if start_date.month() == 12 {
                     (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
                 } else {
                     (start_date.year(), start_date.month() + 1)
                 };
-                candidate = first_day_of_month(next_y, next_m)?;
+                candidate = get_cand_func(next_y, next_m)?;
             }
             Ok(candidate)
         }
-        DateFreq::MonthEnd => {
-            let mut candidate = last_day_of_month(start_date.year(), start_date.month())?;
-            if candidate < start_date {
-                let (next_y, next_m) = if start_date.month() == 12 {
-                    (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
-                } else {
-                    (start_date.year(), start_date.month() + 1)
-                };
-                candidate = last_day_of_month(next_y, next_m)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::QuarterStart => {
+        DateFreq::QuarterStart | DateFreq::QuarterEnd => {
             let current_q = month_to_quarter(start_date.month());
-            let mut candidate = first_day_of_quarter(start_date.year(), current_q)?;
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), current_q)?;
             if candidate < start_date {
                 let (next_y, next_q) = if current_q == 4 {
                     (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
                 } else {
                     (start_date.year(), current_q + 1)
                 };
-                candidate = first_day_of_quarter(next_y, next_q)?;
+                candidate = get_cand_func(next_y, next_q)?;
             }
             Ok(candidate)
         }
-        DateFreq::QuarterEnd => {
-            let current_q = month_to_quarter(start_date.month());
-            let mut candidate = last_day_of_quarter(start_date.year(), current_q)?;
-            if candidate < start_date {
-                let (next_y, next_q) = if current_q == 4 {
-                    (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
-                } else {
-                    (start_date.year(), current_q + 1)
-                };
-                candidate = last_day_of_quarter(next_y, next_q)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::YearStart => {
-            let mut candidate = first_day_of_year(start_date.year())?;
+
+        DateFreq::YearStart | DateFreq::YearEnd => {
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), 0)?;
             if candidate < start_date {
                 candidate =
-                    first_day_of_year(start_date.year().checked_add(1).ok_or("Year overflow")?)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::YearEnd => {
-            let mut candidate = last_day_of_year(start_date.year())?;
-            if candidate < start_date {
-                candidate =
-                    last_day_of_year(start_date.year().checked_add(1).ok_or("Year overflow")?)?;
+                    get_cand_func(start_date.year().checked_add(1).ok_or("Year overflow")?, 0)?;
             }
             Ok(candidate)
         }
@@ -962,7 +959,8 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
         DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => current_date
             .checked_add_signed(Duration::days(7))
             .ok_or_else(|| "Date overflow adding 7 days".into()),
-        DateFreq::MonthStart => {
+        DateFreq::MonthStart | DateFreq::MonthEnd => {
+            let get_cand_func = get_first_date_helper(freq);
             let (next_y, next_m) = if current_date.month() == 12 {
                 (
                     current_date.year().checked_add(1).ok_or("Year overflow")?,
@@ -971,21 +969,11 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
             } else {
                 (current_date.year(), current_date.month() + 1)
             };
-            first_day_of_month(next_y, next_m)
+            get_cand_func(next_y, next_m)
         }
-        DateFreq::MonthEnd => {
-            let (next_y, next_m) = if current_date.month() == 12 {
-                (
-                    current_date.year().checked_add(1).ok_or("Year overflow")?,
-                    1,
-                )
-            } else {
-                (current_date.year(), current_date.month() + 1)
-            };
-            last_day_of_month(next_y, next_m)
-        }
-        DateFreq::QuarterStart => {
+        DateFreq::QuarterStart | DateFreq::QuarterEnd => {
             let current_q = month_to_quarter(current_date.month());
+            let get_cand_func = get_first_date_helper(freq);
             let (next_y, next_q) = if current_q == 4 {
                 (
                     current_date.year().checked_add(1).ok_or("Year overflow")?,
@@ -994,25 +982,14 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
             } else {
                 (current_date.year(), current_q + 1)
             };
-            first_day_of_quarter(next_y, next_q)
+            get_cand_func(next_y, next_q)
         }
-        DateFreq::QuarterEnd => {
-            let current_q = month_to_quarter(current_date.month());
-            let (next_y, next_q) = if current_q == 4 {
-                (
-                    current_date.year().checked_add(1).ok_or("Year overflow")?,
-                    1,
-                )
-            } else {
-                (current_date.year(), current_q + 1)
-            };
-            last_day_of_quarter(next_y, next_q)
-        }
-        DateFreq::YearStart => {
-            first_day_of_year(current_date.year().checked_add(1).ok_or("Year overflow")?)
-        }
-        DateFreq::YearEnd => {
-            last_day_of_year(current_date.year().checked_add(1).ok_or("Year overflow")?)
+        DateFreq::YearStart | DateFreq::YearEnd => {
+            let get_cand_func = get_first_date_helper(freq);
+            get_cand_func(
+                current_date.year().checked_add(1).ok_or("Year overflow")?,
+                0,
+            )
         }
     }
 }
