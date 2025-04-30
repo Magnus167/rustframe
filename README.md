@@ -1,6 +1,4 @@
-<img align="left" alt="Rustframe" src=".github/rustframe_logo.png" height="50" />
-
-<br>
+<img align="left" alt="Rustframe" src=".github/rustframe_logo.png" height="75" />
 
 # rustframe
 
