@@ -13,13 +13,15 @@ impl<T: Clone> Matrix<T> {
     pub fn from_cols(cols_data: Vec<Vec<T>>) -> Self {
         let cols = cols_data.len();
         assert!(cols > 0, "need at least one column");
-        let rows = cols_data[0].len();
-                                                            // Allow 0-row matrices if columns are empty, but not 0-col matrices if rows > 0
+        // Handle empty cols_data
+        let rows = cols_data.get(0).map_or(0, |c| c.len()); 
+        // Allow 0-row matrices if columns are empty, but not 0-col matrices if rows > 0
         assert!(
             rows > 0 || cols == 0,
             "need at least one row if columns exist"
         );
-        for (i, col) in cols_data.iter().enumerate().skip(1) {
+
+        for (i, col) in cols_data.iter().enumerate() {
             assert!(
                 col.len() == rows,
                 "col {} has len {}, expected {}",
@@ -28,10 +30,8 @@ impl<T: Clone> Matrix<T> {
                 rows
             );
         }
-        let mut data = Vec::with_capacity(rows * cols);
-        for col in cols_data {
-            data.extend(col);
-        }
+        // Flatten column data directly
+        let data = cols_data.into_iter().flatten().collect();
         Matrix { rows, cols, data }
     }
 
