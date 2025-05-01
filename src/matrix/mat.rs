@@ -35,6 +35,7 @@ impl<T: Clone> Matrix<T> {
         Matrix { rows, cols, data }
     }
 
+    /// Build from a flat Vec, assuming column-major order.
     pub fn from_vec(data: Vec<T>, rows: usize, cols: usize) -> Self {
         assert!(
             rows > 0 || cols == 0,
@@ -44,7 +45,19 @@ impl<T: Clone> Matrix<T> {
             cols > 0 || rows == 0,
             "need at least one column if rows exist"
         );
-        assert_eq!(data.len(), rows * cols, "data length mismatch");
+        if rows * cols != 0 {
+            // Only assert length if matrix is non-empty
+            assert_eq!(
+                data.len(),
+                rows * cols,
+                "data length mismatch: expected {}, got {}",
+                rows * cols,
+                data.len()
+            );
+        } else {
+            assert!(data.is_empty(), "data must be empty for 0-sized matrix");
+        }
+
         Matrix { rows, cols, data }
     }
 
@@ -56,7 +69,13 @@ impl<T: Clone> Matrix<T> {
         &mut self.data
     }
 
-    pub fn as_vec(&self) -> Vec<T> {
+    /// Consumes the Matrix and returns its underlying data Vec.
+    pub fn into_vec(self) -> Vec<T> {
+        self.data
+    }
+
+    /// Creates a new Vec<T> containing the matrix data (cloned).
+    pub fn to_vec(&self) -> Vec<T> {
         self.data.clone()
     }
 
