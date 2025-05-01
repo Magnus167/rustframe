@@ -1,4 +1,7 @@
-# rustframe
+
+# <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50" /> rustframe
+
+<!-- though the centre tag doesn't work as it would noramlly, it achieves the desired effect -->
 
 📚 [Docs](https://magnus167.github.io/rustframe/) | 🐙 [GitHub](https://github.com/Magnus167/rustframe) | 🌐 [Gitea mirror](https://gitea.nulltech.uk/Magnus167/rustframe) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
 
@@ -53,35 +56,37 @@ let dates: Vec<NaiveDate> =
         .list()
         .unwrap();
 
-    let col_names: Vec<String> = vec!["a".to_string(), "b".to_string()];
+let col_names: Vec<String> = vec!["a".to_string(), "b".to_string()];
 
-    let ma: Matrix<f64> = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0, 4.0], vec![5.0, 6.0, 7.0, 8.0]]);
-    let mb: Matrix<f64> = Matrix::from_cols(vec![vec![4.0, 3.0, 2.0, 1.0], vec![8.0, 7.0, 6.0, 5.0]]);
+let ma: Matrix<f64> =
+    Matrix::from_cols(vec![vec![1.0, 2.0, 3.0, 4.0], vec![5.0, 6.0, 7.0, 8.0]]);
+let mb: Matrix<f64> =
+    Matrix::from_cols(vec![vec![4.0, 3.0, 2.0, 1.0], vec![8.0, 7.0, 6.0, 5.0]]);
 
-    let fa: Frame<f64> = Frame::new(
-        ma.clone(),
-        col_names.clone(),
-        Some(RowIndex::Date(dates.clone())),
-    );
-    let fb: Frame<f64> = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
+let fa: Frame<f64> = Frame::new(
+    ma.clone(),
+    col_names.clone(),
+    Some(RowIndex::Date(dates.clone())),
+);
+let fb: Frame<f64> = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
 
-    // Math that reads like math
-    let result: Frame<f64> = &fa * &fb; // element‑wise multiply
-    let total: f64 = result.sum_vertical().iter().sum::<f64>();
-    assert_eq!(total, 184.0);
+// Math that reads like math
+let result: Frame<f64> = &fa * &fb; // element‑wise multiply
+let total: f64 = result.sum_vertical().iter().sum::<f64>();
+assert_eq!(total, 184.0);
 
-    // broadcast & reduce
-    let result: Matrix<f64> = &ma + 1.0; // add scalar
-    let result: Matrix<f64> = &result - 1.0; // subtract scalar
-    let result: Matrix<f64> = &result * 2.0; // multiply by scalar
-    let result: Matrix<f64> = &result / 2.0; // divide by scalar
+// broadcast & reduce
+let result: Matrix<f64> = &ma + 1.0; // add scalar
+let result: Matrix<f64> = &result - 1.0; // subtract scalar
+let result: Matrix<f64> = &result * 2.0; // multiply by scalar
+let result: Matrix<f64> = &result / 2.0; // divide by scalar
 
-    let check: bool = result.eq_elementwise(ma.clone()).all();
-    assert!(check);
+let check: bool = result.eq_elementwise(ma.clone()).all();
+assert!(check);
 
-    // The above math can also be written as:
-    let check: bool = (&(&(&(&ma + 1.0) - 1.0) * 2.0) / 2.0)
-        .eq_elementwise(ma)
-        .all();
-    assert!(check);
+// The above math can also be written as:
+let check: bool = (&(&(&(&ma + 1.0) - 1.0) * 2.0) / 2.0)
+    .eq_elementwise(ma)
+    .all();
+assert!(check);
 ```
