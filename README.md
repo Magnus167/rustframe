@@ -22,6 +22,12 @@ Rustframe keeps things simple, safe, and readable. It is handy for quick numeric
 - **Date‑centric row index** - business‑day ranges and calendar slicing built in.
 - **Pure safe Rust** - 100 % safe, zero `unsafe`.
 
+### Coming soon
+
+- **CSV I/O** - read/write CSV files with a simple API.
+- **Date Utils** - date math, calendar slicing, indexing, and more.
+- **More math** - more math functions and aggregations.
+
 ### Heads up
 
 - **Not memory‑efficient (yet)** - footprint needs work.
@@ -31,6 +37,7 @@ Rustframe keeps things simple, safe, and readable. It is handy for quick numeric
 
 - Optional GPU help (Vulkan or similar) for heavier workloads.
 - Straightforward Python bindings using `pyo3`.
+- Integration with common ML libraries, or introduce simple ML features.
 
 ---
 
