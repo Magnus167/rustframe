@@ -1,4 +1,6 @@
-use std::ops::{Index, IndexMut, Not};
+//! A simple column-major Matrix implementation with element-wise operations.
+
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Index, IndexMut, Mul, Not, Sub};
 
 /// A column‑major 2D matrix of `T`
 #[derive(Debug, Clone, PartialEq, Eq)]
