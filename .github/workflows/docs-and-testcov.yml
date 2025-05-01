@@ -86,6 +86,8 @@ jobs:
           cp tarpaulin-report.json target/doc/rustframe/
           cp tarpaulin-badge.json target/doc/rustframe/
           cp last-commit-date.json target/doc/rustframe/
+          mkdir -p target/doc/rustframe/.github
+          cp .github/rustframe_logo.png target/doc/rustframe/.github/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
 
       - name: Upload Pages artifact
