@@ -179,13 +179,34 @@ impl<T: Clone> Matrix<T> {
         self.cols -= 1;
     }
 
-    /// Deletes a row from the matrix.
+    /// Deletes a row from the matrix. Panics on out-of-bounds.
+    /// This is O(N) where N is the number of elements, as it rebuilds the data vec.
     pub fn delete_row(&mut self, row: usize) {
-        assert!(row < self.rows, "row index out of bounds");
-        for c in (0..self.cols).rev() {
-            self.data.remove(c * self.rows + row);
+        assert!(
+            row < self.rows,
+            "row index {} out of bounds for {} rows",
+            row,
+            self.rows
+        );
+        if self.rows == 0 {
+            return;
+        } // Nothing to delete
+
+        let old_rows = self.rows;
+        let new_rows = self.rows - 1;
+        let mut new_data = Vec::with_capacity(new_rows * self.cols);
+
+        for c in 0..self.cols {
+            let col_start_old = c * old_rows;
+            for r in 0..old_rows {
+                if r != row {
+                    // Must clone as we are reading from the old data while building the new one
+                    new_data.push(self.data[col_start_old + r].clone());
+                }
+            }
         }
-        self.rows -= 1;
+        self.data = new_data;
+        self.rows = new_rows;
     }
 }
 
