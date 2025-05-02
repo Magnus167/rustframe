@@ -18,5 +18,5 @@ chrono = "^0.4.10"
 criterion = { version = "0.4", features = ["html_reports"] }
 
 [[bench]]
-name = "benchmark"
+name = "benchmarks"
 harness = false
