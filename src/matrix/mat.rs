@@ -170,12 +170,12 @@ impl<T: Clone> Matrix<T> {
         }
     }
 
-    /// Deletes a column from the matrix.
+    /// Deletes a column from the matrix. Panics on out-of-bounds.
+    /// This is O(N) where N is the number of elements.
     pub fn delete_column(&mut self, col: usize) {
-        assert!(col < self.cols, "column index out of bounds");
-        for r in (0..self.rows).rev() {
-            self.data.remove(col * self.rows + r);
-        }
+        assert!(col < self.cols, "column index {} out of bounds for {} columns", col, self.cols);
+        let start = col * self.rows;
+        self.data.drain(start..start + self.rows); // Efficient removal
         self.cols -= 1;
     }
 
