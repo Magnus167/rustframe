@@ -2,7 +2,7 @@ name: run-unit-tests
 
 on:
   pull_request:
-    types: [review_requested, ready_for_review]
+    types: [review_requested, ready_for_review, synchronize, opened, reopened]
     branches:
       - main
 
