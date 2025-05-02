@@ -372,24 +372,25 @@ macro_rules! impl_elementwise_cmp {
         impl<T: PartialOrd + Clone> Matrix<T> {
             $(
             #[doc = concat!("Element-wise comparison `self ", stringify!($op), " rhs`,\n\
-                             where `rhs` may be a `Matrix<T>` or a scalar T.")]
+                             where `rhs` may be a `Matrix<T>` or a scalar T.\n\
+                             Returns a `BoolMatrix`.")]
             pub fn $method<Rhs>(&self, rhs: Rhs) -> BoolMatrix
             where
                 Rhs: Broadcastable<T>,
             {
-                // Prepare broadcasted rhs-data
+                // Prepare broadcasted rhs-data using the trait
                 let rhs_data = rhs.to_vec(self.rows, self.cols);
 
-                // Pairwise compare
+                // Pairwise compare using iterators
                 let data = self
                     .data
-                    .iter()
-                    .cloned()
-                    .zip(rhs_data.into_iter())
-                    .map(|(a, b)| a $op b)
+                    .iter() // Borrow self's data
+                    .zip(rhs_data.iter()) // Borrow rhs's broadcasted data
+                    .map(|(a, b)| a $op b) // Perform comparison op
                     .collect();
 
-                BoolMatrix::from_vec(data, self.rows, self.cols)
+                // Create BoolMatrix from result
+                Matrix::<bool>::from_vec(data, self.rows, self.cols)
             }
             )*
         }
