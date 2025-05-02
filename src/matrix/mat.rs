@@ -206,26 +206,75 @@ impl<T: Clone> Matrix<T> {
 }
 
 impl<T: Clone> Matrix<T> {
-    /// Adds a column to the matrix at the specified index.
+    /// Adds a column to the matrix at the specified index. Panics if index > cols or length mismatch.
+    /// This is O(N) where N is the number of elements.
     pub fn add_column(&mut self, index: usize, column: Vec<T>) {
-        assert!(index <= self.cols,"add_column index {} out of bounds for {} columns",index,self.cols);
-        assert_eq!(column.len(), self.rows, "column length mismatch");
-
-        for (r, value) in column.into_iter().enumerate() {
-            self.data.insert(index * self.rows + r, value);
+        assert!(
+            index <= self.cols,
+            "add_column index {} out of bounds for {} columns",
+            index,
+            self.cols
+        );
+        assert_eq!(
+            column.len(),
+            self.rows,
+            "column length mismatch: expected {}, got {}",
+            self.rows,
+            column.len()
+        );
+        if self.rows == 0 && self.cols == 0 {
+            // Special case: adding first column to empty matrix
+            assert!(index == 0, "index must be 0 for adding first column");
+            self.data = column;
+            self.cols = 1;
+            // self.rows should be correctly set by column.len() assertion
+        } else {
+            let insert_pos = index * self.rows;
+            self.data.splice(insert_pos..insert_pos, column); // Efficient insertion
+            self.cols += 1;
         }
-        self.cols += 1;
     }
 
-    /// Adds a row to the matrix at the specified index.
+    /// Adds a row to the matrix at the specified index. Panics if index > rows or length mismatch.
+    /// This is O(N) where N is the number of elements, as it rebuilds the data vec.
     pub fn add_row(&mut self, index: usize, row: Vec<T>) {
-        assert!(index <= self.rows,"add_row index {} out of bounds for {} rows",index,self.rows);
-        assert_eq!(row.len(),self.cols,"row length mismatch: expected {} (cols), got {}",self.cols,row.len());
+        assert!(index <= self.rows, "add_row index {} out of bounds for {} rows", index, self.rows);
+        assert_eq!(row.len(), self.cols, "row length mismatch: expected {} (cols), got {}", self.cols, row.len());
 
-        for (c, value) in row.into_iter().enumerate() {
-            self.data.insert(c * (self.rows + 1) + index, value);
+        if self.cols == 0 && self.rows == 0 {
+            // Special case: adding first row to empty matrix
+            assert!(index == 0, "index must be 0 for adding first row");
+            // Cannot add a row if there are no columns yet. Maybe panic or change API?
+            assert!(
+                self.cols > 0 || row.is_empty(),
+                "cannot add non-empty row to matrix with 0 columns"
+            );
+            if row.is_empty() {
+                return;
+            } // Adding empty row to empty matrix is no-op
         }
-        self.rows += 1;
+
+        let old_rows = self.rows;
+        let new_rows = self.rows + 1;
+        let mut new_data = Vec::with_capacity(new_rows * self.cols);
+        let mut row_iter = row.into_iter(); // Consume the input row vec
+
+        for c in 0..self.cols {
+            let old_col_start = c * old_rows;
+            for r in 0..new_rows {
+                if r == index {
+                    // Take the next element from the provided row vector
+                    new_data.push(row_iter.next().expect("Row iterator exhausted prematurely - should have been caught by length assert"));
+                } else {
+                    // Calculate the corresponding old row index
+                    let old_r = if r < index { r } else { r - 1 };
+                    // Must clone as we are reading from the old data while building the new one
+                    new_data.push(self.data[old_col_start + old_r].clone());
+                }
+            }
+        }
+        self.data = new_data;
+        self.rows = new_rows;
     }
 }
 
