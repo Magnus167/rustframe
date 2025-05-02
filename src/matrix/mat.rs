@@ -399,11 +399,12 @@ macro_rules! impl_elementwise_cmp {
 
 // Instantiate element-wise comparison implementations for matrices.
 impl_elementwise_cmp! {
-    eq_elementwise => ==,
-    lt_elementwise => <,
-    le_elementwise => <=,
-    gt_elementwise => >,
-    ge_elementwise => >=,
+    eq_elem => ==,
+    ne_elem => !=,
+    lt_elem => <,
+    le_elem => <=,
+    gt_elem => >,
+    ge_elem => >=,
 }
 
 /// Generates element-wise arithmetic implementations for matrices.
