@@ -520,40 +520,72 @@ impl_elementwise_op_scalar_all!(Mul, mul, *);
 impl_elementwise_op_scalar_all!(Div, div, /);
 
 /// Generates element-wise bitwise operations for boolean matrices.
-macro_rules! impl_bitwise_op {
+macro_rules! impl_bitwise_op_all {
     ($OpTrait:ident, $method:ident, $op:tt) => {
-        impl<'a, 'b> std::ops::$OpTrait<&'b Matrix<bool>> for &'a Matrix<bool> {
+        // &Matrix<bool> OP &Matrix<bool>
+        impl<'a, 'b> $OpTrait<&'b Matrix<bool>> for &'a Matrix<bool> {
             type Output = Matrix<bool>;
-
             fn $method(self, rhs: &'b Matrix<bool>) -> Matrix<bool> {
-                // Ensure both matrices have identical dimensions
-                assert_eq!(self.rows, rhs.rows, "row count mismatch");
-                assert_eq!(self.cols, rhs.cols, "col count mismatch");
-                // Apply the bitwise operation element-wise
-                let data = self
-                    .data
-                    .iter()
-                    .cloned()
-                    .zip(rhs.data.iter().cloned())
-                    .map(|(a, b)| a $op b)
-                    .collect();
+                assert_eq!(self.rows, rhs.rows); assert_eq!(self.cols, rhs.cols);
+                let data = self.data.iter().cloned().zip(rhs.data.iter().cloned()).map(|(a, b)| a $op b).collect();
                 Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+        // Matrix<bool> OP &Matrix<bool>
+        impl<'b> $OpTrait<&'b Matrix<bool>> for Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(mut self, rhs: &'b Matrix<bool>) -> Matrix<bool> {
+                assert_eq!(self.rows, rhs.rows); assert_eq!(self.cols, rhs.cols);
+                for (a, b) in self.data.iter_mut().zip(rhs.data.iter()) { *a = *a $op *b; } // bool is Copy
+                self
+            }
+        }
+        // &Matrix<bool> OP Matrix<bool>
+         impl<'a> $OpTrait<Matrix<bool>> for &'a Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(self, mut rhs: Matrix<bool>) -> Matrix<bool> {
+                assert_eq!(self.rows, rhs.rows); assert_eq!(self.cols, rhs.cols);
+                 for (a, b) in self.data.iter().zip(rhs.data.iter_mut()) { *b = *a $op *b; } // bool is Copy
+                rhs
+            }
+        }
+        // Matrix<bool> OP Matrix<bool>
+        impl $OpTrait<Matrix<bool>> for Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(mut self, rhs: Matrix<bool>) -> Matrix<bool> {
+                assert_eq!(self.rows, rhs.rows); assert_eq!(self.cols, rhs.cols);
+                for (a, b) in self.data.iter_mut().zip(rhs.data.iter()) { *a = *a $op *b; } // bool is Copy
+                self
             }
         }
     };
 }
 
-// Instantiate bitwise AND, OR, and XOR for boolean matrices
-impl_bitwise_op!(BitAnd, bitand, &);
-impl_bitwise_op!(BitOr, bitor, |);
-impl_bitwise_op!(BitXor, bitxor, ^);
+// Instantiate ALL combinations for bitwise ops
+impl_bitwise_op_all!(BitAnd, bitand, &);
+impl_bitwise_op_all!(BitOr, bitor, |);
+impl_bitwise_op_all!(BitXor, bitxor, ^);
 
+// --- Logical Not ---
+
+// `!Matrix<bool>` (consumes matrix)
 impl Not for Matrix<bool> {
     type Output = Matrix<bool>;
+    fn not(mut self) -> Matrix<bool> {
+        // Take by value, make mutable
+        for val in self.data.iter_mut() {
+            *val = !*val; // Invert in place
+        }
+        self // Return the modified matrix
+    }
+}
 
+// `!&Matrix<bool>` (borrows matrix, returns new matrix)
+impl Not for &Matrix<bool> {
+    type Output = Matrix<bool>;
     fn not(self) -> Matrix<bool> {
-        // Invert each boolean element in the matrix
-        let data = self.data.iter().map(|&v| !v).collect();
+        // Take by reference
+        let data = self.data.iter().map(|&v| !v).collect(); // Create new data vec
         Matrix {
             rows: self.rows,
             cols: self.cols,
