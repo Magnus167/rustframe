@@ -364,6 +364,21 @@ impl Not for Matrix<bool> {
     }
 }
 
+// implement for &Matrix<bool>
+impl<'a> Not for &'a Matrix<bool> {
+    type Output = Matrix<bool>;
+
+    fn not(self) -> Matrix<bool> {
+        // Invert each boolean element in the matrix
+        let data = self.data.iter().map(|&v| !v).collect();
+        Matrix {
+            rows: self.rows,
+            cols: self.cols,
+            data,
+        }
+    }
+}
+
 pub type FloatMatrix = Matrix<f64>;
 pub type BoolMatrix = Matrix<bool>;
 pub type IntMatrix = Matrix<i32>;
