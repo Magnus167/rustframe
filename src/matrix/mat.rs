@@ -149,19 +149,24 @@ impl<T: Clone> Matrix<T> {
             self.cols
         );
         if c1 == c2 {
-            // Indices are equal; no operation required
             return;
         }
 
-        // Iterate over each row to swap corresponding elements
-        for r in 0..self.rows {
-            // Compute the one-dimensional index for (row r, column c1)
-            let idx1 = c1 * self.rows + r;
-            // Compute the one-dimensional index for (row r, column c2)
-            let idx2 = c2 * self.rows + r;
+        if self.rows == 0 {
+            self.data.swap(c1, c2);
+            return;
+        }
 
-            // Exchange the two elements in the internal data buffer
-            self.data.swap(idx1, idx2);
+        let (start1, end1) = (c1 * self.rows, (c1 + 1) * self.rows);
+        let (start2, end2) = (c2 * self.rows, (c2 + 1) * self.rows);
+
+        if (start1 < start2 && end1 > start2) || (start2 < start1 && end2 > start1) {
+            panic!("Cannot swap overlapping columns");
+        }
+
+        // element-wise swap
+        for r in 0..self.rows {
+            self.data.swap(start1 + r, start2 + r);
         }
     }
 
