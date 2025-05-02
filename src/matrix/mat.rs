@@ -357,9 +357,9 @@ impl<T: Clone> Broadcastable<T> for T {
 
 impl<T: Clone> Broadcastable<T> for Matrix<T> {
     fn to_vec(&self, rows: usize, cols: usize) -> Vec<T> {
-        assert_eq!(self.rows, rows, "row count mismatch");
-        assert_eq!(self.cols, cols, "col count mismatch");
-        self.data.clone()
+        assert_eq!(self.rows, rows, "row count mismatch in broadcast");
+        assert_eq!(self.cols, cols, "col count mismatch in broadcast");
+        self.data.clone() // Clone the data for the broadcasted vec
     }
 }
 
