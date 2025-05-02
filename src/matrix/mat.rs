@@ -148,12 +148,7 @@ impl<T: Clone> Matrix<T> {
             c2,
             self.cols
         );
-        if c1 == c2 {
-            return;
-        }
-
-        if self.rows == 0 {
-            self.data.swap(c1, c2);
+        if c1 == c2 || self.rows == 0 || self.cols == 0 {
             return;
         }
 
