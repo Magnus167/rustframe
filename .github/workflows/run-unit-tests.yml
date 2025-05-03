@@ -39,14 +39,15 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Run unit tests and generate coverage
-        run: |
-          echo "Running doctests"
-          cargo test --doc --all-features --workspace --release
-          echo "Running tests with code coverage"
-          cargo llvm-cov --all-features --release --workspace --lcov --output-path lcov.info
-          echo "Generating documentation (no-deps)"
-          cargo doc --no-deps --release
+      - name: Run doctests
+        run: cargo test --doc --all-features --workspace --release
+
+      - name: Run unit tests with code coverage
+        run: cargo llvm-cov --all-features --release --workspace --lcov --output-path lcov.info
+
+      - name: Test docs generation
+        run: cargo doc --no-deps --release
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
