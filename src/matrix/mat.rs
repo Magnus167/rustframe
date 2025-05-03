@@ -1,4 +1,6 @@
-use std::ops::{Index, IndexMut, Not};
+//! A simple column-major Matrix implementation with element-wise operations.
+
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Index, IndexMut, Mul, Not, Sub};
 
 /// A column‑major 2D matrix of `T`
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,9 +15,15 @@ impl<T: Clone> Matrix<T> {
     pub fn from_cols(cols_data: Vec<Vec<T>>) -> Self {
         let cols = cols_data.len();
         assert!(cols > 0, "need at least one column");
-        let rows = cols_data[0].len();
-        assert!(rows > 0, "need at least one row");
-        for (i, col) in cols_data.iter().enumerate().skip(1) {
+        // Handle empty cols_data
+        let rows = cols_data.get(0).map_or(0, |c| c.len());
+        // Allow 0-row matrices if columns are empty, but not 0-col matrices if rows > 0
+        assert!(
+            rows > 0 || cols == 0,
+            "need at least one row if columns exist"
+        );
+
+        for (i, col) in cols_data.iter().enumerate() {
             assert!(
                 col.len() == rows,
                 "col {} has len {}, expected {}",
@@ -24,17 +32,34 @@ impl<T: Clone> Matrix<T> {
                 rows
             );
         }
-        let mut data = Vec::with_capacity(rows * cols);
-        for col in cols_data {
-            data.extend(col);
-        }
+        // Flatten column data directly
+        let data = cols_data.into_iter().flatten().collect();
         Matrix { rows, cols, data }
     }
 
+    /// Build from a flat Vec, assuming column-major order.
     pub fn from_vec(data: Vec<T>, rows: usize, cols: usize) -> Self {
-        assert!(rows > 0, "need at least one row");
-        assert!(cols > 0, "need at least one column");
-        assert_eq!(data.len(), rows * cols, "data length mismatch");
+        assert!(
+            rows > 0 || cols == 0,
+            "need at least one row if columns exist"
+        );
+        assert!(
+            cols > 0 || rows == 0,
+            "need at least one column if rows exist"
+        );
+        if rows * cols != 0 {
+            // Only assert length if matrix is non-empty
+            assert_eq!(
+                data.len(),
+                rows * cols,
+                "data length mismatch: expected {}, got {}",
+                rows * cols,
+                data.len()
+            );
+        } else {
+            assert!(data.is_empty(), "data must be empty for 0-sized matrix");
+        }
+
         Matrix { rows, cols, data }
     }
 
@@ -46,7 +71,13 @@ impl<T: Clone> Matrix<T> {
         &mut self.data
     }
 
-    pub fn as_vec(&self) -> Vec<T> {
+    /// Consumes the Matrix and returns its underlying data Vec.
+    pub fn into_vec(self) -> Vec<T> {
+        self.data
+    }
+
+    /// Creates a new Vec<T> containing the matrix data (cloned).
+    pub fn to_vec(&self) -> Vec<T> {
         self.data.clone()
     }
 
@@ -58,20 +89,36 @@ impl<T: Clone> Matrix<T> {
         self.cols
     }
 
+    /// Get element reference (immutable). Panics on out-of-bounds.
     pub fn get(&self, r: usize, c: usize) -> &T {
         &self[(r, c)]
     }
+
+    /// Get element reference (mutable). Panics on out-of-bounds.
     pub fn get_mut(&mut self, r: usize, c: usize) -> &mut T {
         &mut self[(r, c)]
     }
 
     #[inline]
     pub fn column(&self, c: usize) -> &[T] {
+        assert!(
+            c < self.cols,
+            "column index {} out of bounds for {} columns",
+            c,
+            self.cols
+        );
         let start = c * self.rows;
         &self.data[start..start + self.rows]
     }
+
     #[inline]
     pub fn column_mut(&mut self, c: usize) -> &mut [T] {
+        assert!(
+            c < self.cols,
+            "column index {} out of bounds for {} columns",
+            c,
+            self.cols
+        );
         let start = c * self.rows;
         &mut self.data[start..start + self.rows]
     }
@@ -87,69 +134,147 @@ impl<T: Clone> Matrix<T> {
         })
     }
 
-    /// Swaps two columns in the matrix.
+    /// Swaps two columns in the matrix. Panics on out-of-bounds.
     pub fn swap_columns(&mut self, c1: usize, c2: usize) {
         assert!(
-            c1 < self.cols && c2 < self.cols,
-            "column index out of bounds"
+            c1 < self.cols,
+            "column index c1={} out of bounds for {} columns",
+            c1,
+            self.cols
         );
-        if c1 == c2 {
-            // Indices are equal; no operation required
+        assert!(
+            c2 < self.cols,
+            "column index c2={} out of bounds for {} columns",
+            c2,
+            self.cols
+        );
+        if c1 == c2 || self.rows == 0 || self.cols == 0 {
             return;
         }
 
-        // Iterate over each row to swap corresponding elements
-        for r in 0..self.rows {
-            // Compute the one-dimensional index for (row r, column c1)
-            let idx1 = c1 * self.rows + r;
-            // Compute the one-dimensional index for (row r, column c2)
-            let idx2 = c2 * self.rows + r;
+        let (start1, end1) = (c1 * self.rows, (c1 + 1) * self.rows);
+        let (start2, end2) = (c2 * self.rows, (c2 + 1) * self.rows);
 
-            // Exchange the two elements in the internal data buffer
-            self.data.swap(idx1, idx2);
+        if (start1 < start2 && end1 > start2) || (start2 < start1 && end2 > start1) {
+            panic!("Cannot swap overlapping columns");
+        }
+
+        // element-wise swap
+        for r in 0..self.rows {
+            self.data.swap(start1 + r, start2 + r);
         }
     }
 
-    /// Deletes a column from the matrix.
+    /// Deletes a column from the matrix. Panics on out-of-bounds.
+    /// This is O(N) where N is the number of elements.
     pub fn delete_column(&mut self, col: usize) {
-        assert!(col < self.cols, "column index out of bounds");
-        for r in (0..self.rows).rev() {
-            self.data.remove(col * self.rows + r);
-        }
+        assert!(col < self.cols, "column index {} out of bounds for {} columns", col, self.cols);
+        let start = col * self.rows;
+        self.data.drain(start..start + self.rows); // Efficient removal
         self.cols -= 1;
     }
 
-    /// Deletes a row from the matrix.
+    /// Deletes a row from the matrix. Panics on out-of-bounds.
+    /// This is O(N) where N is the number of elements, as it rebuilds the data vec.
     pub fn delete_row(&mut self, row: usize) {
-        assert!(row < self.rows, "row index out of bounds");
-        for c in (0..self.cols).rev() {
-            self.data.remove(c * self.rows + row);
+        assert!(
+            row < self.rows,
+            "row index {} out of bounds for {} rows",
+            row,
+            self.rows
+        );
+        if self.rows == 0 {
+            return;
+        } // Nothing to delete
+
+        let old_rows = self.rows;
+        let new_rows = self.rows - 1;
+        let mut new_data = Vec::with_capacity(new_rows * self.cols);
+
+        for c in 0..self.cols {
+            let col_start_old = c * old_rows;
+            for r in 0..old_rows {
+                if r != row {
+                    // Must clone as we are reading from the old data while building the new one
+                    new_data.push(self.data[col_start_old + r].clone());
+                }
+            }
         }
-        self.rows -= 1;
+        self.data = new_data;
+        self.rows = new_rows;
     }
 }
 
 impl<T: Clone> Matrix<T> {
-    /// Adds a column to the matrix at the specified index.
+    /// Adds a column to the matrix at the specified index. Panics if index > cols or length mismatch.
+    /// This is O(N) where N is the number of elements.
     pub fn add_column(&mut self, index: usize, column: Vec<T>) {
-        assert!(index <= self.cols, "column index out of bounds");
-        assert_eq!(column.len(), self.rows, "column length mismatch");
-
-        for (r, value) in column.into_iter().enumerate() {
-            self.data.insert(index * self.rows + r, value);
+        assert!(
+            index <= self.cols,
+            "add_column index {} out of bounds for {} columns",
+            index,
+            self.cols
+        );
+        assert_eq!(
+            column.len(),
+            self.rows,
+            "column length mismatch: expected {}, got {}",
+            self.rows,
+            column.len()
+        );
+        if self.rows == 0 && self.cols == 0 {
+            // Special case: adding first column to empty matrix
+            assert!(index == 0, "index must be 0 for adding first column");
+            self.data = column;
+            self.cols = 1;
+            // self.rows should be correctly set by column.len() assertion
+        } else {
+            let insert_pos = index * self.rows;
+            self.data.splice(insert_pos..insert_pos, column); // Efficient insertion
+            self.cols += 1;
         }
-        self.cols += 1;
     }
 
-    /// Adds a row to the matrix at the specified index.
+    /// Adds a row to the matrix at the specified index. Panics if index > rows or length mismatch.
+    /// This is O(N) where N is the number of elements, as it rebuilds the data vec.
     pub fn add_row(&mut self, index: usize, row: Vec<T>) {
-        assert!(index <= self.rows, "row index out of bounds");
-        assert_eq!(row.len(), self.cols, "row length mismatch");
+        assert!(index <= self.rows, "add_row index {} out of bounds for {} rows", index, self.rows);
+        assert_eq!(row.len(), self.cols, "row length mismatch: expected {} (cols), got {}", self.cols, row.len());
 
-        for (c, value) in row.into_iter().enumerate() {
-            self.data.insert(c * (self.rows + 1) + index, value);
+        if self.cols == 0 && self.rows == 0 {
+            // Special case: adding first row to empty matrix
+            assert!(index == 0, "index must be 0 for adding first row");
+            // Cannot add a row if there are no columns yet. Maybe panic or change API?
+            assert!(
+                self.cols > 0 || row.is_empty(),
+                "cannot add non-empty row to matrix with 0 columns"
+            );
+            if row.is_empty() {
+                return;
+            } // Adding empty row to empty matrix is no-op
         }
-        self.rows += 1;
+
+        let old_rows = self.rows;
+        let new_rows = self.rows + 1;
+        let mut new_data = Vec::with_capacity(new_rows * self.cols);
+        let mut row_iter = row.into_iter(); // Consume the input row vec
+
+        for c in 0..self.cols {
+            let old_col_start = c * old_rows;
+            for r in 0..new_rows {
+                if r == index {
+                    // Take the next element from the provided row vector
+                    new_data.push(row_iter.next().expect("Row iterator exhausted prematurely - should have been caught by length assert"));
+                } else {
+                    // Calculate the corresponding old row index
+                    let old_r = if r < index { r } else { r - 1 };
+                    // Must clone as we are reading from the old data while building the new one
+                    new_data.push(self.data[old_col_start + old_r].clone());
+                }
+            }
+        }
+        self.data = new_data;
+        self.rows = new_rows;
     }
 }
 
@@ -159,7 +284,14 @@ impl<T> Index<(usize, usize)> for Matrix<T> {
     #[inline]
     fn index(&self, (r, c): (usize, usize)) -> &T {
         // Validate that the requested indices are within bounds
-        assert!(r < self.rows && c < self.cols, "index out of bounds");
+        assert!(
+            r < self.rows && c < self.cols,
+            "index out of bounds: ({}, {}) vs {}x{}",
+            r,
+            c,
+            self.rows,
+            self.cols
+        );
         // Compute column-major offset and return reference
         &self.data[c * self.rows + r]
     }
@@ -169,11 +301,20 @@ impl<T> IndexMut<(usize, usize)> for Matrix<T> {
     #[inline]
     fn index_mut(&mut self, (r, c): (usize, usize)) -> &mut T {
         // Validate that the requested indices are within bounds
-        assert!(r < self.rows && c < self.cols, "index out of bounds");
+        assert!(
+            r < self.rows && c < self.cols,
+            "index out of bounds: ({}, {}) vs {}x{}",
+            r,
+            c,
+            self.rows,
+            self.cols
+        );
         // Compute column-major offset and return mutable reference
         &mut self.data[c * self.rows + r]
     }
 }
+
+// --- Row Iterator Helper ---
 
 /// Represents an immutable view of a single row in the matrix.
 pub struct MatrixRow<'a, T> {
@@ -189,21 +330,25 @@ impl<'a, T> MatrixRow<'a, T> {
 
     /// Returns an iterator over all elements in this row.
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        (0..self.matrix.cols).map(move |c| &self.matrix[(self.row, c)])
+        (0..self.matrix.cols).map(move |c| self.get(c))
     }
 }
+
+// --- Reduction Axis Enum ---
 
 /// Specifies the axis along which to perform a reduction operation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Axis {
-    /// Apply reduction along columns (vertical axis).
+    /// Apply reduction along columns (vertical axis). Result has 1 row.
     Col,
-    /// Apply reduction along rows (horizontal axis).
+    /// Apply reduction along rows (horizontal axis). Result has 1 column.
     Row,
 }
 
+// --- Broadcasting ---
+
 /// A trait to turn either a `Matrix<T>` or a scalar T into a `Vec<T>` of
-/// length `rows*cols` (broadcasting the scalar).
+/// length `rows*cols` (broadcasting the scalar). Used for comparisons.
 pub trait Broadcastable<T> {
     fn to_vec(&self, rows: usize, cols: usize) -> Vec<T>;
 }
@@ -216,11 +361,13 @@ impl<T: Clone> Broadcastable<T> for T {
 
 impl<T: Clone> Broadcastable<T> for Matrix<T> {
     fn to_vec(&self, rows: usize, cols: usize) -> Vec<T> {
-        assert_eq!(self.rows, rows, "row count mismatch");
-        assert_eq!(self.cols, cols, "col count mismatch");
-        self.data.clone()
+        assert_eq!(self.rows, rows, "row count mismatch in broadcast");
+        assert_eq!(self.cols, cols, "col count mismatch in broadcast");
+        self.data.clone() // Clone the data for the broadcasted vec
     }
 }
+
+// --- Element-wise Comparisons ---
 
 /// Generates element-wise eq, lt, le, gt and ge methods
 /// where the rhs can be a `Matrix<T>` or a scalar T.
@@ -231,24 +378,25 @@ macro_rules! impl_elementwise_cmp {
         impl<T: PartialOrd + Clone> Matrix<T> {
             $(
             #[doc = concat!("Element-wise comparison `self ", stringify!($op), " rhs`,\n\
-                             where `rhs` may be a `Matrix<T>` or a scalar T.")]
+                             where `rhs` may be a `Matrix<T>` or a scalar T.\n\
+                             Returns a `BoolMatrix`.")]
             pub fn $method<Rhs>(&self, rhs: Rhs) -> BoolMatrix
             where
                 Rhs: Broadcastable<T>,
             {
-                // Prepare broadcasted rhs-data
+                // Prepare broadcasted rhs-data using the trait
                 let rhs_data = rhs.to_vec(self.rows, self.cols);
 
-                // Pairwise compare
+                // Pairwise compare using iterators
                 let data = self
                     .data
-                    .iter()
-                    .cloned()
-                    .zip(rhs_data.into_iter())
-                    .map(|(a, b)| a $op b)
+                    .iter() // Borrow self's data
+                    .zip(rhs_data.iter()) // Borrow rhs's broadcasted data
+                    .map(|(a, b)| a $op b) // Perform comparison op
                     .collect();
 
-                BoolMatrix::from_vec(data, self.rows, self.cols)
+                // Create BoolMatrix from result
+                Matrix::<bool>::from_vec(data, self.rows, self.cols)
             }
             )*
         }
@@ -257,105 +405,211 @@ macro_rules! impl_elementwise_cmp {
 
 // Instantiate element-wise comparison implementations for matrices.
 impl_elementwise_cmp! {
-    eq_elementwise => ==,
-    lt_elementwise => <,
-    le_elementwise => <=,
-    gt_elementwise => >,
-    ge_elementwise => >=,
+    eq_elem => ==,
+    ne_elem => !=,
+    lt_elem => <,
+    le_elem => <=,
+    gt_elem => >,
+    ge_elem => >=,
 }
 
-/// Generates element-wise arithmetic implementations for matrices.
-macro_rules! impl_elementwise_op {
-    ($OpTrait:ident, $method:ident, $op:tt) => {
-        impl<'a, 'b, T> std::ops::$OpTrait<&'b Matrix<T>> for &'a Matrix<T>
-        where
-            T: Clone + std::ops::$OpTrait<Output = T>,
-        {
-            type Output = Matrix<T>;
+// --- Element-wise Arithmetic Operations (Macros generating all ownership variants) ---
 
+fn check_matrix_dims_for_ops<T>(lhs: &Matrix<T>, rhs: &Matrix<T>) {
+    assert!(
+        lhs.rows == rhs.rows,
+        "Row count mismatch: left has {} rows, right has {} rows",
+        lhs.rows,
+        rhs.rows
+    );
+    assert!(
+        lhs.cols == rhs.cols,
+        "Column count mismatch: left has {} columns, right has {} columns",
+        lhs.cols,
+        rhs.cols
+    );
+}
+
+/// Generates element-wise arithmetic implementations for Matrix + Matrix
+macro_rules! impl_elementwise_op_matrix_all {
+    ($OpTrait:ident, $method:ident, $op:tt) => {
+        // &Matrix + &Matrix
+        impl<'a, 'b, T> $OpTrait<&'b Matrix<T>> for &'a Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
+            type Output = Matrix<T>;
             fn $method(self, rhs: &'b Matrix<T>) -> Matrix<T> {
-                // Ensure both matrices have identical dimensions
-                assert_eq!(self.rows, rhs.rows, "row count mismatch");
-                assert_eq!(self.cols, rhs.cols, "col count mismatch");
-                // Apply the operation element-wise and collect into a new matrix
-                let data = self
-                    .data
-                    .iter()
-                    .cloned()
-                    .zip(rhs.data.iter().cloned())
-                    .map(|(a, b)| a $op b)
-                    .collect();
+                check_matrix_dims_for_ops(self, rhs);
+                let data = self.data.iter().cloned().zip(rhs.data.iter().cloned()).map(|(a, b)| a $op b).collect();
                 Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+        // Matrix + &Matrix (Consumes self)
+        impl<'b, T> $OpTrait<&'b Matrix<T>> for Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
+            type Output = Matrix<T>;
+            fn $method(mut self, rhs: &'b Matrix<T>) -> Matrix<T> { // Make self mutable for potential in-place modification
+                check_matrix_dims_for_ops(&self, rhs);
+                // Modify data in place
+                for (a, b) in self.data.iter_mut().zip(rhs.data.iter().cloned()) {
+                    *a = a.clone() $op b; // Requires T: Clone for the *a = part
+                }
+                // Return modified self (its data vec was consumed conceptually)
+                self
+                // Alternative: Collect into new Vec if T is not Clone or in-place is complex
+                // let data = self.data.into_iter().zip(rhs.data.iter().cloned()).map(|(a, b)| a $op b).collect();
+                // Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+         // &Matrix + Matrix (Consumes rhs)
+        impl<'a, T> $OpTrait<Matrix<T>> for &'a Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
+            type Output = Matrix<T>;
+            fn $method(self, mut rhs: Matrix<T>) -> Matrix<T> { // Make rhs mutable
+                check_matrix_dims_for_ops(self, &rhs);
+                 // Modify rhs data in place
+                 for (a, b) in self.data.iter().cloned().zip(rhs.data.iter_mut()) {
+                    *b = a $op b.clone(); // Requires T: Clone for the *b = part
+                }
+                // Return modified rhs
+                rhs
+                // Alternative: Collect into new Vec
+                // let data = self.data.iter().cloned().zip(rhs.data.into_iter()).map(|(a, b)| a $op b).collect();
+                // Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+        // Matrix + Matrix (Consumes both)
+        impl<T> $OpTrait<Matrix<T>> for Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
+            type Output = Matrix<T>;
+            fn $method(mut self, rhs: Matrix<T>) -> Matrix<T> { // Make self mutable
+                check_matrix_dims_for_ops(&self, &rhs);
+                // Modify self data in place
+                 for (a, b) in self.data.iter_mut().zip(rhs.data.into_iter()) {
+                    *a = a.clone() $op b; // Requires T: Clone
+                }
+                // Return modified self
+                self
+                // Alternative: Collect into new Vec
+                // let data = self.data.into_iter().zip(rhs.data.into_iter()).map(|(a, b)| a $op b).collect();
+                // Matrix { rows: self.rows, cols: self.cols, data }
             }
         }
     };
 }
 
-// Instantiate element-wise addition, subtraction, multiplication, and division
-impl_elementwise_op!(Add, add, +);
-impl_elementwise_op!(Sub, sub, -);
-impl_elementwise_op!(Mul, mul, *);
-impl_elementwise_op!(Div, div, /);
-
-/// Generates element-wise arithmetic implementations for matrices with scalars.
-macro_rules! impl_elementwise_op_scalar {
+/// Generates element-wise arithmetic implementations for Matrix + Scalar
+macro_rules! impl_elementwise_op_scalar_all {
     ($OpTrait:ident, $method:ident, $op:tt) => {
-        impl<'a, T> std::ops::$OpTrait<T> for &'a Matrix<T>
-        where
-            T: Clone + std::ops::$OpTrait<Output = T>,
-        {
+        // &Matrix + Scalar
+        impl<'a, T> $OpTrait<T> for &'a Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
             type Output = Matrix<T>;
-
             fn $method(self, rhs: T) -> Matrix<T> {
-                // Apply the operation element-wise and collect into a new matrix
                 let data = self.data.iter().cloned().map(|a| a $op rhs.clone()).collect();
                 Matrix { rows: self.rows, cols: self.cols, data }
             }
         }
+        // Matrix + Scalar (Consumes self)
+        impl<T> $OpTrait<T> for Matrix<T>
+        where T: Clone + $OpTrait<Output = T> {
+            type Output = Matrix<T>;
+            fn $method(mut self, rhs: T) -> Matrix<T> { // Make self mutable
+                 // Modify self data in place
+                for a in self.data.iter_mut() {
+                     *a = a.clone() $op rhs.clone(); // Requires T: Clone
+                }
+                // Return modified self
+                self
+                // Alternative: Collect into new Vec
+                // let data = self.data.into_iter().map(|a| a $op rhs.clone()).collect();
+                // Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+        // NOTE: Scalar + Matrix (e.g., 1.0 + matrix) is NOT implemented here.
+        // It would require `impl Add<Matrix<T>> for T`, which is discouraged
+        // for primitive types unless inside the crate defining T.
     };
 }
 
-// Instantiate element-wise addition, subtraction, multiplication, and division
-impl_elementwise_op_scalar!(Add, add, +);
-impl_elementwise_op_scalar!(Sub, sub, -);
-impl_elementwise_op_scalar!(Mul, mul, *);
-impl_elementwise_op_scalar!(Div, div, /);
+// Instantiate ALL combinations for arithmetic ops using the new macros
+impl_elementwise_op_matrix_all!(Add, add, +);
+impl_elementwise_op_matrix_all!(Sub, sub, -);
+impl_elementwise_op_matrix_all!(Mul, mul, *); // Element-wise multiplication
+impl_elementwise_op_matrix_all!(Div, div, /); // Element-wise division
 
-/// Generates element-wise bitwise operations for boolean matrices.
-macro_rules! impl_bitwise_op {
+impl_elementwise_op_scalar_all!(Add, add, +);
+impl_elementwise_op_scalar_all!(Sub, sub, -);
+impl_elementwise_op_scalar_all!(Mul, mul, *);
+impl_elementwise_op_scalar_all!(Div, div, /);
+
+// --- Element-wise Bitwise Operations (BoolMatrix) ---
+
+macro_rules! impl_bitwise_op_all {
     ($OpTrait:ident, $method:ident, $op:tt) => {
-        impl<'a, 'b> std::ops::$OpTrait<&'b Matrix<bool>> for &'a Matrix<bool> {
+        // &Matrix<bool> OP &Matrix<bool>
+        impl<'a, 'b> $OpTrait<&'b Matrix<bool>> for &'a Matrix<bool> {
             type Output = Matrix<bool>;
-
             fn $method(self, rhs: &'b Matrix<bool>) -> Matrix<bool> {
-                // Ensure both matrices have identical dimensions
-                assert_eq!(self.rows, rhs.rows, "row count mismatch");
-                assert_eq!(self.cols, rhs.cols, "col count mismatch");
-                // Apply the bitwise operation element-wise
-                let data = self
-                    .data
-                    .iter()
-                    .cloned()
-                    .zip(rhs.data.iter().cloned())
-                    .map(|(a, b)| a $op b)
-                    .collect();
+                check_matrix_dims_for_ops(self, rhs);
+                let data = self.data.iter().cloned().zip(rhs.data.iter().cloned()).map(|(a, b)| a $op b).collect();
                 Matrix { rows: self.rows, cols: self.cols, data }
+            }
+        }
+        // Matrix<bool> OP &Matrix<bool>
+        impl<'b> $OpTrait<&'b Matrix<bool>> for Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(mut self, rhs: &'b Matrix<bool>) -> Matrix<bool> {
+                check_matrix_dims_for_ops(&self, rhs);
+                for (a, b) in self.data.iter_mut().zip(rhs.data.iter()) { *a = *a $op *b; } // bool is Copy
+                self
+            }
+        }
+        // &Matrix<bool> OP Matrix<bool>
+        impl<'a> $OpTrait<Matrix<bool>> for &'a Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(self, mut rhs: Matrix<bool>) -> Matrix<bool> {
+                check_matrix_dims_for_ops(self, &rhs);
+                for (a, b) in self.data.iter().zip(rhs.data.iter_mut()) { *b = *a $op *b; } // bool is Copy
+                rhs
+            }
+        }
+        // Matrix<bool> OP Matrix<bool>
+        impl $OpTrait<Matrix<bool>> for Matrix<bool> {
+            type Output = Matrix<bool>;
+            fn $method(mut self, rhs: Matrix<bool>) -> Matrix<bool> {
+                check_matrix_dims_for_ops(&self, &rhs);
+                for (a, b) in self.data.iter_mut().zip(rhs.data.iter()) { *a = *a $op *b; } // bool is Copy
+                self
             }
         }
     };
 }
 
-// Instantiate bitwise AND, OR, and XOR for boolean matrices
-impl_bitwise_op!(BitAnd, bitand, &);
-impl_bitwise_op!(BitOr, bitor, |);
-impl_bitwise_op!(BitXor, bitxor, ^);
+// Instantiate ALL combinations for bitwise ops
+impl_bitwise_op_all!(BitAnd, bitand, &);
+impl_bitwise_op_all!(BitOr, bitor, |);
+impl_bitwise_op_all!(BitXor, bitxor, ^);
 
+// --- Logical Not ---
+
+// `!Matrix<bool>` (consumes matrix)
 impl Not for Matrix<bool> {
     type Output = Matrix<bool>;
+    fn not(mut self) -> Matrix<bool> {
+        // Take by value, make mutable
+        for val in self.data.iter_mut() {
+            *val = !*val; // Invert in place
+        }
+        self // Return the modified matrix
+    }
+}
 
+// `!&Matrix<bool>` (borrows matrix, returns new matrix)
+impl Not for &Matrix<bool> {
+    type Output = Matrix<bool>;
     fn not(self) -> Matrix<bool> {
-        // Invert each boolean element in the matrix
-        let data = self.data.iter().map(|&v| !v).collect();
+        // Take by reference
+        let data = self.data.iter().map(|&v| !v).collect(); // Create new data vec
         Matrix {
             rows: self.rows,
             cols: self.cols,
@@ -364,19 +618,258 @@ impl Not for Matrix<bool> {
     }
 }
 
+// --- Type Aliases ---
 pub type FloatMatrix = Matrix<f64>;
 pub type BoolMatrix = Matrix<bool>;
 pub type IntMatrix = Matrix<i32>;
 pub type StringMatrix = Matrix<String>;
 
+
+// --- Unit Tests ---
+
 #[cfg(test)]
 mod tests {
     use crate::matrix::BoolOps;
 
-    use super::{BoolMatrix, FloatMatrix, Matrix, StringMatrix};
+    use super::*; // Import items from outer scope
+
+    // Helper to create a 2x2 f64 matrix easily
+    fn make_f64_matrix(a: f64, b: f64, c: f64, d: f64) -> FloatMatrix {
+        Matrix::from_cols(vec![vec![a, c], vec![b, d]])
+    }
+
+    // Helper to create a 2x2 bool matrix easily
+    fn make_bool_matrix(a: bool, b: bool, c: bool, d: bool) -> BoolMatrix {
+        Matrix::from_cols(vec![vec![a, c], vec![b, d]])
+    }
+
+    // --- Arithmetic Tests ---
+
+    #[test]
+    fn test_add_f64() {
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let m2 = make_f64_matrix(5.0, 6.0, 7.0, 8.0);
+        let expected = make_f64_matrix(6.0, 8.0, 10.0, 12.0);
+
+        assert_eq!(m1.clone() + m2.clone(), expected, "M + M");
+        assert_eq!(m1.clone() + &m2, expected, "M + &M");
+        assert_eq!(&m1 + m2.clone(), expected, "&M + M");
+        assert_eq!(&m1 + &m2, expected, "&M + &M");
+    }
+
+    #[test]
+    fn test_add_scalar_f64() {
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let scalar = 10.0;
+        let expected = make_f64_matrix(11.0, 12.0, 13.0, 14.0);
+
+        assert_eq!(m1.clone() + scalar, expected, "M + S");
+        assert_eq!(&m1 + scalar, expected, "&M + S");
+    }
+
+    #[test]
+    fn test_sub_f64() {
+        let m1 = make_f64_matrix(10.0, 20.0, 30.0, 40.0);
+        let m2 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let expected = make_f64_matrix(9.0, 18.0, 27.0, 36.0);
+
+        assert_eq!(m1.clone() - m2.clone(), expected, "M - M");
+        assert_eq!(m1.clone() - &m2, expected, "M - &M");
+        assert_eq!(&m1 - m2.clone(), expected, "&M - M");
+        assert_eq!(&m1 - &m2, expected, "&M - &M");
+    }
+
+    #[test]
+    fn test_sub_scalar_f64() {
+        let m1 = make_f64_matrix(11.0, 12.0, 13.0, 14.0);
+        let scalar = 10.0;
+        let expected = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+
+        assert_eq!(m1.clone() - scalar, expected, "M - S");
+        assert_eq!(&m1 - scalar, expected, "&M - S");
+    }
+
+    #[test]
+    fn test_mul_f64() {
+        // Element-wise
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let m2 = make_f64_matrix(5.0, 6.0, 7.0, 8.0);
+        let expected = make_f64_matrix(5.0, 12.0, 21.0, 32.0);
+
+        assert_eq!(m1.clone() * m2.clone(), expected, "M * M");
+        assert_eq!(m1.clone() * &m2, expected, "M * &M");
+        assert_eq!(&m1 * m2.clone(), expected, "&M * M");
+        assert_eq!(&m1 * &m2, expected, "&M * &M");
+    }
+
+    #[test]
+    fn test_mul_scalar_f64() {
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let scalar = 3.0;
+        let expected = make_f64_matrix(3.0, 6.0, 9.0, 12.0);
+
+        assert_eq!(m1.clone() * scalar, expected, "M * S");
+        assert_eq!(&m1 * scalar, expected, "&M * S");
+    }
+
+    #[test]
+    fn test_div_f64() {
+        // Element-wise
+        let m1 = make_f64_matrix(10.0, 20.0, 30.0, 40.0);
+        let m2 = make_f64_matrix(2.0, 5.0, 6.0, 8.0);
+        let expected = make_f64_matrix(5.0, 4.0, 5.0, 5.0);
+
+        assert_eq!(m1.clone() / m2.clone(), expected, "M / M");
+        assert_eq!(m1.clone() / &m2, expected, "M / &M");
+        assert_eq!(&m1 / m2.clone(), expected, "&M / M");
+        assert_eq!(&m1 / &m2, expected, "&M / &M");
+    }
+
+    #[test]
+    fn test_div_scalar_f64() {
+        let m1 = make_f64_matrix(10.0, 20.0, 30.0, 40.0);
+        let scalar = 10.0;
+        let expected = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+
+        assert_eq!(m1.clone() / scalar, expected, "M / S");
+        assert_eq!(&m1 / scalar, expected, "&M / S");
+    }
+
+    #[test]
+    fn test_chained_ops_f64() {
+        let m = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let result = (((m.clone() + 1.0) * 2.0) - 4.0) / 2.0;
+        // Expected:
+        // m+1 = [2, 3], [4, 5]
+        // *2  = [4, 6], [8, 10]
+        // -4  = [0, 2], [4, 6]
+        // /2  = [0, 1], [2, 3]
+        let expected = make_f64_matrix(0.0, 1.0, 2.0, 3.0);
+        assert_eq!(result, expected);
+    }
+
+    // --- Boolean Logic Tests ---
+
+    #[test]
+    fn test_bitand_bool() {
+        let m1 = make_bool_matrix(true, false, true, false);
+        let m2 = make_bool_matrix(true, true, false, false);
+        let expected = make_bool_matrix(true, false, false, false);
+
+        assert_eq!(m1.clone() & m2.clone(), expected, "M & M");
+        assert_eq!(m1.clone() & &m2, expected, "M & &M");
+        assert_eq!(&m1 & m2.clone(), expected, "&M & M");
+        assert_eq!(&m1 & &m2, expected, "&M & &M");
+    }
+
+    #[test]
+    fn test_bitor_bool() {
+        let m1 = make_bool_matrix(true, false, true, false);
+        let m2 = make_bool_matrix(true, true, false, false);
+        let expected = make_bool_matrix(true, true, true, false);
+
+        assert_eq!(m1.clone() | m2.clone(), expected, "M | M");
+        assert_eq!(m1.clone() | &m2, expected, "M | &M");
+        assert_eq!(&m1 | m2.clone(), expected, "&M | M");
+        assert_eq!(&m1 | &m2, expected, "&M | &M");
+    }
+
+    #[test]
+    fn test_bitxor_bool() {
+        let m1 = make_bool_matrix(true, false, true, false);
+        let m2 = make_bool_matrix(true, true, false, false);
+        let expected = make_bool_matrix(false, true, true, false);
+
+        assert_eq!(m1.clone() ^ m2.clone(), expected, "M ^ M");
+        assert_eq!(m1.clone() ^ &m2, expected, "M ^ &M");
+        assert_eq!(&m1 ^ m2.clone(), expected, "&M ^ M");
+        assert_eq!(&m1 ^ &m2, expected, "&M ^ &M");
+    }
+
+    #[test]
+    fn test_not_bool() {
+        let m = make_bool_matrix(true, false, true, false);
+        let expected = make_bool_matrix(false, true, false, true);
+
+        assert_eq!(!m.clone(), expected, "!M (consuming)");
+        assert_eq!(!&m, expected, "!&M (borrowing)");
+
+        // Check original is unchanged when using !&M
+        let original = make_bool_matrix(true, false, true, false);
+        let _negated_ref = !&original;
+        assert_eq!(original, make_bool_matrix(true, false, true, false));
+    }
+
+    // --- Comparison Tests ---
+    #[test]
+    fn test_comparison_eq_elem() {
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let m2 = make_f64_matrix(1.0, 0.0, 3.0, 5.0);
+        let s = 3.0;
+        let expected_m = make_bool_matrix(true, false, true, false);
+        let expected_s = make_bool_matrix(false, false, true, false);
+
+        assert_eq!(m1.eq_elem(m2), expected_m, "eq_elem matrix");
+        assert_eq!(m1.eq_elem(s), expected_s, "eq_elem scalar");
+    }
+
+    #[test]
+    fn test_comparison_gt_elem() {
+        let m1 = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let m2 = make_f64_matrix(0.0, 3.0, 3.0, 5.0);
+        let s = 2.5;
+        let expected_m = make_bool_matrix(true, false, false, false);
+        let expected_s = make_bool_matrix(false, false, true, true);
+
+        assert_eq!(m1.gt_elem(m2), expected_m, "gt_elem matrix");
+        assert_eq!(m1.gt_elem(s), expected_s, "gt_elem scalar");
+    }
+
+    // Add more comparison tests (lt, le, ge, ne) if desired...
+
+    // --- Basic Method Tests ---
+    #[test]
+    fn test_indexing() {
+        let m = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(m[(0, 0)], 1.0);
+        assert_eq!(m[(0, 1)], 2.0);
+        assert_eq!(m[(1, 0)], 3.0);
+        assert_eq!(m[(1, 1)], 4.0);
+        assert_eq!(*m.get(1, 0), 3.0); // Test get() too
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_out_of_bounds_row() {
+        let m = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let _ = m[(2, 0)]; // Row 2 is out of bounds
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_out_of_bounds_col() {
+        let m = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        let _ = m[(0, 2)]; // Col 2 is out of bounds
+    }
+
+    #[test]
+    fn test_dimensions() {
+        let m = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(m.rows(), 2);
+        assert_eq!(m.cols(), 2);
+    }
+
+    #[test]
+    fn test_from_vec() {
+        let data = vec![1.0, 3.0, 2.0, 4.0]; // Column major: [col0_row0, col0_row1, col1_row0, col1_row1]
+        let m = Matrix::from_vec(data, 2, 2);
+        let expected = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(m, expected);
+        assert_eq!(m.to_vec(), vec![1.0, 3.0, 2.0, 4.0]);
+    }
 
     // Helper function to create a basic Matrix for testing
-    fn create_test_matrix() -> Matrix<i32> {
+    fn static_test_matrix() -> Matrix<i32> {
         // Column-major data:
         // 1 4 7
         // 2 5 8
@@ -386,7 +879,7 @@ mod tests {
     }
 
     // Another helper for a different size
-    fn create_test_matrix_2x4() -> Matrix<i32> {
+    fn static_test_matrix_2x4() -> Matrix<i32> {
         // Column-major data:
         // 1 3 5 7
         // 2 4 6 8
@@ -485,7 +978,7 @@ mod tests {
 
     #[test]
     fn test_getters() {
-        let matrix = create_test_matrix();
+        let matrix = static_test_matrix();
         assert_eq!(matrix.rows(), 3);
         assert_eq!(matrix.cols(), 3);
         assert_eq!(matrix.data(), &[1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -493,7 +986,7 @@ mod tests {
 
     #[test]
     fn test_index_and_get() {
-        let matrix = create_test_matrix();
+        let matrix = static_test_matrix();
         assert_eq!(matrix[(0, 0)], 1);
         assert_eq!(matrix[(1, 1)], 5);
         assert_eq!(matrix[(2, 2)], 9);
@@ -505,21 +998,21 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "index out of bounds")]
-    fn test_index_out_of_bounds_row() {
-        let matrix = create_test_matrix(); // 3x3
+    fn test_index_out_of_bounds_row_alt() {
+        let matrix = static_test_matrix(); // 3x3
         let _ = matrix[(3, 0)];
     }
 
     #[test]
     #[should_panic(expected = "index out of bounds")]
-    fn test_index_out_of_bounds_col() {
-        let matrix = create_test_matrix(); // 3x3
+    fn test_index_out_of_bounds_col_alt() {
+        let matrix = static_test_matrix(); // 3x3
         let _ = matrix[(0, 3)];
     }
 
     #[test]
     fn test_index_mut_and_get_mut() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
 
         matrix[(0, 0)] = 10;
         matrix[(1, 1)] = 20;
@@ -546,20 +1039,20 @@ mod tests {
     #[test]
     #[should_panic(expected = "index out of bounds")]
     fn test_index_mut_out_of_bounds_row() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         matrix[(3, 0)] = 99;
     }
 
     #[test]
     #[should_panic(expected = "index out of bounds")]
     fn test_index_mut_out_of_bounds_col() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         matrix[(0, 3)] = 99;
     }
 
     #[test]
     fn test_column() {
-        let matrix = create_test_matrix_2x4(); // 2x4
+        let matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -570,15 +1063,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "range end index")]
+    #[should_panic(expected = "column index 4 out of bounds for 4 columns")]
     fn test_column_out_of_bounds() {
-        let matrix = create_test_matrix_2x4(); // 2x4
+        let matrix = static_test_matrix_2x4(); // 2x4
         matrix.column(4);
     }
 
     #[test]
     fn test_column_mut() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -603,15 +1096,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "range end index")]
+    #[should_panic(expected = "column index 4 out of bounds for 4 columns")]
     fn test_column_mut_out_of_bounds() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         matrix.column_mut(4);
     }
 
     #[test]
     fn test_iter_columns() {
-        let matrix = create_test_matrix_2x4(); // 2x4
+        let matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -625,7 +1118,7 @@ mod tests {
 
     #[test]
     fn test_iter_rows() {
-        let matrix = create_test_matrix_2x4(); // 2x4
+        let matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -641,7 +1134,7 @@ mod tests {
     // test data_mut
     #[test]
     fn test_data_mut() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         // 1 4 7
         // 2 5 8
         // 3 6 9
@@ -656,7 +1149,7 @@ mod tests {
 
     #[test]
     fn test_matrix_row_get_and_iter() {
-        let matrix = create_test_matrix_2x4(); // 2x4
+        let matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -676,7 +1169,7 @@ mod tests {
 
     #[test]
     fn test_swap_columns() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         // 1 4 7
         // 2 5 8
         // 3 6 9
@@ -710,15 +1203,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "column index out of bounds")]
+    #[should_panic(expected = "column index c2=3 out of bounds for 3 columns")]
     fn test_swap_columns_out_of_bounds() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         matrix.swap_columns(0, 3);
     }
 
     #[test]
     fn test_delete_column() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -767,15 +1260,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "column index out of bounds")]
+    #[should_panic(expected = "column index 4 out of bounds for 4 columns")]
     fn test_delete_column_out_of_bounds() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         matrix.delete_column(4);
     }
 
     #[test]
     fn test_delete_row() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         // 1 4 7
         // 2 5 8
         // 3 6 9
@@ -817,15 +1310,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "row index out of bounds")]
+    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
     fn test_delete_row_out_of_bounds() {
-        let mut matrix = create_test_matrix(); // 3x3
+        let mut matrix = static_test_matrix(); // 3x3
         matrix.delete_row(3);
     }
 
     #[test]
     fn test_add_column() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -883,9 +1376,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "column index out of bounds")]
+    #[should_panic(expected = "add_column index 5 out of bounds for 4 columns")]
     fn test_add_column_out_of_bounds() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         let new_col = vec![9, 10];
         matrix.add_column(5, new_col); // Index 5 is out of bounds for 4 columns
     }
@@ -893,14 +1386,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "column length mismatch")]
     fn test_add_column_length_mismatch() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4 (2 rows)
+        let mut matrix = static_test_matrix_2x4(); // 2x4 (2 rows)
         let new_col = vec![9, 10, 11]; // Wrong length
         matrix.add_column(0, new_col);
     }
 
     #[test]
     fn test_add_row() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         // 1 3 5 7
         // 2 4 6 8
 
@@ -949,8 +1442,9 @@ mod tests {
         assert_eq!(matrix.rows(), 4);
         assert_eq!(matrix.cols(), 4);
         assert_eq!(matrix[(0, 0)], 13);
+        assert_eq!(matrix[(0, 1)], 14);
+        assert_eq!(matrix[(0, 2)], 15);
         assert_eq!(matrix[(0, 3)], 16);
-        // Check some existing elements to ensure they shifted correctly
         assert_eq!(matrix[(1, 0)], 1);
         assert_eq!(matrix[(2, 1)], 10);
         assert_eq!(matrix[(3, 3)], 8);
@@ -971,9 +1465,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "row index out of bounds")]
+    #[should_panic(expected = "add_row index 3 out of bounds for 2 rows")]
     fn test_add_row_out_of_bounds() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4
+        let mut matrix = static_test_matrix_2x4(); // 2x4
         let new_row = vec![9, 10, 11, 12];
         matrix.add_row(3, new_row); // Index 3 is out of bounds for 2 rows
     }
@@ -981,14 +1475,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "row length mismatch")]
     fn test_add_row_length_mismatch() {
-        let mut matrix = create_test_matrix_2x4(); // 2x4 (4 cols)
+        let mut matrix = static_test_matrix_2x4(); // 2x4 (4 cols)
         let new_row = vec![9, 10, 11]; // Wrong length
         matrix.add_row(0, new_row);
     }
 
     #[test]
     fn test_elementwise_add() {
-        let matrix1 = create_test_matrix(); // 3x3
+        let matrix1 = static_test_matrix(); // 3x3
         let matrix2 = Matrix::from_vec(vec![9, 8, 7, 6, 5, 4, 3, 2, 1], 3, 3); // 3x3
 
         let result = &matrix1 + &matrix2;
@@ -1009,7 +1503,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_sub() {
-        let matrix1 = create_test_matrix(); // 3x3
+        let matrix1 = static_test_matrix(); // 3x3
         let matrix2 = Matrix::from_vec(vec![1, 1, 1, 2, 2, 2, 3, 3, 3], 3, 3); // 3x3
 
         let result = &matrix1 - &matrix2;
@@ -1030,7 +1524,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_mul() {
-        let matrix1 = create_test_matrix(); // 3x3
+        let matrix1 = static_test_matrix(); // 3x3
         let matrix2 = Matrix::from_vec(vec![1, 2, 3, 1, 2, 3, 1, 2, 3], 3, 3); // 3x3
 
         let result = &matrix1 * &matrix2;
@@ -1051,7 +1545,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_div() {
-        let matrix1 = create_test_matrix(); // 3x3
+        let matrix1 = static_test_matrix(); // 3x3
         let matrix2 = Matrix::from_vec(vec![1, 1, 1, 2, 2, 2, 7, 8, 9], 3, 3); // 3x3
 
         let result = &matrix1 / &matrix2; // Integer division
@@ -1071,18 +1565,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "row count mismatch")]
+    #[should_panic(expected = "Row count mismatch: left has 3 rows, right has 2 rows")]
     fn test_elementwise_op_row_mismatch() {
-        let matrix1 = create_test_matrix(); // 3x3
-        let matrix2 = create_test_matrix_2x4(); // 2x4
+        let matrix1 = static_test_matrix(); // 3x3
+        let matrix2 = static_test_matrix_2x4(); // 2x4
         let _ = &matrix1 + &matrix2; // Should panic
     }
 
     #[test]
-    #[should_panic(expected = "row count mismatch")]
+    #[should_panic(expected = "Row count mismatch: left has 3 rows, right has 2 ro")]
     fn test_elementwise_op_col_mismatch() {
-        let matrix1 = create_test_matrix(); // 3x3
-        let matrix2 = create_test_matrix_2x4(); // 2x4
+        let matrix1 = static_test_matrix(); // 3x3
+        let matrix2 = static_test_matrix_2x4(); // 2x4
         let _ = &matrix1 * &matrix2; // Should panic
     }
 
@@ -1173,7 +1667,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "col count mismatch")]
+    #[should_panic(expected = "Column count mismatch: left has 2 columns, right has 3 columns")]
     fn test_bitwise_op_row_mismatch() {
         let data1 = vec![true, false, true, false]; // 2x2
         let data2 = vec![true, true, false, false, true, true]; // 2x3
@@ -1183,7 +1677,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "col count mismatch")]
+    #[should_panic(expected = "Column count mismatch: left has 2 columns, right has 3 columns")]
     fn test_bitwise_op_col_mismatch() {
         let data1 = vec![true, false, true, false]; // 2x2
         let data2 = vec![true, true, false, false, true, true]; // 2x3
@@ -1218,7 +1712,7 @@ mod tests {
         matrix.add_column(1, new_col); // Add at index 1
         // Should be:
         // hello c d
-        // b     e f
+        // b e f
         assert_eq!(matrix.rows(), 2);
         assert_eq!(matrix.cols(), 3);
         assert_eq!(matrix[(0, 0)], "hello".to_string());
@@ -1232,9 +1726,9 @@ mod tests {
         let new_row = vec!["g".to_string(), "h".to_string(), "i".to_string()];
         matrix.add_row(0, new_row); // Add at index 0
         // Should be:
-        // g     h     i
+        // g h i
         // hello e c
-        // b     f d
+        // b f d
         assert_eq!(matrix.rows(), 3);
         assert_eq!(matrix.cols(), 3);
         assert_eq!(matrix[(0, 0)], "g".to_string());
@@ -1348,25 +1842,25 @@ mod tests {
     // Test broadcastable operations
     #[test]
     fn test_comparision_broadcast() {
-        let matrix = create_test_matrix();
+        let matrix = static_test_matrix();
         // test all > 0
-        let result = matrix.gt_elementwise(0).as_vec();
+        let result = matrix.gt_elem(0).into_vec();
         let expected = vec![true; result.len()];
         assert_eq!(result, expected);
 
-        let ma = create_test_matrix();
-        let mb = create_test_matrix();
+        let ma = static_test_matrix();
+        let mb = static_test_matrix();
 
-        let result = ma.eq_elementwise(mb);
+        let result = ma.eq_elem(mb);
         assert!(result.all());
 
-        let result = matrix.lt_elementwise(1e10 as i32).all();
+        let result = matrix.lt_elem(1e10 as i32).all();
         assert!(result);
 
         for i in 0..matrix.rows() {
             for j in 0..matrix.cols() {
                 let vx = matrix[(i, j)];
-                let c = &(matrix.le_elementwise(vx)) & &(matrix.ge_elementwise(vx));
+                let c = &(matrix.le_elem(vx)) & &(matrix.ge_elem(vx));
                 assert_eq!(c.count(), 1);
             }
         }
@@ -1374,7 +1868,7 @@ mod tests {
 
     #[test]
     fn test_arithmetic_broadcast() {
-        let matrix = create_test_matrix();
+        let matrix = static_test_matrix();
         let result = &matrix + 1;
         for i in 0..matrix.rows() {
             for j in 0..matrix.cols() {
