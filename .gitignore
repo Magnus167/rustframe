@@ -12,5 +12,6 @@ data/
 *.info
 
 .venv/
+.vscode/
 
 tarpaulin-report.*
