@@ -16,6 +16,7 @@ jobs:
     outputs:
       runner: ${{ steps.choose.outputs.use-runner }}
     steps:
+      - uses: actions/checkout@v4
       - id: choose
         uses: ./.github/actions/runner-fallback
         with:
