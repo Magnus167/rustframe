@@ -314,6 +314,8 @@ impl<T> IndexMut<(usize, usize)> for Matrix<T> {
     }
 }
 
+// --- Row Iterator Helper ---
+
 /// Represents an immutable view of a single row in the matrix.
 pub struct MatrixRow<'a, T> {
     matrix: &'a Matrix<T>,
@@ -328,9 +330,11 @@ impl<'a, T> MatrixRow<'a, T> {
 
     /// Returns an iterator over all elements in this row.
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        (0..self.matrix.cols).map(move |c| &self.matrix[(self.row, c)])
+        (0..self.matrix.cols).map(move |c| self.get(c))
     }
 }
+
+// --- Reduction Axis Enum ---
 
 /// Specifies the axis along which to perform a reduction operation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -362,6 +366,8 @@ impl<T: Clone> Broadcastable<T> for Matrix<T> {
         self.data.clone() // Clone the data for the broadcasted vec
     }
 }
+
+// --- Element-wise Comparisons ---
 
 /// Generates element-wise eq, lt, le, gt and ge methods
 /// where the rhs can be a `Matrix<T>` or a scalar T.
@@ -612,10 +618,14 @@ impl Not for &Matrix<bool> {
     }
 }
 
+// --- Type Aliases ---
 pub type FloatMatrix = Matrix<f64>;
 pub type BoolMatrix = Matrix<bool>;
 pub type IntMatrix = Matrix<i32>;
 pub type StringMatrix = Matrix<String>;
+
+
+// --- Unit Tests ---
 
 #[cfg(test)]
 mod tests {
