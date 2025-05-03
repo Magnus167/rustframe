@@ -96,9 +96,10 @@ impl BoolOps for Frame<bool> {
 //     }
 // }
 
+#[cfg(test)]
 mod tests {
-    use crate::frame::*;
-    use crate::matrix::*;
+    use super::*;
+    use crate::matrix::Matrix;
 
     #[test]
     fn test_series_ops() {
