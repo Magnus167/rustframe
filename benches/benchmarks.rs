@@ -17,7 +17,7 @@ pub fn for_short_runs() -> Criterion {
         // limits the number of statistical data points.
         .sample_size(50)
         // measurement time per sample
-        .measurement_time(Duration::from_millis(250))
+        .measurement_time(Duration::from_millis(2000))
         // reduce warm-up time as well for faster overall run
         .warm_up_time(Duration::from_millis(50))
     // You could also make it much shorter if needed, e.g., 50ms measurement, 100ms warm-up
