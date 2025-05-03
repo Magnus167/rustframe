@@ -76,17 +76,26 @@ let total: f64 = result.sum_vertical().iter().sum::<f64>();
 assert_eq!(total, 184.0);
 
 // broadcast & reduce
-let result: Matrix<f64> = &ma + 1.0; // add scalar
-let result: Matrix<f64> = &result - 1.0; // subtract scalar
-let result: Matrix<f64> = &result * 2.0; // multiply by scalar
-let result: Matrix<f64> = &result / 2.0; // divide by scalar
+let result: Matrix<f64> = ma.clone() + 1.0; // add scalar
+let result: Matrix<f64> = result + &ma - &ma; // add matrix
+let result: Matrix<f64> = result - 1.0; // subtract scalar
+let result: Matrix<f64> = result * 2.0; // multiply by scalar
+let result: Matrix<f64> = result / 2.0; // divide by scalar
 
-let check: bool = result.eq_elementwise(ma.clone()).all();
+let check: bool = result.eq_elem(ma.clone()).all();
 assert!(check);
 
 // The above math can also be written as:
 let check: bool = (&(&(&(&ma + 1.0) - 1.0) * 2.0) / 2.0)
-    .eq_elementwise(ma)
+    .eq_elem(ma.clone())
     .all();
 assert!(check);
+
+// The above math can also be written as:
+let check: bool = ((((ma.clone() + 1.0) - 1.0) * 2.0) / 2.0)
+    .eq_elem(ma)
+    .all();
+assert!(check);
+
+
 ```
