@@ -6,7 +6,8 @@ services:
       context: .
       args:
         RUNNER_VERSION: 2.323.0
-    container_name: github-runner
+    # container_name commented to allow for multiple runners
+    # container_name: github-runner
     env_file:
       - .env
     volumes:
