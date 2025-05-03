@@ -23,7 +23,7 @@ jobs:
       runner: ${{ steps.choose.outputs.use-runner }}
     steps:
       - id: choose
-        uses: ./.github/actions/runner-fallback@v1 # or your-org/runner-fallback@v1
+        uses: ./.github/actions/runner-fallback
         with:
           primary-runner: "self-hosted,ubuntu-latest"
           fallback-runner: "ubuntu-latest"
