@@ -1,0 +1,29 @@
+name: Run benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-benchmarks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run benchmarks
+        run: cargo bench
+
+      - name: Upload benchmark reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-reports
+          path: ./target/criterion/
