@@ -11,7 +11,7 @@ inputs:
     description: 'Comma-separated label list or single label for the fallback (e.g. "ubuntu-latest")'
     required: true
   github-token:
-    description: "PAT or ${{ secrets.GITHUB_TOKEN }} with `repo` scope"
+    description: "PAT or GITHUB_TOKEN with `repo` scope"
     required: true
 
 outputs:
