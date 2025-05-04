@@ -11,10 +11,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pick-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.choose.outputs.use-runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: choose
+        uses: ./.github/actions/runner-fallback
+        with:
+          primary-runner: "self-hosted,ubuntu-latest"
+          fallback-runner: "ubuntu-latest"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
   run-unit-tests:
+    needs: pick-runner
     if: github.event.pull_request.draft == false
     name: run-unit-tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJson(needs.pick-runner.outputs.runner) }}
     env:
       CARGO_TERM_COLOR: always
 
@@ -24,12 +38,16 @@ jobs:
         run: rustup update stable
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Generate code coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      - name: Run doc-tests
+
+      - name: Run doctests
         run: cargo test --doc --all-features --workspace --release
+
+      - name: Run unit tests with code coverage
+        run: cargo llvm-cov --all-features --release --workspace --lcov --output-path lcov.info
+
       - name: Test docs generation
         run: cargo doc --no-deps --release
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
