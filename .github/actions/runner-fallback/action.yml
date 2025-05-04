@@ -10,9 +10,6 @@ inputs:
   fallback-runner:
     description: 'Comma-separated label list or single label for the fallback (e.g. "ubuntu-latest")'
     required: true
-  github-token:
-    description: "PAT or GITHUB_TOKEN with `repo` scope"
-    required: true
 
 outputs:
   use-runner:
@@ -26,7 +23,7 @@ runs:
       id: pick
       shell: bash
       env:
-        TOKEN: ${{ inputs.github-token }}
+        TOKEN: ${{ secrets.CUSTOM_GH_TOKEN }}
         PRIMARY: ${{ inputs.primary-runner }}
         FALLBACK: ${{ inputs.fallback-runner }}
       run: |
