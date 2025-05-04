@@ -1,0 +1,61 @@
+# actions/runner-fallback/action.yml
+name: "Runner Fallback"
+description: |
+  Chooses a self-hosted runner when one with the required labels is online,
+  otherwise returns a fallback GitHub-hosted label.
+inputs:
+  primary-runner:
+    description: 'Comma-separated label list for the preferred self-hosted runner (e.g. "self-hosted,linux")'
+    required: true
+  fallback-runner:
+    description: 'Comma-separated label list or single label for the fallback (e.g. "ubuntu-latest")'
+    required: true
+  github-token:
+    description: "PAT or GITHUB_TOKEN with `repo` scope"
+    required: true
+
+outputs:
+  use-runner:
+    description: "JSON array of labels you can feed straight into runs-on"
+    value: ${{ steps.pick.outputs.use-runner }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check self-hosted fleet
+      id: pick
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.github-token }}
+        PRIMARY: ${{ inputs.primary-runner }}
+        FALLBACK: ${{ inputs.fallback-runner }}
+      run: |
+        # -------- helper -----------
+        to_json_array () {
+          local list="$1"; IFS=',' read -ra L <<<"$list"
+          printf '['; printf '"%s",' "${L[@]}"; printf ']'
+        }
+        # -------- query API ---------
+        repo="${{ github.repository }}"
+        runners=$(curl -s -H "Authorization: Bearer $TOKEN" \
+                        -H "Accept: application/vnd.github+json" \
+                        "https://api.github.com/repos/$repo/actions/runners?per_page=100")
+        # Split wanted labels
+        IFS=',' read -ra WANT <<<"$PRIMARY"
+        online_found=0
+        while read -r row; do
+          labels=$(jq -r '.labels[].name' <<<"$row")
+          ok=1
+          for w in "${WANT[@]}"; do
+            grep -Fxq "$w" <<<"$labels" || { ok=0; break; }
+          done
+          [ "$ok" -eq 1 ] && { online_found=1; break; }
+        done < <(jq -c '.runners[] | select(.status=="online")' <<<"$runners")
+
+        if [ "$online_found" -eq 1 ]; then
+          echo "✅ Self-hosted runner online."
+          echo "use-runner=$(to_json_array "$PRIMARY")" >>"$GITHUB_OUTPUT"
+        else
+          echo "❌ No matching self-hosted runner online - using fallback."
+          echo "use-runner=$(to_json_array "$FALLBACK")" >>"$GITHUB_OUTPUT"
+        fi
