@@ -106,7 +106,7 @@ jobs:
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc/
