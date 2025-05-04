@@ -21,7 +21,7 @@ jobs:
       - id: choose
         uses: ./.github/actions/runner-fallback
         with:
-          primary-runner: "self-hosted,ubuntu-latest"
+          primary-runner: "self-hosted"
           fallback-runner: "ubuntu-latest"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
