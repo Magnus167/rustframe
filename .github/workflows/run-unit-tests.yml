@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   pick-runner:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       runner: ${{ steps.choose.outputs.use-runner }}
