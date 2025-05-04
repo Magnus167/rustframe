@@ -1,0 +1,18 @@
+# docker-compose.yml
+
+services:
+  github-runner:
+    build:
+      context: .
+      args:
+        RUNNER_VERSION: 2.323.0
+    # container_name commented to allow for multiple runners
+    # container_name: github-runner
+    env_file:
+      - .env
+    volumes:
+      - runner-work:/home/runner/actions-runner/_work
+    restart: unless-stopped
+
+volumes:
+  runner-work:
