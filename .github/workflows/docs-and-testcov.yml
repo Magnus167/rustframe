@@ -102,7 +102,9 @@ jobs:
           mkdir -p target/doc/rustframe/.github
           cp .github/rustframe_logo.png target/doc/rustframe/.github/
 
-          mv target/doc/rustframe target/doc/docs
+          mkdir -p target/doc/docs
+          mv target/doc/rustframe/ target/doc/docs/
+
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
 
       - name: Upload Pages artifact
