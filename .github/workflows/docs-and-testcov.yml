@@ -101,7 +101,9 @@ jobs:
           cp last-commit-date.json target/doc/rustframe/
           mkdir -p target/doc/rustframe/.github
           cp .github/rustframe_logo.png target/doc/rustframe/.github/
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
+
+          mv target/doc/rustframe target/doc/docs
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
 
       - name: Upload Pages artifact
         if: github.event_name == 'push'
