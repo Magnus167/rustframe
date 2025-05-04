@@ -13,10 +13,15 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 chrono = "^0.4.10"
+criterion = { version = "0.5", features = ["html_reports"], optional = true }
 
-[dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+[features]
+bench = ["dep:criterion"]
+
+# [dev-dependencies]
+# criterion = { version = "0.5", features = ["html_reports"], optional = true }
 
 [[bench]]
 name = "benchmarks"
 harness = false
+required-features = ["bench"]
