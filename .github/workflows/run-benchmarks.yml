@@ -7,8 +7,22 @@ on:
   #     - main
 
 jobs:
-  run-benchmarks:
+  pick-runner:
     runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.choose.outputs.use-runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: choose
+        uses: ./.github/actions/runner-fallback
+        with:
+          primary-runner: "self-hosted,ubuntu-latest"
+          fallback-runner: "ubuntu-latest"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  run-benchmarks:
+    needs: pick-runner
+    runs-on: ${{ fromJson(needs.pick-runner.outputs.runner) }}
 
     steps:
       - name: Checkout code
