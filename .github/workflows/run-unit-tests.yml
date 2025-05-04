@@ -41,7 +41,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Run doctests
-        run: cargo test --lib --doc --all-features --workspace --release
+        run: cargo test --doc --all-features --workspace --release
 
       - name: Run unit tests with code coverage
         run: cargo llvm-cov --all-features --release --workspace --lcov --output-path lcov.info
