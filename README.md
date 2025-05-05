@@ -7,7 +7,7 @@
 
 <!-- [![Last commit](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/rustframe/last-commit-date.json)](https://github.com/Magnus167/rustframe) -->
 [![codecov](https://codecov.io/gh/Magnus167/rustframe/graph/badge.svg?token=J7ULJEFTVI)](https://codecov.io/gh/Magnus167/rustframe)
-[![Coverage](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/rustframe/tarpaulin-badge.json)](https://magnus167.github.io/rustframe/rustframe/tarpaulin-report.html)
+[![Coverage](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/docs/tarpaulin-badge.json)](https://magnus167.github.io/rustframe/docs/tarpaulin-report.html)
 
 ---
 

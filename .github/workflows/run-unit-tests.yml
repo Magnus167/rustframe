@@ -12,18 +12,22 @@ concurrency:
 
 jobs:
   pick-runner:
+
     if: github.event.pull_request.draft == false
+
     runs-on: ubuntu-latest
     outputs:
       runner: ${{ steps.choose.outputs.use-runner }}
     steps:
+
       - uses: actions/checkout@v4
       - id: choose
         uses: ./.github/actions/runner-fallback
         with:
-          primary-runner: "self-hosted,ubuntu-latest"
+          primary-runner: "self-hosted"
           fallback-runner: "ubuntu-latest"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.CUSTOM_GH_TOKEN }}
+          
 
   run-unit-tests:
     needs: pick-runner
