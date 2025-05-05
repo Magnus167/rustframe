@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, update_docs_workflow]
+    branches: [main]
   # pull_request:
   #   branches: [main]
   workflow_dispatch:
