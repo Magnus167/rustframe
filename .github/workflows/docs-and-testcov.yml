@@ -103,8 +103,9 @@ jobs:
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
           cp last-commit-date.json target/doc/docs/
-          cp -r .github target/doc/docs/.github
+          cp -r .github target/doc/docs
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
+          touch target/doc/.nojekyll
 
       # verify that .github exists in the output directory
       - name: Verify .github directory
