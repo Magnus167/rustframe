@@ -44,6 +44,14 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Replace logo URL in README.md
+        env:
+          LOGO_URL: ${{ secrets.LOGO_URL }}
+        run: |
+          # replace  with EXAMPLE.COM/LOGO
+
+          sed -i 's|.github/rustframe_logo.png|rustframe_logo.png|g' README.md
+
       - name: Build documentation
         run: cargo doc --no-deps --release
 
@@ -96,16 +104,25 @@ jobs:
         run: |
           # mkdir docs
           mkdir -p target/doc/docs
-          cp -r target/doc/rustframe/* target/doc/docs/
+          mv target/doc/rustframe/* target/doc/docs/
 
           mkdir output
           cp tarpaulin-report.html target/doc/docs/
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
           cp last-commit-date.json target/doc/docs/
-          mkdir -p target/doc/.github
-          cp .github/rustframe_logo.png target/doc/.github/rustframe_logo.png
+          # cp -r .github target/doc/docs
+          cp .github/rustframe_logo.png target/doc/docs/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
+          touch target/doc/.nojekyll
+
+      # verify that logo exists in the output directory
+      - name: Verify logo directory
+        run: |
+          if [ ! -f target/doc/docs/rustframe_logo.png ]; then
+            echo "Logo not found in output directory!"
+            exit 1
+          fi
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
