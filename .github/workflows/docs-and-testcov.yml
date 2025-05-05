@@ -118,9 +118,13 @@ jobs:
           curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -o benchmark-report.zip "$artifact_url"
 
-          mkdir -p benchmark-report
-          # print ls -a
-          echo "$( ls -a benchmark-report )"
+            
+          # check if there is a benchmark-report.zip file
+          if [ ! -f benchmark-report.zip ]; then
+            echo "benchmark-report.zip not found!"
+            exit 1
+          fi
+          
           unzip benchmark-report.zip -d benchmark-report
           # there will be a tar file in the benchmark-report directory 
           # called artifact.tar. unzip it into the benchmark-report
