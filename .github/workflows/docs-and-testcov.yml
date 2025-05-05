@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, fix_docs]
+    branches: [main, update_docs_workflow]
   # pull_request:
   #   branches: [main]
   workflow_dispatch:
@@ -96,15 +96,15 @@ jobs:
         run: |
           # mkdir docs
           mkdir -p target/doc/docs
-          cp -r target/doc/rustframe/* target/doc/docs/
+          mv target/doc/rustframe/* target/doc/docs/
 
           mkdir output
           cp tarpaulin-report.html target/doc/docs/
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
           cp last-commit-date.json target/doc/docs/
-          mkdir -p target/doc/.github
-          cp .github/rustframe_logo.png target/doc/.github/rustframe_logo.png
+          mkdir -p target/doc/docs/.github
+          cp .github/rustframe_logo.png target/doc/docs/.github/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
 
       - name: Upload Pages artifact
