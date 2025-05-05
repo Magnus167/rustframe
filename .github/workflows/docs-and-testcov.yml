@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main]
-#   pull_request:
-#     branches: [main]
+    branches: [main, update_docs_workflow]
+  # pull_request:
+  #   branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -27,9 +27,9 @@ jobs:
       - id: choose
         uses: ./.github/actions/runner-fallback
         with:
-          primary-runner: "self-hosted,ubuntu-latest"
+          primary-runner: "self-hosted"
           fallback-runner: "ubuntu-latest"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.CUSTOM_GH_TOKEN }}
 
   docs-and-testcov:
     needs: pick-runner
@@ -94,21 +94,25 @@ jobs:
 
       - name: Copy files to output directory
         run: |
+          # mkdir docs
+          mkdir -p target/doc/docs
+          cp -r target/doc/rustframe/* target/doc/docs/
+
           mkdir output
-          cp tarpaulin-report.html target/doc/rustframe/
-          cp tarpaulin-report.json target/doc/rustframe/
-          cp tarpaulin-badge.json target/doc/rustframe/
-          cp last-commit-date.json target/doc/rustframe/
-          mkdir -p target/doc/rustframe/.github
-          cp .github/rustframe_logo.png target/doc/rustframe/.github/
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=rustframe\">" > target/doc/index.html
+          cp tarpaulin-report.html target/doc/docs/
+          cp tarpaulin-report.json target/doc/docs/
+          cp tarpaulin-badge.json target/doc/docs/
+          cp last-commit-date.json target/doc/docs/
+          mkdir -p target/doc/docs/.github
+          cp .github/rustframe_logo.png target/doc/docs/.github/
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push'
+        # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
           path: target/doc/
 
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push'
+        # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/deploy-pages@v4
