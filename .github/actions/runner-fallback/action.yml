@@ -12,8 +12,9 @@ inputs:
     required: true
   github-token:
     description: 'GitHub token with repo admin read permissions'
-    required: false
-    default: ${{ secrets.CUSTOM_GH_TOKEN }}
+    required: true
+
+  
 
 outputs:
   use-runner:

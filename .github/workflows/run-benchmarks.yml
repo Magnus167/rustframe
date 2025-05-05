@@ -18,7 +18,7 @@ jobs:
         with:
           primary-runner: "self-hosted"
           fallback-runner: "ubuntu-latest"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.CUSTOM_GH_TOKEN }}
 
   run-benchmarks:
     needs: pick-runner
