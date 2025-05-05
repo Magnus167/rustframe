@@ -10,6 +10,10 @@ on:
   # pull_request:
   #   branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["run-benchmarks"]
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -100,6 +104,30 @@ jobs:
             <(echo '{}') \
           > last-commit-date.json
 
+      - name: Download last available benchmark report
+        run: |
+          artifact_url=$(gh api -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/actions/artifacts \
+            | jq -r '.artifacts[] | select(.name | startswith("benchmark-reports")) | .archive_download_url' | head -n 1)
+
+          if [ -z "$artifact_url" ]; then
+            echo "No benchmark artifact found!"
+            exit 1
+          fi
+
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -o benchmark-report.zip "$artifact_url"
+
+          mkdir -p benchmark-report
+          unzip benchmark-report.zip -d benchmark-report
+          # there will be a tar file in the benchmark-report directory 
+          # called artifact.tar. unzip it into the benchmark-report
+          tar -xvf benchmark-report/artifact.tar -C benchmark-report
+          # remove the artifact.tar file
+          rm benchmark-report/artifact.tar
+          # add an index.html that points to benchmark-report/report/index.html
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=report/index.html\">" > benchmark-report/index.html
+
       - name: Copy files to output directory
         run: |
           # mkdir docs
@@ -115,6 +143,9 @@ jobs:
           cp .github/rustframe_logo.png target/doc/docs/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
           touch target/doc/.nojekyll
+
+          # copy the benchmark report to the output directory
+          cp -r benchmark-report target/doc/
 
       # verify that logo exists in the output directory
       - name: Verify logo directory
