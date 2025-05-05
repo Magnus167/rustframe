@@ -50,7 +50,7 @@ jobs:
         run: |
           # replace  with EXAMPLE.COM/LOGO
 
-          sed -i 's|.github/rustframe_logo.png|${{ env.LOGO_URL }}|g' README.md
+          sed -i 's|.github/rustframe_logo.png|rustframe_logo.png|g' README.md
 
       - name: Build documentation
         run: cargo doc --no-deps --release
@@ -111,7 +111,8 @@ jobs:
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
           cp last-commit-date.json target/doc/docs/
-          cp -r .github target/doc/docs
+          # cp -r .github target/doc/docs
+          cp .github/rustframe_logo.png target/doc/docs/
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
           touch target/doc/.nojekyll
 
