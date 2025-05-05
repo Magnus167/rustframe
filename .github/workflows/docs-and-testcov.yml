@@ -130,13 +130,8 @@ jobs:
             exit 1
           fi
 
-          unzip benchmark-report.zip -d benchmark-report
-          # there will be a tar file in the benchmark-report directory 
-          # called artifact.tar. unzip it into the benchmark-report
-          tar -xvf benchmark-report/artifact.tar -C benchmark-report
-          # remove the artifact.tar file
-          rm benchmark-report/artifact.tar
-          # add an index.html that points to benchmark-report/report/index.html
+          unzip -q benchmark-report.zip -d benchmark-report
+
           echo "<meta http-equiv=\"refresh\" content=\"0; url=report/index.html\">" > benchmark-report/index.html
 
       - name: Copy files to output directory
