@@ -115,18 +115,19 @@ jobs:
             exit 1
           fi
 
-          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -o benchmark-report.zip "$artifact_url"
+          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
+
+
+
+          # Print all files in the current directory
+          echo "Files in the current directory:"
+          ls -al
 
           # check if the zip file is valid
           if ! unzip -tq benchmark-report.zip; then
             echo "benchmark-report.zip is invalid or corrupted!"
             exit 1
           fi
-
-          # Print all files in the current directory
-          echo "Files in the current directory:"
-          ls -al
 
           unzip benchmark-report.zip -d benchmark-report
           # there will be a tar file in the benchmark-report directory 
