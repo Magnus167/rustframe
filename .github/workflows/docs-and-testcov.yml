@@ -119,6 +119,8 @@ jobs:
             -o benchmark-report.zip "$artifact_url"
 
           mkdir -p benchmark-report
+          # print ls -a
+          echo "$( ls -a benchmark-report )"
           unzip benchmark-report.zip -d benchmark-report
           # there will be a tar file in the benchmark-report directory 
           # called artifact.tar. unzip it into the benchmark-report
