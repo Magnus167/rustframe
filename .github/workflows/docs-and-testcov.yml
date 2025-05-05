@@ -116,11 +116,11 @@ jobs:
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
           touch target/doc/.nojekyll
 
-      # verify that .github exists in the output directory
-      - name: Verify .github directory
+      # verify that logo exists in the output directory
+      - name: Verify logo directory
         run: |
-          if [ ! -d target/doc/docs/.github ]; then
-            echo ".github directory not found in output!"
+          if [ ! -f target/doc/docs/rustframe_logo.png ]; then
+            echo "Logo not found in output directory!"
             exit 1
           fi
 
