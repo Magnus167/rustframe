@@ -44,7 +44,7 @@ runs:
                         "https://api.github.com/repos/$repo/actions/runners?per_page=100")
 
         # Debug: Print runners content
-        echo "Runners response: $runners"
+        # echo "Runners response: $runners"
 
         # Check if runners is null or empty
         if [ -z "$runners" ] || [ "$runners" = "null" ]; then
