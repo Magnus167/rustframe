@@ -103,9 +103,16 @@ jobs:
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
           cp last-commit-date.json target/doc/docs/
-          mkdir -p target/doc/docs/.github
-          cp -r .github target/doc/docs/
+          cp -r .github target/doc/docs/.github
           echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
+
+      # verify that .github exists in the output directory
+      - name: Verify .github directory
+        run: |
+          if [ ! -d target/doc/docs/.github ]; then
+            echo ".github directory not found in output!"
+            exit 1
+          fi
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
