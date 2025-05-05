@@ -147,19 +147,16 @@ jobs:
           cp last-commit-date.json target/doc/docs/
           # cp -r .github target/doc/docs
           cp .github/rustframe_logo.png target/doc/docs/
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
+          # echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
           touch target/doc/.nojekyll
 
           # copy the benchmark report to the output directory
           cp -r benchmark-report target/doc/
 
-      # verify that logo exists in the output directory
-      - name: Verify logo directory
+      - name: Add index.html to output directory
         run: |
-          if [ ! -f target/doc/docs/rustframe_logo.png ]; then
-            echo "Logo not found in output directory!"
-            exit 1
-          fi
+          cp .github/htmldocs/index.html target/doc/index.html
+          cp .github/rustframe_logo.png target/doc/rustframe_logo.png
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
