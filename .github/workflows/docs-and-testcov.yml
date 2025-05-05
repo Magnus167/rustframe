@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [main, fix_docs]
-  # pull_request:
-  #   branches: [main]
+    branches: [main]
+#   pull_request:
+#     branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -27,9 +27,9 @@ jobs:
       - id: choose
         uses: ./.github/actions/runner-fallback
         with:
-          primary-runner: "self-hosted"
+          primary-runner: "self-hosted,ubuntu-latest"
           fallback-runner: "ubuntu-latest"
-          github-token: ${{ secrets.CUSTOM_GH_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   docs-and-testcov:
     needs: pick-runner
@@ -94,32 +94,26 @@ jobs:
 
       - name: Copy files to output directory
         run: |
-          # mkdir docs
-          mkdir -p target/doc/docs
-          mv target/doc/rustframe/* target/doc/docs/
-
           mkdir output
-          cp tarpaulin-report.html target/doc/docs/
-          cp tarpaulin-report.json target/doc/docs/
-          cp tarpaulin-badge.json target/doc/docs/
-          cp last-commit-date.json target/doc/docs/
-          cp -r .github target/doc/docs/.github
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > target/doc/index.html
+          cp tarpaulin-report.html target/doc/rustframe/
+          cp tarpaulin-report.json target/doc/rustframe/
+          cp tarpaulin-badge.json target/doc/rustframe/
+          cp last-commit-date.json target/doc/rustframe/
+          mkdir -p target/doc/rustframe/.github
+          # cp .github/rustframe_logo.png target/doc/rustframe/.github/
+          cp .github/rustframe_logo.png target/doc/rustframe/.github/
+          
+          mkdir docs
+          mv target/doc/rustframe/* docs/
 
-      # verify that .github exists in the output directory
-      - name: Verify .github directory
-        run: |
-          if [ ! -d target/doc/docs/.github ]; then
-            echo ".github directory not found in output!"
-            exit 1
-          fi
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=docs\">" > docs/index.html
 
       - name: Upload Pages artifact
-        # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: target/doc/
+          path: docs/
 
       - name: Deploy to GitHub Pages
-        # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'push'
         uses: actions/deploy-pages@v4
