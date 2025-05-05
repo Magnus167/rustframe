@@ -115,7 +115,7 @@ jobs:
             exit 1
           fi
 
-          curl -L -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$artifact_url"
+          curl -L -H "Authorization: Bearer ${{ secrets.CUSTOM_GH_TOKEN }}" "$artifact_url"
 
 
 
