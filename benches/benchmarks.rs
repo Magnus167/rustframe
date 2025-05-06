@@ -1,7 +1,7 @@
-// Combined benchmarks for rustframe
+// Combined benchmarks
 use chrono::NaiveDate;
 use criterion::{criterion_group, criterion_main, Criterion};
-// Import Duration for measurement_time and warm_up_time
+
 use rustframe::{
     frame::{Frame, RowIndex},
     matrix::{BoolMatrix, Matrix},
@@ -9,8 +9,6 @@ use rustframe::{
 };
 use std::time::Duration;
 
-// You can define a custom Criterion configuration function
-// This will be passed to the criterion_group! macro
 pub fn for_short_runs() -> Criterion {
     Criterion::default()
         // (samples != total iterations)
@@ -20,14 +18,15 @@ pub fn for_short_runs() -> Criterion {
         .measurement_time(Duration::from_millis(2000))
         // reduce warm-up time as well for faster overall run
         .warm_up_time(Duration::from_millis(50))
-    // You could also make it much shorter if needed, e.g., 50ms measurement, 100ms warm-up
+    // can make it much shorter if needed, e.g., 50ms measurement, 100ms warm-up
     // .measurement_time(Duration::from_millis(50))
     // .warm_up_time(Duration::from_millis(100))
 }
 
+const BENCH_SIZES: [usize; 5] = [1, 100, 250, 500, 1000];
+
 fn bool_matrix_operations_benchmark(c: &mut Criterion) {
-    let sizes = [1, 100, 1000];
-    // let sizes = [1000];
+    let sizes = BENCH_SIZES;
 
     for &size in &sizes {
         let data1: Vec<bool> = (0..size * size).map(|x| x % 2 == 0).collect();
@@ -62,8 +61,7 @@ fn bool_matrix_operations_benchmark(c: &mut Criterion) {
 }
 
 fn matrix_boolean_operations_benchmark(c: &mut Criterion) {
-    let sizes = [1, 100, 1000];
-    // let sizes = [1000];
+    let sizes = BENCH_SIZES;
 
     for &size in &sizes {
         let data1: Vec<bool> = (0..size * size).map(|x| x % 2 == 0).collect();
@@ -98,8 +96,7 @@ fn matrix_boolean_operations_benchmark(c: &mut Criterion) {
 }
 
 fn matrix_operations_benchmark(c: &mut Criterion) {
-    let sizes = [1, 100, 1000];
-    // let sizes = [1000];
+    let sizes = BENCH_SIZES;
 
     for &size in &sizes {
         let data: Vec<f64> = (0..size * size).map(|x| x as f64).collect();
