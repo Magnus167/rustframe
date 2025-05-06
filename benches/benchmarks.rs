@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use rustframe::{
     frame::{Frame, RowIndex},
-    matrix::{BoolMatrix, Matrix},
+    matrix::{BoolMatrix, Matrix, SeriesOps},
     utils::{BDateFreq, BDatesList},
 };
 use std::time::Duration;
@@ -160,35 +160,76 @@ fn matrix_operations_benchmark(c: &mut Criterion) {
     }
 }
 
-fn benchmark_frame_operations(c: &mut Criterion) {
-    let n_periods = 1000;
-    let n_cols = 1000;
+fn generate_frame(size: usize) -> Frame<f64> {
+    let data: Vec<f64> = (0..size * size).map(|x| x as f64).collect();
     let dates: Vec<NaiveDate> =
-        BDatesList::from_n_periods("2024-01-02".to_string(), BDateFreq::Daily, n_periods)
+        BDatesList::from_n_periods("2000-01-01".to_string(), BDateFreq::Daily, size)
             .unwrap()
             .list()
             .unwrap();
 
     // let col_names= str(i) for i in range(1, 1000)
-    let col_names: Vec<String> = (1..=n_cols).map(|i| format!("col_{}", i)).collect();
+    let col_names: Vec<String> = (1..=size).map(|i| format!("col_{}", i)).collect();
 
-    let data1: Vec<f64> = (0..n_periods * n_cols).map(|x| x as f64).collect();
-    let data2: Vec<f64> = (0..n_periods * n_cols).map(|x| (x + 1) as f64).collect();
-    let ma = Matrix::from_vec(data1.clone(), n_periods, n_cols);
-    let mb = Matrix::from_vec(data2.clone(), n_periods, n_cols);
+    Frame::new(
+        Matrix::from_vec(data.clone(), size, size),
+        col_names,
+        Some(RowIndex::Date(dates)),
+    )
+}
 
-    let fa = Frame::new(
-        ma.clone(),
-        col_names.clone(),
-        Some(RowIndex::Date(dates.clone())),
-    );
-    let fb = Frame::new(mb, col_names, Some(RowIndex::Date(dates)));
+fn benchmark_frame_operations(c: &mut Criterion) {
+    let sizes = BENCH_SIZES;
 
-    c.bench_function("frame element-wise multiply (1000x1000)", |b| {
-        b.iter(|| {
-            let _result = &fa * &fb;
+    for &size in &sizes {
+        let fa = generate_frame(size);
+        let fb = generate_frame(size);
+
+        c.bench_function(&format!("frame add ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = &fa + &fb;
+            });
         });
-    });
+
+        c.bench_function(&format!("frame subtract ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = &fa - &fb;
+            });
+        });
+
+        c.bench_function(&format!("frame multiply ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = &fa * &fb;
+            });
+        });
+
+        c.bench_function(&format!("frame divide ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = &fa / &fb;
+            });
+        });
+
+        c.bench_function(&format!("frame sum_horizontal ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.sum_horizontal();
+            });
+        });
+        c.bench_function(&format!("frame sum_vertical ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.sum_vertical();
+            });
+        });
+        c.bench_function(&format!("frame prod_horizontal ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.prod_horizontal();
+            });
+        });
+        c.bench_function(&format!("frame prod_vertical ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.prod_vertical();
+            });
+        });
+    }
 }
 
 // Define the criterion group and pass the custom configuration function
