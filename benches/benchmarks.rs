@@ -9,26 +9,36 @@ use rustframe::{
 };
 use std::time::Duration;
 
-pub fn for_short_runs() -> Criterion {
+// Define size categories
+const SIZES_SMALL: [usize; 1] = [1];
+const SIZES_MEDIUM: [usize; 3] = [100, 250, 500];
+const SIZES_LARGE: [usize; 1] = [1000];
+
+// Configuration functions for different size categories
+fn config_small_arrays() -> Criterion {
     Criterion::default()
-        // (samples != total iterations)
-        // limits the number of statistical data points.
-        .sample_size(50)
-        // measurement time per sample
-        .measurement_time(Duration::from_millis(2000))
-        // reduce warm-up time as well for faster overall run
+        .sample_size(500) // More samples for very fast operations
+        .measurement_time(Duration::from_millis(500))
         .warm_up_time(Duration::from_millis(50))
-    // can make it much shorter if needed, e.g., 50ms measurement, 100ms warm-up
-    // .measurement_time(Duration::from_millis(50))
-    // .warm_up_time(Duration::from_millis(100))
 }
 
-const BENCH_SIZES: [usize; 5] = [1, 100, 250, 500, 1000];
+fn config_medium_arrays() -> Criterion {
+    Criterion::default()
+        .sample_size(100)
+        .measurement_time(Duration::from_millis(2000))
+        .warm_up_time(Duration::from_millis(100))
+}
 
-fn bool_matrix_operations_benchmark(c: &mut Criterion) {
-    let sizes = BENCH_SIZES;
+fn config_large_arrays() -> Criterion {
+    Criterion::default()
+        .sample_size(50)
+        .measurement_time(Duration::from_millis(5000))
+        .warm_up_time(Duration::from_millis(200))
+}
 
-    for &size in &sizes {
+// Modified benchmark functions to accept a slice of sizes
+fn bool_matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
+    for &size in sizes {
         let data1: Vec<bool> = (0..size * size).map(|x| x % 2 == 0).collect();
         let data2: Vec<bool> = (0..size * size).map(|x| x % 3 == 0).collect();
         let bm1 = BoolMatrix::from_vec(data1.clone(), size, size);
@@ -60,10 +70,8 @@ fn bool_matrix_operations_benchmark(c: &mut Criterion) {
     }
 }
 
-fn matrix_boolean_operations_benchmark(c: &mut Criterion) {
-    let sizes = BENCH_SIZES;
-
-    for &size in &sizes {
+fn matrix_boolean_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
+    for &size in sizes {
         let data1: Vec<bool> = (0..size * size).map(|x| x % 2 == 0).collect();
         let data2: Vec<bool> = (0..size * size).map(|x| x % 3 == 0).collect();
         let bm1 = BoolMatrix::from_vec(data1.clone(), size, size);
@@ -95,10 +103,8 @@ fn matrix_boolean_operations_benchmark(c: &mut Criterion) {
     }
 }
 
-fn matrix_operations_benchmark(c: &mut Criterion) {
-    let sizes = BENCH_SIZES;
-
-    for &size in &sizes {
+fn matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
+    for &size in sizes {
         let data: Vec<f64> = (0..size * size).map(|x| x as f64).collect();
         let ma = Matrix::from_vec(data.clone(), size, size);
 
@@ -127,8 +133,7 @@ fn matrix_operations_benchmark(c: &mut Criterion) {
         });
     }
 
-    // Benchmarking matrix addition
-    for &size in &sizes {
+    for &size in sizes {
         let data1: Vec<f64> = (0..size * size).map(|x| x as f64).collect();
         let data2: Vec<f64> = (0..size * size).map(|x| (x + 1) as f64).collect();
         let ma = Matrix::from_vec(data1.clone(), size, size);
@@ -167,10 +172,7 @@ fn generate_frame(size: usize) -> Frame<f64> {
             .unwrap()
             .list()
             .unwrap();
-
-    // let col_names= str(i) for i in range(1, 1000)
     let col_names: Vec<String> = (1..=size).map(|i| format!("col_{}", i)).collect();
-
     Frame::new(
         Matrix::from_vec(data.clone(), size, size),
         col_names,
@@ -178,10 +180,8 @@ fn generate_frame(size: usize) -> Frame<f64> {
     )
 }
 
-fn benchmark_frame_operations(c: &mut Criterion) {
-    let sizes = BENCH_SIZES;
-
-    for &size in &sizes {
+fn benchmark_frame_operations(c: &mut Criterion, sizes: &[usize]) {
+    for &size in sizes {
         let fa = generate_frame(size);
         let fb = generate_frame(size);
 
@@ -232,13 +232,46 @@ fn benchmark_frame_operations(c: &mut Criterion) {
     }
 }
 
-// Define the criterion group and pass the custom configuration function
+// Runner functions for each size category
+fn run_benchmarks_small(c: &mut Criterion) {
+    bool_matrix_operations_benchmark(c, &SIZES_SMALL);
+    matrix_boolean_operations_benchmark(c, &SIZES_SMALL);
+    matrix_operations_benchmark(c, &SIZES_SMALL);
+    benchmark_frame_operations(c, &SIZES_SMALL);
+}
+
+fn run_benchmarks_medium(c: &mut Criterion) {
+    bool_matrix_operations_benchmark(c, &SIZES_MEDIUM);
+    matrix_boolean_operations_benchmark(c, &SIZES_MEDIUM);
+    matrix_operations_benchmark(c, &SIZES_MEDIUM);
+    benchmark_frame_operations(c, &SIZES_MEDIUM);
+}
+
+fn run_benchmarks_large(c: &mut Criterion) {
+    bool_matrix_operations_benchmark(c, &SIZES_LARGE);
+    matrix_boolean_operations_benchmark(c, &SIZES_LARGE);
+    matrix_operations_benchmark(c, &SIZES_LARGE);
+    benchmark_frame_operations(c, &SIZES_LARGE);
+}
+
 criterion_group!(
-    name = combined_benches;
-    config = for_short_runs(); // Use the custom configuration here
-    targets = bool_matrix_operations_benchmark,
-              matrix_boolean_operations_benchmark,
-              matrix_operations_benchmark,
-              benchmark_frame_operations
+    name = benches_small_arrays;
+    config = config_small_arrays();
+    targets = run_benchmarks_small
 );
-criterion_main!(combined_benches);
+criterion_group!(
+    name = benches_medium_arrays;
+    config = config_medium_arrays();
+    targets = run_benchmarks_medium
+);
+criterion_group!(
+    name = benches_large_arrays;
+    config = config_large_arrays();
+    targets = run_benchmarks_large
+);
+
+criterion_main!(
+    benches_small_arrays,
+    benches_medium_arrays,
+    benches_large_arrays
+);
