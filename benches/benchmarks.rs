@@ -14,28 +14,6 @@ const SIZES_SMALL: [usize; 1] = [1];
 const SIZES_MEDIUM: [usize; 3] = [100, 250, 500];
 const SIZES_LARGE: [usize; 1] = [1000];
 
-// Configuration functions for different size categories
-fn config_small_arrays() -> Criterion {
-    Criterion::default()
-        .sample_size(500) // More samples for very fast operations
-        .measurement_time(Duration::from_millis(500))
-        .warm_up_time(Duration::from_millis(50))
-}
-
-fn config_medium_arrays() -> Criterion {
-    Criterion::default()
-        .sample_size(100)
-        .measurement_time(Duration::from_millis(2000))
-        .warm_up_time(Duration::from_millis(100))
-}
-
-fn config_large_arrays() -> Criterion {
-    Criterion::default()
-        .sample_size(50)
-        .measurement_time(Duration::from_millis(5000))
-        .warm_up_time(Duration::from_millis(200))
-}
-
 // Modified benchmark functions to accept a slice of sizes
 fn bool_matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
     for &size in sizes {
@@ -252,6 +230,28 @@ fn run_benchmarks_large(c: &mut Criterion) {
     matrix_boolean_operations_benchmark(c, &SIZES_LARGE);
     matrix_operations_benchmark(c, &SIZES_LARGE);
     benchmark_frame_operations(c, &SIZES_LARGE);
+}
+
+// Configuration functions for different size categories
+fn config_small_arrays() -> Criterion {
+    Criterion::default()
+        .sample_size(500)
+        .measurement_time(Duration::from_millis(500))
+        .warm_up_time(Duration::from_millis(50))
+}
+
+fn config_medium_arrays() -> Criterion {
+    Criterion::default()
+        .sample_size(100)
+        .measurement_time(Duration::from_millis(2000))
+        .warm_up_time(Duration::from_millis(100))
+}
+
+fn config_large_arrays() -> Criterion {
+    Criterion::default()
+        .sample_size(50)
+        .measurement_time(Duration::from_millis(5000))
+        .warm_up_time(Duration::from_millis(200))
 }
 
 criterion_group!(
