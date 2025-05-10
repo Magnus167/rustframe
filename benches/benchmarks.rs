@@ -236,8 +236,8 @@ fn run_benchmarks_large(c: &mut Criterion) {
 fn config_small_arrays() -> Criterion {
     Criterion::default()
         .sample_size(500)
-        .measurement_time(Duration::from_millis(500))
-        .warm_up_time(Duration::from_millis(50))
+        .measurement_time(Duration::from_millis(100))
+        .warm_up_time(Duration::from_millis(5))
 }
 
 fn config_medium_arrays() -> Criterion {
@@ -253,6 +253,7 @@ fn config_large_arrays() -> Criterion {
         .measurement_time(Duration::from_millis(5000))
         .warm_up_time(Duration::from_millis(200))
 }
+
 
 criterion_group!(
     name = benches_small_arrays;
