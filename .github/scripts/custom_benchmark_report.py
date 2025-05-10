@@ -247,7 +247,8 @@ def generate_html_table_with_links(
 {html_doc_end}"""
 
     all_sizes = sorted(
-        list(set(size for test_data in results.values() for size in test_data.keys()))
+        list(set(size for test_data in results.values() for size in test_data.keys())),
+        key=(lambda x: int(x.split("x")[0])),
     )
     all_test_names = sorted(list(results.keys()))
 
