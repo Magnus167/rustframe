@@ -36,6 +36,16 @@ jobs:
       - name: Run benchmarks
         run: cargo bench --features bench
 
+      - name: Generate custom benchmark reports
+        run: |
+          if [ -d ./target/criterion ]; then
+            echo "Found benchmark reports, generating custom report..."
+          else
+            echo "No benchmark reports found, skipping custom report generation."
+            exit 1
+          fi
+          python .github/scripts/custom_benchmark_report.py
+
       - name: Upload benchmark reports
         uses: actions/upload-artifact@v4
         with:
