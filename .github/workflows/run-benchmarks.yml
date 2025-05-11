@@ -44,6 +44,7 @@ jobs:
             echo "No benchmark reports found, skipping custom report generation."
             exit 1
           fi
+          pip3 install pandas
           python3 .github/scripts/custom_benchmark_report.py
 
       - name: Upload benchmark reports
