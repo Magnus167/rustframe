@@ -132,7 +132,7 @@ jobs:
 
           unzip -q benchmark-report.zip -d benchmark-report
 
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=report/index.html\">" > benchmark-report/index.html
+          # echo "<meta http-equiv=\"refresh\" content=\"0; url=report/index.html\">" > benchmark-report/index.html
 
       - name: Copy files to output directory
         run: |
