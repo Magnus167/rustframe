@@ -565,7 +565,7 @@ impl Iterator for DatesGenerator {
 
 /// Generates the flat list of dates for the given range and frequency.
 /// Assumes the `collect_*` functions return sorted dates.
-fn get_dates_list_with_freq(
+pub fn get_dates_list_with_freq(
     start_date_str: &str,
     end_date_str: &str,
     freq: DateFreq,
@@ -733,6 +733,19 @@ fn collect_quarterly(
     Ok(result)
 }
 
+pub fn get_dates_list_with_freq_from_naive_date(
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    freq: DateFreq,
+) -> Result<Vec<NaiveDate>, Box<dyn Error>> {
+    get_dates_list_with_freq(
+        &start_date.format("%Y-%m-%d").to_string(),
+        &end_date.format("%Y-%m-%d").to_string(),
+        freq,
+    )
+}
+
+
 /// Return either the first or last calendar day in each year of the range.
 fn collect_yearly(
     start_date: NaiveDate,
@@ -819,7 +832,7 @@ fn last_day_of_month(year: i32, month: u32) -> Result<NaiveDate, Box<dyn Error>>
 
 /// Converts a month number (1-12) to a quarter number (1-4).
 /// Panics if month is invalid (should not happen with valid NaiveDate).
-fn month_to_quarter(m: u32) -> u32 {
+pub fn month_to_quarter(m: u32) -> u32 {
     match m {
         1..=3 => 1,
         4..=6 => 2,
@@ -899,7 +912,7 @@ fn get_first_date_helper(freq: DateFreq) -> fn(i32, u32) -> Result<NaiveDate, Bo
 
 /// Finds the *first* valid date according to the frequency,
 /// starting the search *on or after* the given `start_date`.
-fn find_first_date_on_or_after(
+pub fn find_first_date_on_or_after(
     start_date: NaiveDate,
     freq: DateFreq,
 ) -> Result<NaiveDate, Box<dyn Error>> {
@@ -951,7 +964,7 @@ fn find_first_date_on_or_after(
 
 /// Finds the *next* valid date according to the frequency,
 /// given the `current_date` (which is assumed to be a valid date previously generated).
-fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, Box<dyn Error>> {
+pub fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, Box<dyn Error>> {
     match freq {
         DateFreq::Daily => current_date
             .succ_opt()
