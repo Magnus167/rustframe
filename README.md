@@ -44,7 +44,7 @@ use chrono::NaiveDate;
 use rustframe::{
     frame::{Frame, RowIndex},
     matrix::{BoolOps, Matrix, SeriesOps},
-    utils::{BDateFreq, BDatesList},
+    utils::{DateFreq, BDatesList},
 };
 
 let n_periods = 4;
@@ -53,8 +53,7 @@ let n_periods = 4;
 let dates: Vec<NaiveDate> =
     BDatesList::from_n_periods("2024-01-02".to_string(), BDateFreq::Daily, n_periods)
         .unwrap()
-        .list()
-        .unwrap();
+        .list().unwrap();
 
 let col_names: Vec<String> = vec!["a".to_string(), "b".to_string()];
 
