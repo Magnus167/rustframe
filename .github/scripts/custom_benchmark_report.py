@@ -347,6 +347,11 @@ if __name__ == "__main__":
         description="Load Criterion benchmark results from JSON files and generate an HTML table with links to reports."
     )
     parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without writing the HTML file.",
+    )
+    parser.add_argument(
         "--criterion-dir",
         type=str,
         default=DEFAULT_CRITERION_PATH,
@@ -371,6 +376,12 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if args.dry_run:
+        print(
+            "Dry run mode: No files will be written. Use --dry-run to skip writing the HTML file."
+        )
+        sys.exit(0)
 
     criterion_path = Path(args.criterion_dir)
     output_file_path = Path(args.output_file)
