@@ -1,4 +1,4 @@
-name: Run benchmarks
+name: run-benchmarks
 
 on:
   workflow_dispatch:
@@ -33,8 +33,28 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Install Python
+        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Setup venv
+        run: |
+          uv venv
+          uv pip install pandas
+          uv run .github/scripts/custom_benchmark_report.py --dry-run
+
       - name: Run benchmarks
         run: cargo bench --features bench
+
+      - name: Generate custom benchmark reports
+        run: |
+          if [ -d ./target/criterion ]; then
+            echo "Found benchmark reports, generating custom report..."
+          else
+            echo "No benchmark reports found, skipping custom report generation."
+            exit 1
+          fi
+          uv run .github/scripts/custom_benchmark_report.py
 
       - name: Upload benchmark reports
         uses: actions/upload-artifact@v4
