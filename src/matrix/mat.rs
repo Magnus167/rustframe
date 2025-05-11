@@ -2,7 +2,7 @@
 
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Index, IndexMut, Mul, Not, Sub};
 
-/// A column‑major 2D matrix of `T`
+/// A column‑major 2D matrix of `T`. Index as `Array(row, column)`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Matrix<T> {
     rows: usize,
