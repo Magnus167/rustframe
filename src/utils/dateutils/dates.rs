@@ -2143,26 +2143,6 @@ mod tests {
                                                                            // find_next tries YE(MAX+1) - this call to find_next_date fails internally
         assert_eq!(generator.next(), None); // Returns None because internal find_next_date failed
 
-        // Check internal state after the call that returned None
-        // When Some(YE MAX) was returned, periods_remaining became 1.
-        // The next call enters the match, calls find_next_date (fails -> .ok() is None),
-        // sets next_date_candidate=None, decrements periods_remaining to 0, returns Some(YE MAX).
-        // --> NO, the code was: set candidate=find().ok(), THEN decrement.
-        // Let's revisit Iterator::next logic:
-        // 1. periods_remaining = 1, next_date_candidate = Some(YE MAX)
-        // 2. Enter match arm
-        // 3. find_next_date(YE MAX, YE) -> Err
-        // 4. self.next_date_candidate = Err.ok() -> None
-        // 5. self.periods_remaining -= 1 -> becomes 0
-        // 6. return Some(YE MAX) <-- This was the bug in my reasoning. It returns the *current* date first.
-        // State after returning Some(YE MAX): periods_remaining = 0, next_date_candidate = None
-        // Next call to generator.next():
-        // 1. periods_remaining = 0
-        // 2. Enter the `_` arm of the match
-        // 3. self.periods_remaining = 0 (no change)
-        // 4. self.next_date_candidate = None (no change)
-        // 5. return None
-
         // State after the *first* None is returned:
         assert_eq!(generator.periods_remaining, 0); // Corrected assertion
         assert!(generator.next_date_candidate.is_none());
