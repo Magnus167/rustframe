@@ -3,11 +3,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::hash::Hash;
 use std::result::Result;
-use std::str::FromStr;
 
-use crate::utils::dateutils::dates::{
-    find_next_date, AggregationType, DateFreq, DatesGenerator, DatesList,
-};
+use crate::utils::dateutils::dates::{find_next_date, AggregationType, DateFreq, DatesGenerator};
 
 use crate::utils::dateutils::dates;
 
@@ -366,10 +363,10 @@ impl BDatesList {
 /// ```
 #[derive(Debug, Clone)]
 pub struct BDatesGenerator {
+    dates_generator: DatesGenerator,
+    start_date: NaiveDate,
     freq: DateFreq,
     periods_remaining: usize,
-    // Next business date candidate to yield; None when iteration is complete.
-    next_date_candidate: Option<NaiveDate>,
 }
 
 impl BDatesGenerator {
@@ -395,18 +392,26 @@ impl BDatesGenerator {
         freq: DateFreq,
         n_periods: usize,
     ) -> Result<Self, Box<dyn Error>> {
-        let start_date = iter_till_bdate(start_date);
-        let first_date = if n_periods > 0 {
-            Some(find_first_bdate_on_or_after(start_date, freq))
-        } else {
-            // No dates when period count is zero.
-            None
+        // over-estimate the number of periods
+        let adj_n_periods = match freq {
+            DateFreq::Daily => n_periods + 5,
+            DateFreq::WeeklyMonday
+            | DateFreq::WeeklyFriday
+            | DateFreq::MonthStart
+            | DateFreq::MonthEnd
+            | DateFreq::QuarterStart
+            | DateFreq::QuarterEnd
+            | DateFreq::YearStart
+            | DateFreq::YearEnd => n_periods + 2,
         };
 
+        let dates_generator = DatesGenerator::new(start_date, freq, adj_n_periods)?;
+
         Ok(BDatesGenerator {
+            dates_generator,
+            start_date,
             freq,
             periods_remaining: n_periods,
-            next_date_candidate: first_date,
         })
     }
 }
@@ -418,21 +423,40 @@ impl Iterator for BDatesGenerator {
     /// number of periods has been generated.
     fn next(&mut self) -> Option<Self::Item> {
         // Terminate if no periods remain or no initial date is set.
-        if self.periods_remaining == 0 || self.next_date_candidate.is_none() {
+        if self.periods_remaining == 0 {
             return None;
         }
 
-        // Retrieve and store the current date for output.
-        let current_date = self.next_date_candidate.unwrap();
+        // get the next date from the generator
+        let next_date = self.dates_generator.next()?;
 
-        // Compute and queue the subsequent date for the next call.
-        self.next_date_candidate = Some(find_next_bdate(current_date, self.freq));
+        let next_date = match self.freq {
+            DateFreq::Daily => {
+                let mut new_candidate = next_date.clone();
+                while !is_business_date(new_candidate) {
+                    new_candidate = self.dates_generator.next()?;
+                }
+                new_candidate
+            }
 
-        // Decrement the remaining period count.
+            DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => next_date,
+            DateFreq::MonthEnd | DateFreq::QuarterEnd | DateFreq::YearEnd => {
+                // Adjust to the last business date of the month, quarter, or year.
+                let adjusted_date = iter_reverse_till_bdate(next_date);
+                if self.start_date > adjusted_date {
+                    // Skip this iteration if the adjusted date is before the start date.
+                    return self.next();
+                }
+                adjusted_date
+            }
+            DateFreq::MonthStart | DateFreq::QuarterStart | DateFreq::YearStart => {
+                // Adjust to the first business date of the month, quarter, or year.
+                iter_till_bdate(next_date)
+            }
+        };
+        // Decrement the remaining periods.
         self.periods_remaining -= 1;
-
-        // Yield the current business date.
-        Some(current_date)
+        Some(next_date)
     }
 }
 
@@ -492,27 +516,6 @@ fn iter_reverse_till_bdate(date: NaiveDate) -> NaiveDate {
     current_date
 }
 
-fn crop_to_first_and_last_bdate(dates: &mut Vec<NaiveDate>) {
-    if dates.is_empty() {
-        return;
-    }
-    let start_date = dates[0].clone();
-    let end_date = dates[dates.len() - 1].clone();
-    let start_date = iter_till_bdate(start_date);
-    let end_date = iter_reverse_till_bdate(end_date);
-    while dates.first().unwrap() < &start_date {
-        dates.remove(0);
-    }
-    while dates.last().unwrap() > &end_date {
-        dates.pop();
-    }
-
-    if dates.is_empty() {
-        dates.push(start_date);
-    }
-
-}
-
 /// Helper function to get a list of business dates based on the frequency.
 pub fn get_bdates_list_with_freq(
     start_date_str: &str,
@@ -523,13 +526,8 @@ pub fn get_bdates_list_with_freq(
 
     let start_date = NaiveDate::parse_from_str(start_date_str, "%Y-%m-%d")?;
     let end_date = NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d")?;
-    let start_date = iter_till_bdate(start_date);
-    let end_date = iter_reverse_till_bdate(end_date);
 
     let mut dates = dates::get_dates_list_with_freq_from_naive_date(start_date, end_date, freq)?;
-
-    // crop to first and last business date
-    crop_to_first_and_last_bdate(&mut dates);
 
     match freq {
         DateFreq::Daily => {
@@ -554,6 +552,7 @@ pub fn get_bdates_list_with_freq(
 mod tests {
     use super::*;
     use chrono::NaiveDate;
+    use std::str::FromStr;
 
     // Helper to create a NaiveDate for tests, handling the expect for fixed dates.
     fn date(year: i32, month: u32, day: u32) -> NaiveDate {
@@ -837,7 +836,7 @@ mod tests {
             "2023-12-31".to_string(),
             DateFreq::MonthEnd,
         );
-        assert_eq!(dates_list.count()?, 12); // 12 month ends in 2023
+        assert_eq!(dates_list.count()?, 12, "{:?}", dates_list.list()); // 12 month ends in 2023
 
         let dates_list_weekly = BDatesList::new(
             "2023-11-01".to_string(), // Wed
