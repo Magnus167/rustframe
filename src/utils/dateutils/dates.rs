@@ -492,10 +492,10 @@ impl DatesList {
 /// ```
 #[derive(Debug, Clone)]
 pub struct DatesGenerator {
-    freq: DateFreq,
-    periods_remaining: usize,
+    pub freq: DateFreq,
+    pub periods_remaining: usize,
     // Stores the *next* date to be yielded by the iterator.
-    next_date_candidate: Option<NaiveDate>,
+    pub next_date_candidate: Option<NaiveDate>,
 }
 
 impl DatesGenerator {
@@ -745,7 +745,6 @@ pub fn get_dates_list_with_freq_from_naive_date(
     )
 }
 
-
 /// Return either the first or last calendar day in each year of the range.
 fn collect_yearly(
     start_date: NaiveDate,
@@ -964,7 +963,10 @@ pub fn find_first_date_on_or_after(
 
 /// Finds the *next* valid date according to the frequency,
 /// given the `current_date` (which is assumed to be a valid date previously generated).
-pub fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, Box<dyn Error>> {
+pub fn find_next_date(
+    current_date: NaiveDate,
+    freq: DateFreq,
+) -> Result<NaiveDate, Box<dyn Error>> {
     match freq {
         DateFreq::Daily => current_date
             .succ_opt()
@@ -1498,7 +1500,8 @@ mod tests {
             // And trying to move *past* it should fail
             let day_before = NaiveDate::MAX - Duration::days(1);
             let target_day_after = NaiveDate::MAX.weekday().succ(); // Day after MAX's weekday
-            assert!(move_to_day_of_week_on_or_after(day_before, target_day_after).is_err()); // Moving past MAX fails
+            assert!(move_to_day_of_week_on_or_after(day_before, target_day_after).is_err());
+            // Moving past MAX fails
         }
 
         Ok(())
@@ -1522,7 +1525,7 @@ mod tests {
         assert_eq!(days_in_month(2023, 12)?, 31);
         assert!(days_in_month(2023, 0).is_err()); // Invalid month 0
         assert!(days_in_month(2023, 13).is_err()); // Invalid month 13
-        // Test near max date year overflow - Use MAX.year()
+                                                   // Test near max date year overflow - Use MAX.year()
         assert!(days_in_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1534,7 +1537,7 @@ mod tests {
         assert_eq!(last_day_of_month(2023, 12)?, date(2023, 12, 31));
         assert!(last_day_of_month(2023, 0).is_err()); // Invalid month 0
         assert!(last_day_of_month(2023, 13).is_err()); // Invalid month 13
-        // Test near max date year overflow - use MAX.year()
+                                                       // Test near max date year overflow - use MAX.year()
         assert!(last_day_of_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1600,7 +1603,7 @@ mod tests {
         assert_eq!(last_day_of_quarter(2023, 4)?, date(2023, 12, 31));
         assert_eq!(last_day_of_quarter(2024, 1)?, date(2024, 3, 31)); // Leap year doesn't affect March end
         assert!(last_day_of_quarter(2023, 5).is_err()); // Invalid quarter
-        // Test overflow propagation - use MAX.year()
+                                                        // Test overflow propagation - use MAX.year()
         assert!(last_day_of_quarter(NaiveDate::MAX.year(), 4).is_err());
         Ok(())
     }
@@ -1618,7 +1621,7 @@ mod tests {
     fn test_last_day_of_year() -> Result<(), Box<dyn Error>> {
         assert_eq!(last_day_of_year(2023)?, date(2023, 12, 31));
         assert_eq!(last_day_of_year(2024)?, date(2024, 12, 31)); // Leap year doesn't affect Dec 31st existence
-        // Test MAX year - should be okay since MAX is Dec 31
+                                                                 // Test MAX year - should be okay since MAX is Dec 31
         assert_eq!(last_day_of_year(NaiveDate::MAX.year())?, NaiveDate::MAX);
         Ok(())
     }
@@ -1910,13 +1913,11 @@ mod tests {
         assert!(find_next_date(NaiveDate::MAX, DateFreq::MonthEnd).is_err());
 
         // Test finding next quarter start after Q4 MAX_YEAR -> Q1 (MAX_YEAR+1) (fail)
-        assert!(
-            find_next_date(
-                first_day_of_quarter(NaiveDate::MAX.year(), 4)?,
-                DateFreq::QuarterStart
-            )
-            .is_err()
-        );
+        assert!(find_next_date(
+            first_day_of_quarter(NaiveDate::MAX.year(), 4)?,
+            DateFreq::QuarterStart
+        )
+        .is_err());
 
         // Test finding next quarter end after Q3 MAX_YEAR -> Q4 MAX_YEAR (fails because last_day_of_quarter(MAX, 4) fails)
         let q3_end_max_year = last_day_of_quarter(NaiveDate::MAX.year(), 3)?;
@@ -1927,22 +1928,18 @@ mod tests {
         assert!(find_next_date(NaiveDate::MAX, DateFreq::QuarterEnd).is_err());
 
         // Test finding next year start after Jan 1 MAX_YEAR -> Jan 1 (MAX_YEAR+1) (fail)
-        assert!(
-            find_next_date(
-                first_day_of_year(NaiveDate::MAX.year())?,
-                DateFreq::YearStart
-            )
-            .is_err()
-        );
+        assert!(find_next_date(
+            first_day_of_year(NaiveDate::MAX.year())?,
+            DateFreq::YearStart
+        )
+        .is_err());
 
         // Test finding next year end after Dec 31 (MAX_YEAR-1) -> Dec 31 MAX_YEAR (ok)
-        assert!(
-            find_next_date(
-                last_day_of_year(NaiveDate::MAX.year() - 1)?,
-                DateFreq::YearEnd
-            )
-            .is_ok()
-        );
+        assert!(find_next_date(
+            last_day_of_year(NaiveDate::MAX.year() - 1)?,
+            DateFreq::YearEnd
+        )
+        .is_ok());
 
         // Test finding next year end after Dec 31 MAX_YEAR -> Dec 31 (MAX_YEAR+1) (fail)
         assert!(
@@ -2143,7 +2140,7 @@ mod tests {
         assert_eq!(generator.next(), Some(start_date));
         // find_next finds YE(MAX)
         assert_eq!(generator.next(), Some(last_day_of_year(start_year)?)); // Should be MAX
-        // find_next tries YE(MAX+1) - this call to find_next_date fails internally
+                                                                           // find_next tries YE(MAX+1) - this call to find_next_date fails internally
         assert_eq!(generator.next(), None); // Returns None because internal find_next_date failed
 
         // Check internal state after the call that returned None
