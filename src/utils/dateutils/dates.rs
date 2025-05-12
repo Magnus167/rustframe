@@ -492,10 +492,10 @@ impl DatesList {
 /// ```
 #[derive(Debug, Clone)]
 pub struct DatesGenerator {
-    freq: DateFreq,
-    periods_remaining: usize,
+    pub freq: DateFreq,
+    pub periods_remaining: usize,
     // Stores the *next* date to be yielded by the iterator.
-    next_date_candidate: Option<NaiveDate>,
+    pub next_date_candidate: Option<NaiveDate>,
 }
 
 impl DatesGenerator {
@@ -565,7 +565,7 @@ impl Iterator for DatesGenerator {
 
 /// Generates the flat list of dates for the given range and frequency.
 /// Assumes the `collect_*` functions return sorted dates.
-fn get_dates_list_with_freq(
+pub fn get_dates_list_with_freq(
     start_date_str: &str,
     end_date_str: &str,
     freq: DateFreq,
@@ -648,8 +648,13 @@ fn collect_monthly(
     let mut year = start_date.year();
     let mut month = start_date.month();
 
-    let next_month =
-        |(yr, mo): (i32, u32)| -> (i32, u32) { if mo == 12 { (yr + 1, 1) } else { (yr, mo + 1) } };
+    let next_month = |(yr, mo): (i32, u32)| -> (i32, u32) {
+        if mo == 12 {
+            (yr + 1, 1)
+        } else {
+            (yr, mo + 1)
+        }
+    };
 
     loop {
         let candidate = if want_first_day {
@@ -726,6 +731,18 @@ fn collect_quarterly(
     }
 
     Ok(result)
+}
+
+pub fn get_dates_list_with_freq_from_naive_date(
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    freq: DateFreq,
+) -> Result<Vec<NaiveDate>, Box<dyn Error>> {
+    get_dates_list_with_freq(
+        &start_date.format("%Y-%m-%d").to_string(),
+        &end_date.format("%Y-%m-%d").to_string(),
+        freq,
+    )
 }
 
 /// Return either the first or last calendar day in each year of the range.
@@ -814,7 +831,7 @@ fn last_day_of_month(year: i32, month: u32) -> Result<NaiveDate, Box<dyn Error>>
 
 /// Converts a month number (1-12) to a quarter number (1-4).
 /// Panics if month is invalid (should not happen with valid NaiveDate).
-fn month_to_quarter(m: u32) -> u32 {
+pub fn month_to_quarter(m: u32) -> u32 {
     match m {
         1..=3 => 1,
         4..=6 => 2,
@@ -873,9 +890,28 @@ fn last_day_of_year(year: i32) -> Result<NaiveDate, Box<dyn Error>> {
 
 // --- Generator Helper Functions ---
 
+fn get_first_date_helper(freq: DateFreq) -> fn(i32, u32) -> Result<NaiveDate, Box<dyn Error>> {
+    if matches!(
+        freq,
+        DateFreq::Daily | DateFreq::WeeklyMonday | DateFreq::WeeklyFriday
+    ) {
+        panic!("Daily, WeeklyMonday, and WeeklyFriday frequencies are not supported here");
+    }
+
+    match freq {
+        DateFreq::MonthStart => first_day_of_month,
+        DateFreq::MonthEnd => last_day_of_month,
+        DateFreq::QuarterStart => first_day_of_quarter,
+        DateFreq::QuarterEnd => last_day_of_quarter,
+        DateFreq::YearStart => |year, _| first_day_of_year(year),
+        DateFreq::YearEnd => |year, _| last_day_of_year(year),
+        _ => unreachable!(),
+    }
+}
+
 /// Finds the *first* valid date according to the frequency,
 /// starting the search *on or after* the given `start_date`.
-fn find_first_date_on_or_after(
+pub fn find_first_date_on_or_after(
     start_date: NaiveDate,
     freq: DateFreq,
 ) -> Result<NaiveDate, Box<dyn Error>> {
@@ -883,69 +919,42 @@ fn find_first_date_on_or_after(
         DateFreq::Daily => Ok(start_date), // The first daily date is the start date itself
         DateFreq::WeeklyMonday => move_to_day_of_week_on_or_after(start_date, Weekday::Mon),
         DateFreq::WeeklyFriday => move_to_day_of_week_on_or_after(start_date, Weekday::Fri),
-        DateFreq::MonthStart => {
-            let mut candidate = first_day_of_month(start_date.year(), start_date.month())?;
+
+        DateFreq::MonthStart | DateFreq::MonthEnd => {
+            // let mut candidate = first_day_of_month(start_date.year(), start_date.month())?;
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), start_date.month())?;
             if candidate < start_date {
                 let (next_y, next_m) = if start_date.month() == 12 {
                     (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
                 } else {
                     (start_date.year(), start_date.month() + 1)
                 };
-                candidate = first_day_of_month(next_y, next_m)?;
+                candidate = get_cand_func(next_y, next_m)?;
             }
             Ok(candidate)
         }
-        DateFreq::MonthEnd => {
-            let mut candidate = last_day_of_month(start_date.year(), start_date.month())?;
-            if candidate < start_date {
-                let (next_y, next_m) = if start_date.month() == 12 {
-                    (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
-                } else {
-                    (start_date.year(), start_date.month() + 1)
-                };
-                candidate = last_day_of_month(next_y, next_m)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::QuarterStart => {
+        DateFreq::QuarterStart | DateFreq::QuarterEnd => {
             let current_q = month_to_quarter(start_date.month());
-            let mut candidate = first_day_of_quarter(start_date.year(), current_q)?;
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), current_q)?;
             if candidate < start_date {
                 let (next_y, next_q) = if current_q == 4 {
                     (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
                 } else {
                     (start_date.year(), current_q + 1)
                 };
-                candidate = first_day_of_quarter(next_y, next_q)?;
+                candidate = get_cand_func(next_y, next_q)?;
             }
             Ok(candidate)
         }
-        DateFreq::QuarterEnd => {
-            let current_q = month_to_quarter(start_date.month());
-            let mut candidate = last_day_of_quarter(start_date.year(), current_q)?;
-            if candidate < start_date {
-                let (next_y, next_q) = if current_q == 4 {
-                    (start_date.year().checked_add(1).ok_or("Year overflow")?, 1)
-                } else {
-                    (start_date.year(), current_q + 1)
-                };
-                candidate = last_day_of_quarter(next_y, next_q)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::YearStart => {
-            let mut candidate = first_day_of_year(start_date.year())?;
+
+        DateFreq::YearStart | DateFreq::YearEnd => {
+            let get_cand_func = get_first_date_helper(freq);
+            let mut candidate = get_cand_func(start_date.year(), 0)?;
             if candidate < start_date {
                 candidate =
-                    first_day_of_year(start_date.year().checked_add(1).ok_or("Year overflow")?)?;
-            }
-            Ok(candidate)
-        }
-        DateFreq::YearEnd => {
-            let mut candidate = last_day_of_year(start_date.year())?;
-            if candidate < start_date {
-                candidate =
-                    last_day_of_year(start_date.year().checked_add(1).ok_or("Year overflow")?)?;
+                    get_cand_func(start_date.year().checked_add(1).ok_or("Year overflow")?, 0)?;
             }
             Ok(candidate)
         }
@@ -954,7 +963,10 @@ fn find_first_date_on_or_after(
 
 /// Finds the *next* valid date according to the frequency,
 /// given the `current_date` (which is assumed to be a valid date previously generated).
-fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, Box<dyn Error>> {
+pub fn find_next_date(
+    current_date: NaiveDate,
+    freq: DateFreq,
+) -> Result<NaiveDate, Box<dyn Error>> {
     match freq {
         DateFreq::Daily => current_date
             .succ_opt()
@@ -962,7 +974,8 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
         DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => current_date
             .checked_add_signed(Duration::days(7))
             .ok_or_else(|| "Date overflow adding 7 days".into()),
-        DateFreq::MonthStart => {
+        DateFreq::MonthStart | DateFreq::MonthEnd => {
+            let get_cand_func = get_first_date_helper(freq);
             let (next_y, next_m) = if current_date.month() == 12 {
                 (
                     current_date.year().checked_add(1).ok_or("Year overflow")?,
@@ -971,21 +984,11 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
             } else {
                 (current_date.year(), current_date.month() + 1)
             };
-            first_day_of_month(next_y, next_m)
+            get_cand_func(next_y, next_m)
         }
-        DateFreq::MonthEnd => {
-            let (next_y, next_m) = if current_date.month() == 12 {
-                (
-                    current_date.year().checked_add(1).ok_or("Year overflow")?,
-                    1,
-                )
-            } else {
-                (current_date.year(), current_date.month() + 1)
-            };
-            last_day_of_month(next_y, next_m)
-        }
-        DateFreq::QuarterStart => {
+        DateFreq::QuarterStart | DateFreq::QuarterEnd => {
             let current_q = month_to_quarter(current_date.month());
+            let get_cand_func = get_first_date_helper(freq);
             let (next_y, next_q) = if current_q == 4 {
                 (
                     current_date.year().checked_add(1).ok_or("Year overflow")?,
@@ -994,25 +997,14 @@ fn find_next_date(current_date: NaiveDate, freq: DateFreq) -> Result<NaiveDate, 
             } else {
                 (current_date.year(), current_q + 1)
             };
-            first_day_of_quarter(next_y, next_q)
+            get_cand_func(next_y, next_q)
         }
-        DateFreq::QuarterEnd => {
-            let current_q = month_to_quarter(current_date.month());
-            let (next_y, next_q) = if current_q == 4 {
-                (
-                    current_date.year().checked_add(1).ok_or("Year overflow")?,
-                    1,
-                )
-            } else {
-                (current_date.year(), current_q + 1)
-            };
-            last_day_of_quarter(next_y, next_q)
-        }
-        DateFreq::YearStart => {
-            first_day_of_year(current_date.year().checked_add(1).ok_or("Year overflow")?)
-        }
-        DateFreq::YearEnd => {
-            last_day_of_year(current_date.year().checked_add(1).ok_or("Year overflow")?)
+        DateFreq::YearStart | DateFreq::YearEnd => {
+            let get_cand_func = get_first_date_helper(freq);
+            get_cand_func(
+                current_date.year().checked_add(1).ok_or("Year overflow")?,
+                0,
+            )
         }
     }
 }
@@ -1508,7 +1500,8 @@ mod tests {
             // And trying to move *past* it should fail
             let day_before = NaiveDate::MAX - Duration::days(1);
             let target_day_after = NaiveDate::MAX.weekday().succ(); // Day after MAX's weekday
-            assert!(move_to_day_of_week_on_or_after(day_before, target_day_after).is_err()); // Moving past MAX fails
+            assert!(move_to_day_of_week_on_or_after(day_before, target_day_after).is_err());
+            // Moving past MAX fails
         }
 
         Ok(())
@@ -1532,7 +1525,7 @@ mod tests {
         assert_eq!(days_in_month(2023, 12)?, 31);
         assert!(days_in_month(2023, 0).is_err()); // Invalid month 0
         assert!(days_in_month(2023, 13).is_err()); // Invalid month 13
-        // Test near max date year overflow - Use MAX.year()
+                                                   // Test near max date year overflow - Use MAX.year()
         assert!(days_in_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1544,7 +1537,7 @@ mod tests {
         assert_eq!(last_day_of_month(2023, 12)?, date(2023, 12, 31));
         assert!(last_day_of_month(2023, 0).is_err()); // Invalid month 0
         assert!(last_day_of_month(2023, 13).is_err()); // Invalid month 13
-        // Test near max date year overflow - use MAX.year()
+                                                       // Test near max date year overflow - use MAX.year()
         assert!(last_day_of_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1610,7 +1603,7 @@ mod tests {
         assert_eq!(last_day_of_quarter(2023, 4)?, date(2023, 12, 31));
         assert_eq!(last_day_of_quarter(2024, 1)?, date(2024, 3, 31)); // Leap year doesn't affect March end
         assert!(last_day_of_quarter(2023, 5).is_err()); // Invalid quarter
-        // Test overflow propagation - use MAX.year()
+                                                        // Test overflow propagation - use MAX.year()
         assert!(last_day_of_quarter(NaiveDate::MAX.year(), 4).is_err());
         Ok(())
     }
@@ -1628,7 +1621,7 @@ mod tests {
     fn test_last_day_of_year() -> Result<(), Box<dyn Error>> {
         assert_eq!(last_day_of_year(2023)?, date(2023, 12, 31));
         assert_eq!(last_day_of_year(2024)?, date(2024, 12, 31)); // Leap year doesn't affect Dec 31st existence
-        // Test MAX year - should be okay since MAX is Dec 31
+                                                                 // Test MAX year - should be okay since MAX is Dec 31
         assert_eq!(last_day_of_year(NaiveDate::MAX.year())?, NaiveDate::MAX);
         Ok(())
     }
@@ -1920,13 +1913,11 @@ mod tests {
         assert!(find_next_date(NaiveDate::MAX, DateFreq::MonthEnd).is_err());
 
         // Test finding next quarter start after Q4 MAX_YEAR -> Q1 (MAX_YEAR+1) (fail)
-        assert!(
-            find_next_date(
-                first_day_of_quarter(NaiveDate::MAX.year(), 4)?,
-                DateFreq::QuarterStart
-            )
-            .is_err()
-        );
+        assert!(find_next_date(
+            first_day_of_quarter(NaiveDate::MAX.year(), 4)?,
+            DateFreq::QuarterStart
+        )
+        .is_err());
 
         // Test finding next quarter end after Q3 MAX_YEAR -> Q4 MAX_YEAR (fails because last_day_of_quarter(MAX, 4) fails)
         let q3_end_max_year = last_day_of_quarter(NaiveDate::MAX.year(), 3)?;
@@ -1937,22 +1928,18 @@ mod tests {
         assert!(find_next_date(NaiveDate::MAX, DateFreq::QuarterEnd).is_err());
 
         // Test finding next year start after Jan 1 MAX_YEAR -> Jan 1 (MAX_YEAR+1) (fail)
-        assert!(
-            find_next_date(
-                first_day_of_year(NaiveDate::MAX.year())?,
-                DateFreq::YearStart
-            )
-            .is_err()
-        );
+        assert!(find_next_date(
+            first_day_of_year(NaiveDate::MAX.year())?,
+            DateFreq::YearStart
+        )
+        .is_err());
 
         // Test finding next year end after Dec 31 (MAX_YEAR-1) -> Dec 31 MAX_YEAR (ok)
-        assert!(
-            find_next_date(
-                last_day_of_year(NaiveDate::MAX.year() - 1)?,
-                DateFreq::YearEnd
-            )
-            .is_ok()
-        );
+        assert!(find_next_date(
+            last_day_of_year(NaiveDate::MAX.year() - 1)?,
+            DateFreq::YearEnd
+        )
+        .is_ok());
 
         // Test finding next year end after Dec 31 MAX_YEAR -> Dec 31 (MAX_YEAR+1) (fail)
         assert!(
@@ -2153,28 +2140,8 @@ mod tests {
         assert_eq!(generator.next(), Some(start_date));
         // find_next finds YE(MAX)
         assert_eq!(generator.next(), Some(last_day_of_year(start_year)?)); // Should be MAX
-        // find_next tries YE(MAX+1) - this call to find_next_date fails internally
+                                                                           // find_next tries YE(MAX+1) - this call to find_next_date fails internally
         assert_eq!(generator.next(), None); // Returns None because internal find_next_date failed
-
-        // Check internal state after the call that returned None
-        // When Some(YE MAX) was returned, periods_remaining became 1.
-        // The next call enters the match, calls find_next_date (fails -> .ok() is None),
-        // sets next_date_candidate=None, decrements periods_remaining to 0, returns Some(YE MAX).
-        // --> NO, the code was: set candidate=find().ok(), THEN decrement.
-        // Let's revisit Iterator::next logic:
-        // 1. periods_remaining = 1, next_date_candidate = Some(YE MAX)
-        // 2. Enter match arm
-        // 3. find_next_date(YE MAX, YE) -> Err
-        // 4. self.next_date_candidate = Err.ok() -> None
-        // 5. self.periods_remaining -= 1 -> becomes 0
-        // 6. return Some(YE MAX) <-- This was the bug in my reasoning. It returns the *current* date first.
-        // State after returning Some(YE MAX): periods_remaining = 0, next_date_candidate = None
-        // Next call to generator.next():
-        // 1. periods_remaining = 0
-        // 2. Enter the `_` arm of the match
-        // 3. self.periods_remaining = 0 (no change)
-        // 4. self.next_date_candidate = None (no change)
-        // 5. return None
 
         // State after the *first* None is returned:
         assert_eq!(generator.periods_remaining, 0); // Corrected assertion
