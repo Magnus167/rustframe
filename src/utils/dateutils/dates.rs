@@ -340,32 +340,7 @@ impl DatesList {
     /// Returns an error if the start or end date strings cannot be parsed.
     pub fn groups(&self) -> Result<Vec<Vec<NaiveDate>>, Box<dyn Error>> {
         let dates = self.list()?;
-        let mut groups: HashMap<GroupKey, Vec<NaiveDate>> = HashMap::new();
-
-        for date in dates {
-            let key = match self.freq {
-                DateFreq::Daily => GroupKey::Daily(date),
-                DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => {
-                    let iso_week = date.iso_week();
-                    GroupKey::Weekly(iso_week.year(), iso_week.week())
-                }
-                DateFreq::MonthStart | DateFreq::MonthEnd => {
-                    GroupKey::Monthly(date.year(), date.month())
-                }
-                DateFreq::QuarterStart | DateFreq::QuarterEnd => {
-                    GroupKey::Quarterly(date.year(), month_to_quarter(date.month()))
-                }
-                DateFreq::YearStart | DateFreq::YearEnd => GroupKey::Yearly(date.year()),
-            };
-            groups.entry(key).or_insert_with(Vec::new).push(date);
-        }
-
-        let mut sorted_groups: Vec<(GroupKey, Vec<NaiveDate>)> = groups.into_iter().collect();
-        sorted_groups.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
-
-        // Dates within groups are already sorted because they came from the sorted `self.list()`.
-        let result_groups = sorted_groups.into_iter().map(|(_, dates)| dates).collect();
-        Ok(result_groups)
+        group_dates_helper(dates, self.freq)
     }
 
     /// Returns the start date parsed as a `NaiveDate`.
@@ -562,6 +537,38 @@ impl Iterator for DatesGenerator {
 }
 
 // --- Internal helper functions ---
+
+pub fn group_dates_helper(
+    dates: Vec<NaiveDate>,
+    freq: DateFreq,
+) -> Result<Vec<Vec<NaiveDate>>, Box<dyn Error + 'static>> {
+    let mut groups: HashMap<GroupKey, Vec<NaiveDate>> = HashMap::new();
+
+    for date in dates {
+        let key = match freq {
+            DateFreq::Daily => GroupKey::Daily(date),
+            DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => {
+                let iso_week = date.iso_week();
+                GroupKey::Weekly(iso_week.year(), iso_week.week())
+            }
+            DateFreq::MonthStart | DateFreq::MonthEnd => {
+                GroupKey::Monthly(date.year(), date.month())
+            }
+            DateFreq::QuarterStart | DateFreq::QuarterEnd => {
+                GroupKey::Quarterly(date.year(), month_to_quarter(date.month()))
+            }
+            DateFreq::YearStart | DateFreq::YearEnd => GroupKey::Yearly(date.year()),
+        };
+        groups.entry(key).or_insert_with(Vec::new).push(date);
+    }
+
+    let mut sorted_groups: Vec<(GroupKey, Vec<NaiveDate>)> = groups.into_iter().collect();
+    sorted_groups.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
+
+    // Dates within groups are already sorted because they came from the sorted `self.list()`.
+    let result_groups = sorted_groups.into_iter().map(|(_, dates)| dates).collect();
+    Ok(result_groups)
+}
 
 /// Generates the flat list of dates for the given range and frequency.
 /// Assumes the `collect_*` functions return sorted dates.
