@@ -10,6 +10,9 @@ use crate::utils::dateutils::dates::{find_next_date, AggregationType, DateFreq, 
 
 use crate::utils::dateutils::dates;
 
+/// Type alias for `DateFreq` to represent business date frequency.
+pub type BDateFreq = DateFreq;
+
 /// Represents a list of business dates generated between a start and end date
 /// at a specified frequency. Provides methods to retrieve the full list,
 /// count, or dates grouped by period.
