@@ -5,8 +5,6 @@ use std::hash::Hash;
 use std::result::Result;
 use std::str::FromStr;
 
-// --- Core Enums ---
-
 /// Represents the frequency at which calendar dates should be generated.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DateFreq {
@@ -123,8 +121,6 @@ impl FromStr for DateFreq {
         Ok(r)
     }
 }
-
-// --- DatesList Struct ---
 
 /// Represents a list of calendar dates generated between a start and end date
 /// at a specified frequency. Provides methods to retrieve the full list,
@@ -382,8 +378,6 @@ impl DatesList {
     }
 }
 
-// --- Dates Generator (Iterator) ---
-
 /// An iterator that generates a sequence of calendar dates based on a start date,
 /// frequency, and a specified number of periods.
 ///
@@ -536,7 +530,7 @@ impl Iterator for DatesGenerator {
     }
 }
 
-// --- Internal helper functions ---
+// Internal helper functions
 
 pub fn group_dates_helper(
     dates: Vec<NaiveDate>,
@@ -608,7 +602,7 @@ pub fn get_dates_list_with_freq(
     Ok(dates)
 }
 
-/* ---------------------- Low-Level Date Collection Functions (Internal) ---------------------- */
+//  Low-Level Date Collection Functions (Internal)
 // These functions generate dates within a *range* [start_date, end_date]
 
 /// Returns all calendar days day-by-day within the range.
@@ -740,6 +734,9 @@ fn collect_quarterly(
     Ok(result)
 }
 
+/// Returns a list of dates between the given start and end dates, inclusive,
+/// at the specified frequency.
+/// This function is a convenience wrapper around `get_dates_list_with_freq`.
 pub fn get_dates_list_with_freq_from_naive_date(
     start_date: NaiveDate,
     end_date: NaiveDate,
@@ -780,8 +777,6 @@ fn collect_yearly(
     }
     Ok(result)
 }
-
-/* ---------------------- Core Date Utility Functions (Internal) ---------------------- */
 
 /// Given a date and a `target_weekday`, returns the date that is the first
 /// `target_weekday` on or after the given date.
@@ -1474,8 +1469,6 @@ mod tests {
         Ok(())
     }
 
-    // --- Tests for internal helper functions ---
-
     #[test]
     fn test_move_to_day_of_week_on_or_after() -> Result<(), Box<dyn Error>> {
         assert_eq!(
@@ -1527,12 +1520,15 @@ mod tests {
     fn test_days_in_month() -> Result<(), Box<dyn Error>> {
         assert_eq!(days_in_month(2023, 1)?, 31);
         assert_eq!(days_in_month(2023, 2)?, 28);
-        assert_eq!(days_in_month(2024, 2)?, 29); // Leap
+        // Leap
+        assert_eq!(days_in_month(2024, 2)?, 29);
         assert_eq!(days_in_month(2023, 4)?, 30);
         assert_eq!(days_in_month(2023, 12)?, 31);
-        assert!(days_in_month(2023, 0).is_err()); // Invalid month 0
-        assert!(days_in_month(2023, 13).is_err()); // Invalid month 13
-                                                   // Test near max date year overflow - Use MAX.year()
+        // Invalid month 0
+        assert!(days_in_month(2023, 0).is_err());
+        // Invalid month 13
+        // Test near max date year overflow - Use MAX.year()
+        assert!(days_in_month(2023, 13).is_err());
         assert!(days_in_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1542,9 +1538,12 @@ mod tests {
         assert_eq!(last_day_of_month(2023, 11)?, date(2023, 11, 30));
         assert_eq!(last_day_of_month(2024, 2)?, date(2024, 2, 29)); // Leap
         assert_eq!(last_day_of_month(2023, 12)?, date(2023, 12, 31));
-        assert!(last_day_of_month(2023, 0).is_err()); // Invalid month 0
-        assert!(last_day_of_month(2023, 13).is_err()); // Invalid month 13
-                                                       // Test near max date year overflow - use MAX.year()
+        // Invalid month 0
+        assert!(last_day_of_month(2023, 0).is_err());
+        // Invalid month 13
+        // Test near max date year overflow - use MAX.year()
+        assert!(last_day_of_month(2023, 13).is_err());
+
         assert!(last_day_of_month(NaiveDate::MAX.year(), 12).is_err());
         Ok(())
     }
@@ -1588,7 +1587,8 @@ mod tests {
         assert_eq!(first_day_of_quarter(2023, 2)?, date(2023, 4, 1));
         assert_eq!(first_day_of_quarter(2023, 3)?, date(2023, 7, 1));
         assert_eq!(first_day_of_quarter(2023, 4)?, date(2023, 10, 1));
-        assert!(first_day_of_quarter(2023, 5).is_err()); // Invalid quarter
+        // Invalid quarter
+        assert!(first_day_of_quarter(2023, 5).is_err());
         Ok(())
     }
 
@@ -1608,9 +1608,11 @@ mod tests {
         assert_eq!(last_day_of_quarter(2023, 2)?, date(2023, 6, 30));
         assert_eq!(last_day_of_quarter(2023, 3)?, date(2023, 9, 30));
         assert_eq!(last_day_of_quarter(2023, 4)?, date(2023, 12, 31));
-        assert_eq!(last_day_of_quarter(2024, 1)?, date(2024, 3, 31)); // Leap year doesn't affect March end
-        assert!(last_day_of_quarter(2023, 5).is_err()); // Invalid quarter
-                                                        // Test overflow propagation - use MAX.year()
+        // Leap year doesn't affect March end
+        assert_eq!(last_day_of_quarter(2024, 1)?, date(2024, 3, 31));
+        // Invalid quarter
+        // Test overflow propagation - use MAX.year()
+        assert!(last_day_of_quarter(2023, 5).is_err());
         assert!(last_day_of_quarter(NaiveDate::MAX.year(), 4).is_err());
         Ok(())
     }
@@ -1627,15 +1629,12 @@ mod tests {
     #[test]
     fn test_last_day_of_year() -> Result<(), Box<dyn Error>> {
         assert_eq!(last_day_of_year(2023)?, date(2023, 12, 31));
-        assert_eq!(last_day_of_year(2024)?, date(2024, 12, 31)); // Leap year doesn't affect Dec 31st existence
-                                                                 // Test MAX year - should be okay since MAX is Dec 31
+        // Leap year doesn't affect Dec 31st existence
+        // Test MAX year - should be okay since MAX is Dec 31
+        assert_eq!(last_day_of_year(2024)?, date(2024, 12, 31));
         assert_eq!(last_day_of_year(NaiveDate::MAX.year())?, NaiveDate::MAX);
         Ok(())
     }
-
-    // Overflow tests for collect_* removed as they were misleading
-
-    // --- Tests for Generator Helper Functions ---
 
     #[test]
     fn test_find_first_date_on_or_after() -> Result<(), Box<dyn Error>> {
@@ -1644,10 +1643,11 @@ mod tests {
             find_first_date_on_or_after(date(2023, 11, 8), DateFreq::Daily)?,
             date(2023, 11, 8)
         );
+        // Sat -> Sat
         assert_eq!(
             find_first_date_on_or_after(date(2023, 11, 11), DateFreq::Daily)?,
             date(2023, 11, 11)
-        ); // Sat -> Sat
+        );
 
         // Weekly Mon
         assert_eq!(
@@ -1658,10 +1658,11 @@ mod tests {
             find_first_date_on_or_after(date(2023, 11, 13), DateFreq::WeeklyMonday)?,
             date(2023, 11, 13)
         );
+        // Sun -> Mon
         assert_eq!(
             find_first_date_on_or_after(date(2023, 11, 12), DateFreq::WeeklyMonday)?,
             date(2023, 11, 13)
-        ); // Sun -> Mon
+        );
 
         // Weekly Fri
         assert_eq!(
@@ -1690,10 +1691,11 @@ mod tests {
             find_first_date_on_or_after(date(2023, 12, 15), DateFreq::MonthStart)?,
             date(2024, 1, 1)
         );
+        // Oct 1 -> Oct 1
         assert_eq!(
             find_first_date_on_or_after(date(2023, 10, 1), DateFreq::MonthStart)?,
             date(2023, 10, 1)
-        ); // Oct 1 -> Oct 1
+        );
 
         // Month End
         assert_eq!(
@@ -1704,18 +1706,21 @@ mod tests {
             find_first_date_on_or_after(date(2023, 11, 15), DateFreq::MonthEnd)?,
             date(2023, 11, 30)
         );
+        // Dec 31 -> Dec 31
         assert_eq!(
             find_first_date_on_or_after(date(2023, 12, 31), DateFreq::MonthEnd)?,
             date(2023, 12, 31)
-        ); // Dec 31 -> Dec 31
+        );
+        // Mid Feb (Leap) -> Feb 29
         assert_eq!(
             find_first_date_on_or_after(date(2024, 2, 15), DateFreq::MonthEnd)?,
             date(2024, 2, 29)
-        ); // Mid Feb (Leap) -> Feb 29
+        );
+        // Feb 29 -> Feb 29
         assert_eq!(
             find_first_date_on_or_after(date(2024, 2, 29), DateFreq::MonthEnd)?,
             date(2024, 2, 29)
-        ); // Feb 29 -> Feb 29
+        );
 
         // Quarter Start
         assert_eq!(
@@ -2146,12 +2151,15 @@ mod tests {
         // find_first returns start_date (YE MAX-1)
         assert_eq!(generator.next(), Some(start_date));
         // find_next finds YE(MAX)
-        assert_eq!(generator.next(), Some(last_day_of_year(start_year)?)); // Should be MAX
-                                                                           // find_next tries YE(MAX+1) - this call to find_next_date fails internally
-        assert_eq!(generator.next(), None); // Returns None because internal find_next_date failed
+        assert_eq!(generator.next(), Some(last_day_of_year(start_year)?));
+        // Should be MAX
+        // find_next tries YE(MAX+1) - this call to find_next_date fails internally
+        assert_eq!(generator.next(), None);
+        // Returns None because internal find_next_date failed
 
         // State after the *first* None is returned:
-        assert_eq!(generator.periods_remaining, 0); // Corrected assertion
+        // Corrected assertion
+        assert_eq!(generator.periods_remaining, 0);
         assert!(generator.next_date_candidate.is_none());
 
         // Calling next() again should also return None
