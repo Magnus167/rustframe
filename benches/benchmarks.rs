@@ -5,7 +5,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rustframe::{
     frame::{Frame, RowIndex},
     matrix::{BoolMatrix, Matrix, SeriesOps},
-    utils::{BDateFreq, BDatesList},
+    utils::{BDatesList, BDateFreq},
 };
 use std::time::Duration;
 
@@ -253,7 +253,6 @@ fn config_large_arrays() -> Criterion {
         .measurement_time(Duration::from_millis(5000))
         .warm_up_time(Duration::from_millis(200))
 }
-
 
 criterion_group!(
     name = benches_small_arrays;
