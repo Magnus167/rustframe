@@ -219,45 +219,8 @@ impl BDatesList {
     ///
     /// Returns an error if the start or end date strings cannot be parsed.
     pub fn groups(&self) -> Result<Vec<Vec<NaiveDate>>, Box<dyn Error>> {
-        // Retrieve all business dates in chronological order.
         let dates = self.list()?;
-
-        // Aggregate dates into buckets keyed by period.
-        let mut groups: HashMap<GroupKey, Vec<NaiveDate>> = HashMap::new();
-
-        for date in dates {
-            // Derive the appropriate GroupKey for the current date based on the configured frequency.
-            let key = match self.freq {
-                DateFreq::Daily => GroupKey::Daily(date),
-                DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => {
-                    let iso_week = date.iso_week();
-                    GroupKey::Weekly(iso_week.year(), iso_week.week())
-                }
-                DateFreq::MonthStart | DateFreq::MonthEnd => {
-                    GroupKey::Monthly(date.year(), date.month())
-                }
-                DateFreq::QuarterStart | DateFreq::QuarterEnd => {
-                    GroupKey::Quarterly(date.year(), dates::month_to_quarter(date.month()))
-                }
-                DateFreq::YearStart | DateFreq::YearEnd => GroupKey::Yearly(date.year()),
-            };
-
-            // Append the date to its period group.
-            groups.entry(key).or_insert_with(Vec::new).push(date);
-        }
-
-        // Transform the group map into a vector of (GroupKey, Vec<NaiveDate>) tuples.
-        let mut sorted_groups: Vec<(GroupKey, Vec<NaiveDate>)> = groups.into_iter().collect();
-
-        // Sort groups chronologically using the derived `Ord` implementation on `GroupKey`.
-        sorted_groups.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
-
-        // Note: Dates within each group remain sorted due to initial ordered input.
-
-        // Discard group keys to return only the list of date vectors.
-        let result_groups = sorted_groups.into_iter().map(|(_, dates)| dates).collect();
-
-        Ok(result_groups)
+        dates::group_dates_helper(dates, self.freq)
     }
 
     /// Returns the start date parsed as a `NaiveDate`.
