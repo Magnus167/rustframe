@@ -1,12 +1,17 @@
+//! This module provides functionality for generating and manipulating business dates.
+//! It includes the `BDatesList`, which emulates a `DateList` structure and its properties.
+//! It uses `DateList` and `DateListGenerator`, adjusting the output to work on business dates.
+
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
-use std::collections::HashMap;
 use std::error::Error;
-use std::hash::Hash;
 use std::result::Result;
 
 use crate::utils::dateutils::dates::{find_next_date, AggregationType, DateFreq, DatesGenerator};
 
 use crate::utils::dateutils::dates;
+
+/// Type alias for `DateFreq` to represent business date frequency.
+pub type BDateFreq = DateFreq;
 
 /// Represents a list of business dates generated between a start and end date
 /// at a specified frequency. Provides methods to retrieve the full list,
@@ -16,19 +21,6 @@ pub struct BDatesList {
     start_date_str: String,
     end_date_str: String,
     freq: DateFreq,
-    // TODO: cache the generated date list to reduce repeated computation.
-    // Currently, list(), count(), and groups() regenerate the list on every invocation.
-    // cached_list: Option<Vec<NaiveDate>>,
-}
-
-// Enumeration of period keys used for grouping dates.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-enum GroupKey {
-    Daily(NaiveDate),    // Daily grouping: use the exact date
-    Weekly(i32, u32),    // Weekly grouping: use year and ISO week number
-    Monthly(i32, u32),   // Monthly grouping: use year and month (1-12)
-    Quarterly(i32, u32), // Quarterly grouping: use year and quarter (1-4)
-    Yearly(i32),         // Yearly grouping: use year
 }
 
 /// Represents a collection of business dates generated according to specific rules.
@@ -219,45 +211,8 @@ impl BDatesList {
     ///
     /// Returns an error if the start or end date strings cannot be parsed.
     pub fn groups(&self) -> Result<Vec<Vec<NaiveDate>>, Box<dyn Error>> {
-        // Retrieve all business dates in chronological order.
         let dates = self.list()?;
-
-        // Aggregate dates into buckets keyed by period.
-        let mut groups: HashMap<GroupKey, Vec<NaiveDate>> = HashMap::new();
-
-        for date in dates {
-            // Derive the appropriate GroupKey for the current date based on the configured frequency.
-            let key = match self.freq {
-                DateFreq::Daily => GroupKey::Daily(date),
-                DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => {
-                    let iso_week = date.iso_week();
-                    GroupKey::Weekly(iso_week.year(), iso_week.week())
-                }
-                DateFreq::MonthStart | DateFreq::MonthEnd => {
-                    GroupKey::Monthly(date.year(), date.month())
-                }
-                DateFreq::QuarterStart | DateFreq::QuarterEnd => {
-                    GroupKey::Quarterly(date.year(), dates::month_to_quarter(date.month()))
-                }
-                DateFreq::YearStart | DateFreq::YearEnd => GroupKey::Yearly(date.year()),
-            };
-
-            // Append the date to its period group.
-            groups.entry(key).or_insert_with(Vec::new).push(date);
-        }
-
-        // Transform the group map into a vector of (GroupKey, Vec<NaiveDate>) tuples.
-        let mut sorted_groups: Vec<(GroupKey, Vec<NaiveDate>)> = groups.into_iter().collect();
-
-        // Sort groups chronologically using the derived `Ord` implementation on `GroupKey`.
-        sorted_groups.sort_by(|(k1, _), (k2, _)| k1.cmp(k2));
-
-        // Note: Dates within each group remain sorted due to initial ordered input.
-
-        // Discard group keys to return only the list of date vectors.
-        let result_groups = sorted_groups.into_iter().map(|(_, dates)| dates).collect();
-
-        Ok(result_groups)
+        dates::group_dates_helper(dates, self.freq)
     }
 
     /// Returns the start date parsed as a `NaiveDate`.
@@ -441,7 +396,6 @@ impl Iterator for BDatesGenerator {
 
             DateFreq::WeeklyMonday | DateFreq::WeeklyFriday => next_date,
             DateFreq::MonthEnd | DateFreq::QuarterEnd | DateFreq::YearEnd => {
-                // Adjust to the last business date of the month, quarter, or year.
                 let adjusted_date = iter_reverse_till_bdate(next_date);
                 if self.start_date > adjusted_date {
                     // Skip this iteration if the adjusted date is before the start date.
@@ -1229,4 +1183,4 @@ mod tests {
         );
         Ok(())
     }
-} // end mod tests
+}
