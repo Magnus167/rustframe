@@ -5,7 +5,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rustframe::{
     frame::{Frame, RowIndex},
     matrix::{BoolMatrix, Matrix, SeriesOps},
-    utils::{BDatesList, BDateFreq},
+    utils::{DateFreq, DatesList},
 };
 use std::time::Duration;
 
@@ -146,7 +146,7 @@ fn matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
 fn generate_frame(size: usize) -> Frame<f64> {
     let data: Vec<f64> = (0..size * size).map(|x| x as f64).collect();
     let dates: Vec<NaiveDate> =
-        BDatesList::from_n_periods("2000-01-01".to_string(), BDateFreq::Daily, size)
+        DatesList::from_n_periods("2000-01-01".to_string(), DateFreq::Daily, size)
             .unwrap()
             .list()
             .unwrap();
