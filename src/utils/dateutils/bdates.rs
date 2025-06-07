@@ -40,7 +40,7 @@ pub struct BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// use rustframe::utils::{BDatesList, DateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, DateFreq};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     let start_date = "2023-11-01".to_string(); // Wednesday
@@ -68,7 +68,7 @@ pub struct BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// use rustframe::utils::{BDatesList, DateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, DateFreq};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     let start_date = "2024-02-28".to_string(); // Wednesday
@@ -98,7 +98,7 @@ pub struct BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// use rustframe::utils::{BDatesList, DateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesList, DateFreq};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     let start_date = "2023-11-20".to_string(); // Mon, Week 47
@@ -294,7 +294,7 @@ impl BDatesList {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// use rustframe::utils::{BDatesGenerator, DateFreq}; // Replace bdates with your actual crate/module name
+/// use rustframe::utils::{BDatesGenerator, DateFreq};
 ///
 /// fn main() -> Result<(), Box<dyn Error>> {
 ///     let start = NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(); // Monday
