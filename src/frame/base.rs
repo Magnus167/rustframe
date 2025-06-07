@@ -781,14 +781,13 @@ impl<T: Clone + PartialEq> IndexMut<&str> for Frame<T> {
 /// Panics if column labels or row indices differ between operands.
 macro_rules! impl_elementwise_frame_op {
     ($OpTrait:ident, $method:ident) => {
+        // &Frame<T> $OpTrait &Frame<T>
         impl<'a, 'b, T> std::ops::$OpTrait<&'b Frame<T>> for &'a Frame<T>
         where
             T: Clone + PartialEq + std::ops::$OpTrait<Output = T>,
         {
             type Output = Frame<T>;
-
             fn $method(self, rhs: &'b Frame<T>) -> Frame<T> {
-                // Verify matching schema
                 if self.column_names != rhs.column_names {
                     panic!(
                         "Element-wise {}: column names do not match. Left: {:?}, Right: {:?}",
@@ -805,21 +804,47 @@ macro_rules! impl_elementwise_frame_op {
                         rhs.index
                     );
                 }
-
-                // Apply the matrix operation
                 let result_matrix = (&self.matrix).$method(&rhs.matrix);
-
-                // Determine index for the result
                 let new_index = match self.index {
                     RowIndex::Range(_) => None,
                     _ => Some(self.index.clone()),
                 };
-
                 Frame::new(result_matrix, self.column_names.clone(), new_index)
+            }
+        }
+        // Frame<T> $OpTrait &Frame<T>
+        impl<'b, T> std::ops::$OpTrait<&'b Frame<T>> for Frame<T>
+        where
+            T: Clone + PartialEq + std::ops::$OpTrait<Output = T>,
+        {
+            type Output = Frame<T>;
+            fn $method(self, rhs: &'b Frame<T>) -> Frame<T> {
+                (&self).$method(rhs)
+            }
+        }
+        // &Frame<T> $OpTrait Frame<T>
+        impl<'a, T> std::ops::$OpTrait<Frame<T>> for &'a Frame<T>
+        where
+            T: Clone + PartialEq + std::ops::$OpTrait<Output = T>,
+        {
+            type Output = Frame<T>;
+            fn $method(self, rhs: Frame<T>) -> Frame<T> {
+                self.$method(&rhs)
+            }
+        }
+        // Frame<T> $OpTrait Frame<T>
+        impl<T> std::ops::$OpTrait<Frame<T>> for Frame<T>
+        where
+            T: Clone + PartialEq + std::ops::$OpTrait<Output = T>,
+        {
+            type Output = Frame<T>;
+            fn $method(self, rhs: Frame<T>) -> Frame<T> {
+                (&self).$method(&rhs)
             }
         }
     };
 }
+
 impl_elementwise_frame_op!(Add, add);
 impl_elementwise_frame_op!(Sub, sub);
 impl_elementwise_frame_op!(Mul, mul);
@@ -830,11 +855,10 @@ impl_elementwise_frame_op!(Div, div);
 /// Panics if column labels or row indices differ between operands.
 macro_rules! impl_bitwise_frame_op {
     ($OpTrait:ident, $method:ident) => {
+        // &Frame<bool> $OpTrait &Frame<bool>
         impl<'a, 'b> std::ops::$OpTrait<&'b Frame<bool>> for &'a Frame<bool> {
             type Output = Frame<bool>;
-
             fn $method(self, rhs: &'b Frame<bool>) -> Frame<bool> {
-                // Verify matching schema
                 if self.column_names != rhs.column_names {
                     panic!(
                         "Bitwise {}: column names do not match. Left: {:?}, Right: {:?}",
@@ -851,25 +875,43 @@ macro_rules! impl_bitwise_frame_op {
                         rhs.index
                     );
                 }
-
-                // Apply the matrix operation
                 let result_matrix = (&self.matrix).$method(&rhs.matrix);
-
-                // Determine index for the result
                 let new_index = match self.index {
                     RowIndex::Range(_) => None,
                     _ => Some(self.index.clone()),
                 };
-
                 Frame::new(result_matrix, self.column_names.clone(), new_index)
+            }
+        }
+        // Frame<bool> $OpTrait &Frame<bool>
+        impl<'b> std::ops::$OpTrait<&'b Frame<bool>> for Frame<bool> {
+            type Output = Frame<bool>;
+            fn $method(self, rhs: &'b Frame<bool>) -> Frame<bool> {
+                (&self).$method(rhs)
+            }
+        }
+        // &Frame<bool> $OpTrait Frame<bool>
+        impl<'a> std::ops::$OpTrait<Frame<bool>> for &'a Frame<bool> {
+            type Output = Frame<bool>;
+            fn $method(self, rhs: Frame<bool>) -> Frame<bool> {
+                self.$method(&rhs)
+            }
+        }
+        // Frame<bool> $OpTrait Frame<bool>
+        impl std::ops::$OpTrait<Frame<bool>> for Frame<bool> {
+            type Output = Frame<bool>;
+            fn $method(self, rhs: Frame<bool>) -> Frame<bool> {
+                (&self).$method(&rhs)
             }
         }
     };
 }
+
 impl_bitwise_frame_op!(BitAnd, bitand);
 impl_bitwise_frame_op!(BitOr, bitor);
 impl_bitwise_frame_op!(BitXor, bitxor);
 
+/* ---------- Logical NOT ---------- */
 /// Implements logical NOT (`!`) for `Frame<bool>`, consuming the frame.
 impl Not for Frame<bool> {
     type Output = Frame<bool>;
@@ -888,12 +930,30 @@ impl Not for Frame<bool> {
     }
 }
 
-// --- Tests ---
+/// Implements logical NOT (`!`) for `&Frame<bool>`, borrowing the frame.
+impl Not for &Frame<bool> {
+    type Output = Frame<bool>;
+
+    fn not(self) -> Frame<bool> {
+        // Apply NOT to the underlying matrix
+        let result_matrix = !&self.matrix;
+
+        // Determine index for the result
+        let new_index = match self.index {
+            RowIndex::Range(_) => None,
+            _ => Some(self.index.clone()),
+        };
+
+        Frame::new(result_matrix, self.column_names.clone(), new_index)
+    }
+}
+
+//  --- Tests ---
 #[cfg(test)]
 mod tests {
     use super::*;
     // Assume Matrix is available from crate::matrix or similar
-    use crate::matrix::Matrix;
+    use crate::matrix::{BoolOps, Matrix};
     use chrono::NaiveDate;
     // HashMap needed for direct inspection in tests if required
     use std::collections::HashMap;
@@ -1295,7 +1355,7 @@ mod tests {
     #[test]
     fn frame_row_mutate_default_index() {
         let mut frame = create_test_frame_f64(); // Index 0..3, A=[1,2,3], B=[4,5,6]
-        // Mutate using set("col_name", value)
+                                                 // Mutate using set("col_name", value)
         frame.get_row_mut(1).set("A", 2.9); // Mutate row index 1, col A
         assert_eq!(frame["A"], vec![1.0, 2.9, 3.0]);
         // Mutate using IndexMut by physical column index
@@ -1349,7 +1409,7 @@ mod tests {
     fn test_row_view_name_panic() {
         let frame = create_test_frame_f64();
         let row_view = frame.get_row(0);
-        let _ = row_view["C"]; // Access non-existent column name
+        let _ = row_view["C"]; // Access non-existent column Z
     }
     #[test]
     #[should_panic(expected = "column index 3 out of bounds")] // Check specific message
@@ -1438,7 +1498,7 @@ mod tests {
         assert_eq!(frame.cols(), 2);
         assert_eq!(frame["X"], vec![1, 2]); // X data unchanged
         assert_eq!(frame["B"], vec![5, 6]); // B data unchanged
-        // Check internal state after delete + rebuild_col_lookup
+                                            // Check internal state after delete + rebuild_col_lookup
         assert_eq!(frame.column_index("X"), Some(0)); // X is now physical col 0
         assert_eq!(frame.column_index("B"), Some(1)); // B is now physical col 1
         assert!(frame.column_index("A").is_none());
@@ -1447,10 +1507,10 @@ mod tests {
         // Sort Columns [X, B] -> [B, X]
         frame.sort_columns();
         assert_eq!(frame.columns(), &["B", "X"]); // Alphabetical order of names
-        // Verify data remained with the correct logical column after sort
+                                                  // Verify data remained with the correct logical column after sort
         assert_eq!(frame["B"], vec![5, 6], "Data in B after sort"); // B should still have [5, 6]
         assert_eq!(frame["X"], vec![1, 2], "Data in X after sort"); // X should still have [1, 2]
-        // Verify internal lookup map is correct after sort
+                                                                    // Verify internal lookup map is correct after sort
         assert_eq!(frame.column_index("B"), Some(0), "Index of B after sort"); // B is now physical col 0
         assert_eq!(frame.column_index("X"), Some(1), "Index of X after sort"); // X is now physical col 1
         assert_eq!(frame.col_lookup.len(), 2);
@@ -1664,6 +1724,79 @@ mod tests {
         assert_eq!(frame_div.index(), frame1.index());
         assert_eq!(frame_div["X"], vec![10, -10]);
         assert_eq!(frame_div["Y"], vec![10, -10]);
+    }
+
+    #[test]
+    fn tests_for_frame_arithmetic_ops() {
+        let ops: Vec<(
+            &str,
+            fn(&Frame<f64>, &Frame<f64>) -> Frame<f64>,
+            fn(&Frame<f64>, &Frame<f64>) -> Frame<f64>,
+        )> = vec![
+            ("addition", |a, b| a + b, |a, b| (&*a) + (&*b)),
+            ("subtraction", |a, b| a - b, |a, b| (&*a) - (&*b)),
+            ("multiplication", |a, b| a * b, |a, b| (&*a) * (&*b)),
+            ("division", |a, b| a / b, |a, b| (&*a) / (&*b)),
+        ];
+
+        for (op_name, owned_op, ref_op) in ops {
+            let f1 = create_test_frame_f64();
+            let f2 = create_test_frame_f64_alt();
+            let result_owned = owned_op(&f1, &f2);
+            let expected = ref_op(&f1, &f2);
+
+            assert_eq!(
+                result_owned.columns(),
+                f1.columns(),
+                "Column mismatch for {}",
+                op_name
+            );
+            assert_eq!(
+                result_owned.index(),
+                f1.index(),
+                "Index mismatch for {}",
+                op_name
+            );
+
+            let bool_mat = result_owned.matrix().eq_elem(expected.matrix().clone());
+            assert!(bool_mat.all(), "Element-wise {} failed", op_name);
+        }
+    }
+
+    // test not , and or on frame
+    #[test]
+    fn tests_for_frame_bool_ops() {
+        let ops: Vec<(
+            &str,
+            fn(&Frame<bool>, &Frame<bool>) -> Frame<bool>,
+            fn(&Frame<bool>, &Frame<bool>) -> Frame<bool>,
+        )> = vec![
+            ("and", |a, b| a & b, |a, b| (&*a) & (&*b)),
+            ("or", |a, b| a | b, |a, b| (&*a) | (&*b)),
+            ("xor", |a, b| a ^ b, |a, b| (&*a) ^ (&*b)),
+        ];
+        for (op_name, owned_op, ref_op) in ops {
+            let f1 = create_test_frame_bool();
+            let f2 = create_test_frame_bool_alt();
+            let result_owned = owned_op(&f1, &f2);
+            let expected = ref_op(&f1, &f2);
+
+            assert_eq!(
+                result_owned.columns(),
+                f1.columns(),
+                "Column mismatch for {}",
+                op_name
+            );
+            assert_eq!(
+                result_owned.index(),
+                f1.index(),
+                "Index mismatch for {}",
+                op_name
+            );
+
+            let bool_mat = result_owned.matrix().eq_elem(expected.matrix().clone());
+            assert!(bool_mat.all(), "Element-wise {} failed", op_name);
+        }
     }
 
     #[test]
