@@ -160,7 +160,7 @@ enum GroupKey {
 /// ```rust
 /// use chrono::NaiveDate;
 /// use std::error::Error;
-/// # use rustframe::utils::{DatesList, DateFreq}; // Assuming the crate/module is named 'dates'
+/// use rustframe::utils::{DatesList, DateFreq};
 ///
 /// # fn main() -> Result<(), Box<dyn Error>> {
 /// let start_date = "2023-11-01".to_string(); // Wednesday
