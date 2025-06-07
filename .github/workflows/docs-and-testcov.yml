@@ -112,13 +112,13 @@ jobs:
 
           if [ -z "$artifact_url" ]; then
             echo "No benchmark artifact found!"
-            exit 1
+            mkdir -p benchmark-report
+            echo '<!DOCTYPE html><html><head><title>No Benchmarks</title></head><body><h1>No benchmarks available</h1></body></html>' > benchmark-report/index.html
+            exit 0
           fi
 
           curl -L -H "Authorization: Bearer ${{ secrets.CUSTOM_GH_TOKEN }}" \
           "$artifact_url" -o benchmark-report.zip
-
-
 
           # Print all files in the current directory
           echo "Files in the current directory:"
