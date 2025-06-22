@@ -1124,10 +1124,10 @@ mod tests {
         Frame::new(matrix, vec!["X", "Y"], Some(index));
     }
     #[test]
-    #[should_panic(expected = "Cannot explicitly provide a Range index")]
-    fn frame_new_panic_explicit_range() {
-        let matrix = create_test_matrix_f64();
-        let index = RowIndex::Range(0..3); // User cannot provide Range directly
+    #[should_panic(expected = "Frame::new: Range index length (4) mismatch matrix rows (3)")]
+    fn frame_new_panic_invalid_explicit_range_index() {
+        let matrix = create_test_matrix_f64(); // 3 rows
+        let index = RowIndex::Range(0..4); // Range 0..4 but only 3 rows
         Frame::new(matrix, vec!["A", "B"], Some(index));
     }
 
