@@ -1,10 +1,11 @@
 use crate::frame::{Frame, RowIndex};
+use crate::matrix::Matrix;
 use std::collections::HashMap;
 
-/// Represents a column in a DataFrame, holding data of a specific type.
-/// Each variant wraps a `Frame<T>` where T is the data type.
+/// Represents a typed Frame that can hold multiple columns of a single type.
+/// This will be the underlying storage for DataFrame.
 #[derive(Debug, Clone, PartialEq)]
-pub enum DataFrameColumn {
+pub enum TypedFrame {
     F64(Frame<f64>),
     I64(Frame<i64>),
     Bool(Frame<bool>),
@@ -12,54 +13,190 @@ pub enum DataFrameColumn {
     // Add more types as needed
 }
 
-impl DataFrameColumn {
-    /// Returns the number of rows in the column.
+impl TypedFrame {
     pub fn rows(&self) -> usize {
         match self {
-            DataFrameColumn::F64(f) => f.rows(),
-            DataFrameColumn::I64(f) => f.rows(),
-            DataFrameColumn::Bool(f) => f.rows(),
-            DataFrameColumn::String(f) => f.rows(),
+            TypedFrame::F64(f) => f.rows(),
+            TypedFrame::I64(f) => f.rows(),
+            TypedFrame::Bool(f) => f.rows(),
+            TypedFrame::String(f) => f.rows(),
         }
     }
 
-    /// Returns the column name.
-    /// Panics if the internal frame has more than one column (which it shouldn't for a single DataFrameColumn).
-    pub fn name(&self) -> &str {
+    pub fn cols(&self) -> usize {
         match self {
-            DataFrameColumn::F64(f) => &f.columns()[0],
-            DataFrameColumn::I64(f) => &f.columns()[0],
-            DataFrameColumn::Bool(f) => &f.columns()[0],
-            DataFrameColumn::String(f) => &f.columns()[0],
+            TypedFrame::F64(f) => f.cols(),
+            TypedFrame::I64(f) => f.cols(),
+            TypedFrame::Bool(f) => f.cols(),
+            TypedFrame::String(f) => f.cols(),
         }
     }
 
-    /// Returns a reference to the underlying RowIndex.
+    pub fn columns(&self) -> &[String] {
+        match self {
+            TypedFrame::F64(f) => f.columns(),
+            TypedFrame::I64(f) => f.columns(),
+            TypedFrame::Bool(f) => f.columns(),
+            TypedFrame::String(f) => f.columns(),
+        }
+    }
+
     pub fn index(&self) -> &RowIndex {
         match self {
-            DataFrameColumn::F64(f) => f.index(),
-            DataFrameColumn::I64(f) => f.index(),
-            DataFrameColumn::Bool(f) => f.index(),
-            DataFrameColumn::String(f) => f.index(),
+            TypedFrame::F64(f) => f.index(),
+            TypedFrame::I64(f) => f.index(),
+            TypedFrame::Bool(f) => f.index(),
+            TypedFrame::String(f) => f.index(),
+        }
+    }
+
+    /// Returns an immutable slice of the specified column's data by name.
+    /// Panics if the column name is not found.
+    pub fn column(&self, name: &str) -> &[f64] {
+        match self {
+            TypedFrame::F64(f) => f.column(name),
+            _ => panic!("Column type mismatch"),
+        }
+    }
+
+    /// Returns a mutable slice of the specified column's data by name.
+    /// Panics if the column name is not found.
+    pub fn column_mut(&mut self, name: &str) -> &mut [f64] {
+        match self {
+            TypedFrame::F64(f) => f.column_mut(name),
+            _ => panic!("Column type mismatch"),
+        }
+    }
+}
+
+/// Represents a view of a single column within a DataFrame.
+/// It borrows data from an underlying TypedFrame.
+#[derive(Debug, PartialEq)]
+pub enum DataFrameColumn<'a> {
+    F64(&'a [f64]),
+    I64(&'a [i64]),
+    Bool(&'a [bool]),
+    String(&'a [String]),
+}
+
+impl<'a> DataFrameColumn<'a> {
+    pub fn len(&self) -> usize {
+        match self {
+            DataFrameColumn::F64(s) => s.len(),
+            DataFrameColumn::I64(s) => s.len(),
+            DataFrameColumn::Bool(s) => s.len(),
+            DataFrameColumn::String(s) => s.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    // Add methods to get specific typed slices
+    pub fn as_f64(&self) -> Option<&'a [f64]> {
+        if let DataFrameColumn::F64(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_i64(&self) -> Option<&'a [i64]> {
+        if let DataFrameColumn::I64(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_bool(&self) -> Option<&'a [bool]> {
+        if let DataFrameColumn::Bool(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_string(&self) -> Option<&'a [String]> {
+        if let DataFrameColumn::String(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+}
+
+/// Represents a mutable view of a single column within a DataFrame.
+#[derive(Debug)]
+pub enum DataFrameColumnMut<'a> {
+    F64(&'a mut [f64]),
+    I64(&'a mut [i64]),
+    Bool(&'a mut [bool]),
+    String(&'a mut [String]),
+}
+
+impl<'a> DataFrameColumnMut<'a> {
+    pub fn len(&self) -> usize {
+        match self {
+            DataFrameColumnMut::F64(s) => s.len(),
+            DataFrameColumnMut::I64(s) => s.len(),
+            DataFrameColumnMut::Bool(s) => s.len(),
+            DataFrameColumnMut::String(s) => s.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    // Add methods to get specific typed mutable slices
+    pub fn as_f64_mut(&mut self) -> Option<&mut [f64]> {
+        if let DataFrameColumnMut::F64(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_i64_mut(&mut self) -> Option<&mut [i64]> {
+        if let DataFrameColumnMut::I64(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_bool_mut(&mut self) -> Option<&mut [bool]> {
+        if let DataFrameColumnMut::Bool(s) = self {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    pub fn as_string_mut(&mut self) -> Option<&mut [String]> {
+        if let DataFrameColumnMut::String(s) = self {
+            Some(s)
+        } else {
+            None
         }
     }
 }
 
 /// A DataFrame capable of holding multiple data types.
 ///
-/// Internally, a DataFrame manages a collection of `Frame` instances,
+/// Internally, a DataFrame manages a collection of `TypedFrame` instances,
 /// each holding data of a single, homogeneous type. The logical column
 /// order is maintained separately from the physical storage.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrame {
     /// The logical order of column names.
     column_names: Vec<String>,
-    /// A map from column name to its corresponding DataFrameColumn (which wraps a Frame).
-    data: HashMap<String, DataFrameColumn>,
+    /// A map from a unique ID to a TypedFrame (the underlying storage).
+    subframes: HashMap<usize, TypedFrame>,
+    /// A map from logical column name to its location: (subframe_id, column_name_in_subframe).
+    column_locations: HashMap<String, (usize, String)>,
     /// The common row index for all columns in the DataFrame.
     index: RowIndex,
     /// The number of rows in the DataFrame.
     rows: usize,
+    /// Counter for generating unique subframe IDs.
+    next_subframe_id: usize,
 }
 
 impl DataFrame {
@@ -72,7 +209,7 @@ impl DataFrame {
     /// All columns must have the same number of rows.
     ///
     /// # Arguments
-    /// * `columns` - A vector of `DataFrameColumn` instances, each representing a column.
+    /// * `columns` - A vector of `TypedFrame` instances, each representing a column.
     /// * `column_names` - A vector of strings, providing names for each column.
     /// * `index` - An optional `RowIndex` to be used for the DataFrame. If `None`, a default
     ///             `Range` index will be created.
@@ -83,24 +220,18 @@ impl DataFrame {
     /// * If column names are duplicated.
     /// * If the provided `index` length does not match the row count.
     pub fn new(
-        columns: Vec<DataFrameColumn>,
+        columns: Vec<TypedFrame>, // Changed from DataFrameColumn to TypedFrame
         column_names: Vec<String>,
         index: Option<RowIndex>,
     ) -> Self {
-        if columns.len() != column_names.len() {
-            panic!(
-                "DataFrame::new: column data count ({}) mismatch column names count ({})",
-                columns.len(),
-                column_names.len()
-            );
-        }
-
         if columns.is_empty() {
             return Self {
                 column_names: Vec::new(),
-                data: HashMap::new(),
+                subframes: HashMap::new(),
+                column_locations: HashMap::new(),
                 index: index.unwrap_or(RowIndex::Range(0..0)),
                 rows: 0,
+                next_subframe_id: 0,
             };
         }
 
@@ -115,39 +246,58 @@ impl DataFrame {
             );
         }
 
-        let mut data_map = HashMap::with_capacity(columns.len());
-        let mut final_column_names = Vec::with_capacity(column_names.len());
+        let mut subframes = HashMap::new();
+        let mut column_locations = HashMap::new();
+        let mut next_subframe_id = 0;
 
-        for (i, col_name) in column_names.into_iter().enumerate() {
-            let col = columns[i].clone();
-
-            if col.rows() != num_rows {
+        // Process each provided TypedFrame
+        for typed_frame in columns {
+            if typed_frame.rows() != num_rows {
                 panic!(
-                    "DataFrame::new: column '{}' has inconsistent row count ({} vs {})",
-                    col_name,
-                    col.rows(),
+                    "DataFrame::new: TypedFrame has inconsistent row count ({} vs {})",
+                    typed_frame.rows(),
                     num_rows
                 );
             }
+            if typed_frame.index() != &common_index {
+                panic!("DataFrame::new: TypedFrame has inconsistent index with common index",);
+            }
 
-            if col.index() != &common_index {
-                panic!(
-                    "DataFrame::new: column '{}' has inconsistent index with common index",
-                    col_name
+            let subframe_id = next_subframe_id;
+            next_subframe_id += 1;
+
+            for col_name_in_subframe in typed_frame.columns() {
+                if column_locations.contains_key(col_name_in_subframe) {
+                    panic!(
+                        "DataFrame::new: duplicate column name: {}",
+                        col_name_in_subframe
+                    );
+                }
+                column_locations.insert(
+                    col_name_in_subframe.clone(),
+                    (subframe_id, col_name_in_subframe.clone()),
                 );
             }
+            subframes.insert(subframe_id, typed_frame);
+        }
 
-            if data_map.insert(col_name.clone(), col).is_some() {
-                panic!("DataFrame::new: duplicate column name: {}", col_name);
+        // Ensure all column_names provided are actually present in the subframes
+        for name in &column_names {
+            if !column_locations.contains_key(name) {
+                panic!(
+                    "DataFrame::new: column name '{}' not found in provided TypedFrames",
+                    name
+                );
             }
-            final_column_names.push(col_name);
         }
 
         Self {
-            column_names: final_column_names,
-            data: data_map,
+            column_names, // This now represents the logical order of ALL columns from all subframes
+            subframes,
+            column_locations,
             index: common_index,
             rows: num_rows,
+            next_subframe_id,
         }
     }
 
@@ -175,27 +325,77 @@ impl DataFrame {
         &self.index
     }
 
-    /// Returns an immutable reference to a column by its name.
+    /// Returns an immutable view to a column by its name.
     /// Panics if the column is not found.
-    pub fn column(&self, name: &str) -> &DataFrameColumn {
-        self.data
+    pub fn column(&self, name: &str) -> DataFrameColumn<'_> {
+        let (subframe_id, col_in_subframe_name) = self
+            .column_locations
             .get(name)
-            .unwrap_or_else(|| panic!("DataFrame::column: unknown column label: '{}'", name))
+            .unwrap_or_else(|| panic!("DataFrame::column: unknown column label: '{}'", name));
+
+        let subframe = self.subframes.get(subframe_id).unwrap_or_else(|| {
+            panic!(
+                "DataFrame::column: internal error, subframe ID {} not found",
+                subframe_id
+            )
+        });
+
+        match subframe {
+            TypedFrame::F64(f) => DataFrameColumn::F64(f.column(col_in_subframe_name)),
+            TypedFrame::I64(f) => DataFrameColumn::I64(f.column(col_in_subframe_name)),
+            TypedFrame::Bool(f) => DataFrameColumn::Bool(f.column(col_in_subframe_name)),
+            TypedFrame::String(f) => DataFrameColumn::String(f.column(col_in_subframe_name)),
+        }
     }
 
-    /// Returns a mutable reference to a column by its name.
+    /// Returns a mutable view to a column by its name.
     /// Panics if the column is not found.
-    pub fn column_mut(&mut self, name: &str) -> &mut DataFrameColumn {
-        self.data
-            .get_mut(name)
-            .unwrap_or_else(|| panic!("DataFrame::column_mut: unknown column label: '{}'", name))
+    pub fn column_mut(&mut self, name: &str) -> DataFrameColumnMut<'_> {
+        let (subframe_id, col_in_subframe_name) = self
+            .column_locations
+            .get(name)
+            .unwrap_or_else(|| panic!("DataFrame::column_mut: unknown column label: '{}'", name));
+
+        // We need to get a mutable reference to the subframe.
+        // This requires a bit of care because we're borrowing `self.column_locations`
+        // and then `self.subframes` mutably.
+        // To avoid double-borrowing, we can get the subframe_id and col_in_subframe_name first,
+        // then use them to access the subframe mutably.
+        let subframe_id_copy = *subframe_id;
+        let col_in_subframe_name_copy = col_in_subframe_name.clone();
+
+        let subframe = self
+            .subframes
+            .get_mut(&subframe_id_copy)
+            .unwrap_or_else(|| {
+                panic!(
+                    "DataFrame::column_mut: internal error, subframe ID {} not found",
+                    subframe_id_copy
+                )
+            });
+
+        match subframe {
+            TypedFrame::F64(f) => DataFrameColumnMut::F64(f.column_mut(&col_in_subframe_name_copy)),
+            TypedFrame::I64(f) => DataFrameColumnMut::I64(f.column_mut(&col_in_subframe_name_copy)),
+            TypedFrame::Bool(f) => {
+                DataFrameColumnMut::Bool(f.column_mut(&col_in_subframe_name_copy))
+            }
+            TypedFrame::String(f) => {
+                DataFrameColumnMut::String(f.column_mut(&col_in_subframe_name_copy))
+            }
+        }
     }
 
     /// Adds a new column to the DataFrame.
+    /// This involves either adding it to an existing TypedFrame if types match,
+    /// or creating a new TypedFrame.
     /// Panics if a column with the same name already exists or if the new column's
     /// row count or index does not match the DataFrame's.
-    pub fn add_column(&mut self, name: String, column_data: DataFrameColumn) {
-        if self.data.contains_key(&name) {
+    /// Adds a new column to the DataFrame.
+    /// The `column_data` must be a `TypedFrame` containing exactly one column,
+    /// and its name must match the `name` parameter.
+    pub fn add_column(&mut self, name: String, column_data: TypedFrame) {
+        if self.column_locations.contains_key(&name) {
             panic!("DataFrame::add_column: duplicate column label: {}", name);
         }
         if column_data.rows() != self.rows {
@@ -212,24 +412,85 @@ impl DataFrame {
                 name
             );
         }
+        // Ensure the provided TypedFrame contains exactly one column, and its name matches `name`
+        if column_data.cols() != 1 || column_data.columns()[0] != name {
+            panic!(
+                "DataFrame::add_column: provided TypedFrame must contain exactly one column named '{}'",
+                name
+            );
+        }
 
-        self.column_names.push(name.clone());
-        self.data.insert(name, column_data);
+        let subframe_id = self.next_subframe_id;
+        self.next_subframe_id += 1;
+
+        self.subframes.insert(subframe_id, column_data);
+        self.column_locations
+            .insert(name.clone(), (subframe_id, name.clone()));
+
+        self.column_names.push(name);
     }
 
-    /// Deletes a column by name and returns it.
+    /// Deletes a column by name and returns its data as a new single-column TypedFrame.
     /// Panics if the column name is not found.
-    pub fn delete_column(&mut self, name: &str) -> DataFrameColumn {
-        let removed_col = self.data.remove(name).unwrap_or_else(|| {
-            panic!("DataFrame::delete_column: unknown column label: '{}'", name)
-        });
+    pub fn delete_column(&mut self, name: &str) -> TypedFrame {
+        let (subframe_id, col_in_subframe_name) =
+            self.column_locations.remove(name).unwrap_or_else(|| {
+                panic!("DataFrame::delete_column: unknown column label: '{}'", name)
+            });
 
-        // Remove from column_names vector and rebuild if necessary (to maintain order)
+        // Remove from logical column names
         if let Some(pos) = self.column_names.iter().position(|n| n == name) {
             self.column_names.remove(pos);
         }
 
-        removed_col
+        let mut subframe = self.subframes.get_mut(&subframe_id).unwrap_or_else(|| {
+            panic!(
+                "DataFrame::delete_column: internal error, subframe ID {} not found",
+                subframe_id
+            )
+        });
+
+        let deleted_data_frame = match subframe {
+            TypedFrame::F64(f) => {
+                let data = f.delete_column(&col_in_subframe_name);
+                TypedFrame::F64(Frame::new(
+                    Matrix::from_cols(vec![data]),
+                    vec![col_in_subframe_name.clone()],
+                    Some(f.index().clone()),
+                ))
+            }
+            TypedFrame::I64(f) => {
+                let data = f.delete_column(&col_in_subframe_name);
+                TypedFrame::I64(Frame::new(
+                    Matrix::from_cols(vec![data]),
+                    vec![col_in_subframe_name.clone()],
+                    Some(f.index().clone()),
+                ))
+            }
+            TypedFrame::Bool(f) => {
+                let data = f.delete_column(&col_in_subframe_name);
+                TypedFrame::Bool(Frame::new(
+                    Matrix::from_cols(vec![data]),
+                    vec![col_in_subframe_name.clone()],
+                    Some(f.index().clone()),
+                ))
+            }
+            TypedFrame::String(f) => {
+                let data = f.delete_column(&col_in_subframe_name);
+                TypedFrame::String(Frame::new(
+                    Matrix::from_cols(vec![data]),
+                    vec![col_in_subframe_name.clone()],
+                    Some(f.index().clone()),
+                ))
+            }
+        };
+
+        // If the subframe becomes empty after deletion, remove it from the map
+        if subframe.cols() == 0 {
+            self.subframes.remove(&subframe_id);
+        }
+
+        deleted_data_frame
     }
 
     /// Renames an existing column.
@@ -237,41 +498,43 @@ impl DataFrame {
         if old_name == new_name {
             return; // No change needed
         }
-        if self.data.contains_key(&new_name) {
+        if self.column_locations.contains_key(&new_name) {
             panic!(
                 "DataFrame::rename_column: new column name '{}' already exists",
                 new_name
             );
         }
 
-        let column = self.data.remove(old_name).unwrap_or_else(|| {
-            panic!(
-                "DataFrame::rename_column: unknown column label: '{}'",
-                old_name
-            )
-        });
-        let new_name_clone = new_name.clone();
-        self.data.insert(new_name, column);
+        let (subframe_id, col_in_subframe_name) =
+            self.column_locations.remove(old_name).unwrap_or_else(|| {
+                panic!(
+                    "DataFrame::rename_column: unknown column label: '{}'",
+                    old_name
+                )
+            });
+
+        // Update the column_locations map
+        self.column_locations
+            .insert(new_name.clone(), (subframe_id, new_name.clone()));
+
+        // Update the logical column_names vector
         if let Some(pos) = self.column_names.iter().position(|n| n == old_name) {
-            self.column_names[pos] = new_name_clone.clone();
+            self.column_names[pos] = new_name.clone();
         }
 
-        // rename the column in the underlying Frame as well
-        if let Some(col) = self.data.get_mut(&new_name_clone) {
-            match col {
-                DataFrameColumn::F64(frame) => {
-                    frame.rename(old_name, new_name_clone.clone());
-                }
-                DataFrameColumn::I64(frame) => {
-                    frame.rename(old_name, new_name_clone.clone());
-                }
-                DataFrameColumn::String(frame) => {
-                    frame.rename(old_name, new_name_clone.clone());
-                }
-                DataFrameColumn::Bool(frame) => {
-                    frame.rename(old_name, new_name_clone.clone());
-                }
-            }
+        // Rename the column in the underlying TypedFrame
+        let subframe = self.subframes.get_mut(&subframe_id).unwrap_or_else(|| {
+            panic!(
+                "DataFrame::rename_column: internal error, subframe ID {} not found",
+                subframe_id
+            )
+        });
+
+        match subframe {
+            TypedFrame::F64(f) => f.rename(&col_in_subframe_name, new_name),
+            TypedFrame::I64(f) => f.rename(&col_in_subframe_name, new_name),
+            TypedFrame::Bool(f) => f.rename(&col_in_subframe_name, new_name),
+            TypedFrame::String(f) => f.rename(&col_in_subframe_name, new_name),
         }
     }
 
@@ -293,51 +556,67 @@ mod tests {
         NaiveDate::from_ymd_opt(y, m, d).unwrap()
     }
 
-    // Helper to create a simple f64 Frame
-    fn create_f64_frame(name: &str, data: Vec<f64>, index: Option<RowIndex>) -> DataFrameColumn {
+    // Helper to create a simple f64 TypedFrame
+    fn create_f64_typed_frame(name: &str, data: Vec<f64>, index: Option<RowIndex>) -> TypedFrame {
         let rows = data.len();
         let matrix = Matrix::from_cols(vec![data]);
         let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-        DataFrameColumn::F64(Frame::new(
+        TypedFrame::F64(Frame::new(
             matrix,
             vec![name.to_string()],
             Some(frame_index),
         ))
     }
 
-    // Helper to create a simple i64 Frame
-    fn create_i64_frame(name: &str, data: Vec<i64>, index: Option<RowIndex>) -> DataFrameColumn {
+    // Helper to create a simple i64 TypedFrame
+    fn create_i64_typed_frame(name: &str, data: Vec<i64>, index: Option<RowIndex>) -> TypedFrame {
         let rows = data.len();
         let matrix = Matrix::from_cols(vec![data]);
         let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-        DataFrameColumn::I64(Frame::new(
+        TypedFrame::I64(Frame::new(
             matrix,
             vec![name.to_string()],
             Some(frame_index),
         ))
     }
 
-    // Helper to create a simple String Frame
-    fn create_string_frame(
+    // Helper to create a simple String TypedFrame
+    fn create_string_typed_frame(
         name: &str,
         data: Vec<String>,
         index: Option<RowIndex>,
-    ) -> DataFrameColumn {
+    ) -> TypedFrame {
         let rows = data.len();
         let matrix = Matrix::from_cols(vec![data]);
         let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-        DataFrameColumn::String(Frame::new(
+        TypedFrame::String(Frame::new(
             matrix,
             vec![name.to_string()],
+            Some(frame_index),
+        ))
+    }
+
+    // Helper to create a multi-column f64 TypedFrame
+    fn create_multi_f64_typed_frame(
+        names: Vec<&str>,
+        data: Vec<Vec<f64>>,
+        index: Option<RowIndex>,
+    ) -> TypedFrame {
+        let rows = data[0].len();
+        let matrix = Matrix::from_cols(data);
+        let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
+        TypedFrame::F64(Frame::new(
+            matrix,
+            names.into_iter().map(|s| s.to_string()).collect(),
             Some(frame_index),
         ))
     }
 
     #[test]
     fn test_dataframe_new_basic() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0, 3.0], None);
-        let col_b = create_i64_frame("B", vec![4, 5, 6], None);
-        let col_c = create_string_frame(
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
+        let col_b = create_i64_typed_frame("B", vec![4, 5, 6], None);
+        let col_c = create_string_typed_frame(
             "C",
             vec!["x".to_string(), "y".to_string(), "z".to_string()],
             None,
@@ -354,29 +633,69 @@ mod tests {
         assert_eq!(df.columns(), &["A", "B", "C"]);
         assert_eq!(df.index(), &RowIndex::Range(0..3));
 
-        // Check column data
-        if let DataFrameColumn::F64(frame_a) = df.column("A") {
-            assert_eq!(frame_a["A"], vec![1.0, 2.0, 3.0]);
+        // Check column data using the new DataFrameColumn view
+        if let DataFrameColumn::F64(slice_a) = df.column("A") {
+            assert_eq!(slice_a, &[1.0, 2.0, 3.0]);
         } else {
             panic!("Column A is not f64");
         }
-        if let DataFrameColumn::I64(frame_b) = df.column("B") {
-            assert_eq!(frame_b["B"], vec![4, 5, 6]);
+        if let DataFrameColumn::I64(slice_b) = df.column("B") {
+            assert_eq!(slice_b, &[4, 5, 6]);
         } else {
             panic!("Column B is not i64");
         }
-        if let DataFrameColumn::String(frame_c) = df.column("C") {
-            assert_eq!(frame_c["C"], vec!["x", "y", "z"]);
+        if let DataFrameColumn::String(slice_c) = df.column("C") {
+            assert_eq!(
+                slice_c,
+                &["x".to_string(), "y".to_string(), "z".to_string()]
+            );
         } else {
             panic!("Column C is not String");
         }
     }
 
     #[test]
+    fn test_dataframe_new_with_multi_column_subframe() {
+        let multi_f64_frame = create_multi_f64_typed_frame(
+            vec!["X", "Y"],
+            vec![vec![1.0, 2.0], vec![10.0, 20.0]],
+            None,
+        );
+        let single_string_frame =
+            create_string_typed_frame("Z", vec!["a".to_string(), "b".to_string()], None);
+
+        let df = DataFrame::new(
+            vec![multi_f64_frame, single_string_frame],
+            vec!["X".to_string(), "Y".to_string(), "Z".to_string()],
+            None,
+        );
+
+        assert_eq!(df.rows(), 2);
+        assert_eq!(df.cols(), 3);
+        assert_eq!(df.columns(), &["X", "Y", "Z"]);
+
+        if let DataFrameColumn::F64(slice_x) = df.column("X") {
+            assert_eq!(slice_x, &[1.0, 2.0]);
+        } else {
+            panic!("Column X is not f64");
+        }
+        if let DataFrameColumn::F64(slice_y) = df.column("Y") {
+            assert_eq!(slice_y, &[10.0, 20.0]);
+        } else {
+            panic!("Column Y is not f64");
+        }
+        if let DataFrameColumn::String(slice_z) = df.column("Z") {
+            assert_eq!(slice_z, &["a".to_string(), "b".to_string()]);
+        } else {
+            panic!("Column Z is not String");
+        }
+    }
+
+    #[test]
     fn test_dataframe_new_with_int_index() {
         let index = RowIndex::Int(vec![10, 20, 30]);
-        let col_a = create_f64_frame("A", vec![1.0, 2.0, 3.0], Some(index.clone()));
-        let col_b = create_i64_frame("B", vec![4, 5, 6], Some(index.clone()));
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], Some(index.clone()));
+        let col_b = create_i64_typed_frame("B", vec![4, 5, 6], Some(index.clone()));
 
         let df = DataFrame::new(
             vec![col_a, col_b],
@@ -393,8 +712,8 @@ mod tests {
     fn test_dataframe_new_with_date_index() {
         let index_vec = vec![d(2024, 1, 1), d(2024, 1, 2)];
         let index = RowIndex::Date(index_vec.clone());
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], Some(index.clone()));
-        let col_b = create_string_frame(
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], Some(index.clone()));
+        let col_b = create_string_typed_frame(
             "B",
             vec!["hello".to_string(), "world".to_string()],
             Some(index.clone()),
@@ -412,17 +731,17 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "column data count (1) mismatch column names count (2)")]
-    fn test_dataframe_new_panic_col_count_mismatch() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
+    #[should_panic(expected = "column name 'B' not found in provided TypedFrames")]
+    fn test_dataframe_new_panic_col_name_not_found_in_subframes() {
+        let col_a = create_f64_typed_frame("A", vec![1.0], None);
         DataFrame::new(vec![col_a], vec!["A".to_string(), "B".to_string()], None);
     }
 
     #[test]
-    #[should_panic(expected = "column 'B' has inconsistent row count (2 vs 3)")]
+    #[should_panic(expected = "TypedFrame has inconsistent row count (2 vs 3)")]
     fn test_dataframe_new_panic_inconsistent_rows() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0, 3.0], None);
-        let col_b = create_i64_frame("B", vec![4, 5], None); // Mismatch
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
+        let col_b = create_i64_typed_frame("B", vec![4, 5], None); // Mismatch
         DataFrame::new(
             vec![col_a, col_b],
             vec!["A".to_string(), "B".to_string()],
@@ -433,8 +752,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "duplicate column name: A")]
     fn test_dataframe_new_panic_duplicate_col_name() {
-        let col_a1 = create_f64_frame("A", vec![1.0], None);
-        let col_a2 = create_i64_frame("A", vec![2], None); // Duplicate name
+        let col_a1 = create_f64_typed_frame("A", vec![1.0], None);
+        let col_a2 = create_i64_typed_frame("A", vec![2], None); // Duplicate name
         DataFrame::new(
             vec![col_a1, col_a2],
             vec!["A".to_string(), "A".to_string()],
@@ -446,55 +765,63 @@ mod tests {
     #[should_panic(expected = "provided index length (2) mismatch column rows (3)")]
     fn test_dataframe_new_panic_index_len_mismatch() {
         let index = RowIndex::Int(vec![10, 20]); // Length 2
-        let col_a = create_f64_frame("A", vec![1.0, 2.0, 3.0], None); // Length 3
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None); // Length 3
         DataFrame::new(vec![col_a], vec!["A".to_string()], Some(index));
     }
 
     #[test]
-    #[should_panic(expected = "column 'A' has inconsistent index with common index")]
+    #[should_panic(expected = "TypedFrame has inconsistent index with common index")]
     fn test_dataframe_new_panic_inconsistent_column_index() {
         let common_index = RowIndex::Int(vec![10, 20]);
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None); // Uses Range index by default
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None); // Uses Range index by default
         DataFrame::new(vec![col_a], vec!["A".to_string()], Some(common_index));
     }
 
     #[test]
     fn test_dataframe_add_column() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None);
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
         let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
 
-        let new_col_b = create_i64_frame("B", vec![10, 20], None);
-        df.add_column("B".to_string(), new_col_b);
+        let new_col_b_typed_frame = create_i64_typed_frame("B", vec![10, 20], None);
+        df.add_column("B".to_string(), new_col_b_typed_frame);
 
         assert_eq!(df.cols(), 2);
         assert_eq!(df.columns(), &["A", "B"]);
-        if let DataFrameColumn::I64(frame_b) = df.column("B") {
-            assert_eq!(frame_b["B"], vec![10, 20]);
+        if let DataFrameColumn::I64(slice_b) = df.column("B") {
+            assert_eq!(slice_b, &[10, 20]);
         } else {
             panic!("Column B is not i64");
         }
 
-        let new_col_c = create_string_frame("C", vec!["foo".to_string(), "bar".to_string()], None);
-        df.add_column("C".to_string(), new_col_c);
+        let new_col_c_typed_frame =
+            create_string_typed_frame("C", vec!["foo".to_string(), "bar".to_string()], None);
+        df.add_column("C".to_string(), new_col_c_typed_frame);
         assert_eq!(df.cols(), 3);
         assert_eq!(df.columns(), &["A", "B", "C"]);
+        if let DataFrameColumn::String(slice_c) = df.column("C") {
+            assert_eq!(slice_c, &["foo".to_string(), "bar".to_string()]);
+        } else {
+            panic!("Column C is not String");
+        }
     }
 
     #[test]
-    #[should_panic(expected = "duplicate column label: A")]
-    fn test_dataframe_add_column_panic_duplicate() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
+    #[should_panic(expected = "duplicate column label: B")]
+    fn test_dataframe_add_column_panic_duplicate_name() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
         let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        let new_col_a = create_i64_frame("A", vec![2], None);
-        df.add_column("A".to_string(), new_col_a);
+        let new_col_b = create_i64_typed_frame("B", vec![10, 20], None);
+        df.add_column("B".to_string(), new_col_b);
+        let another_col_b = create_i64_typed_frame("B", vec![30, 40], None);
+        df.add_column("B".to_string(), another_col_b);
     }
 
     #[test]
-    #[should_panic(expected = "new column 'B' has inconsistent row count (1 vs 2)")]
+    #[should_panic(expected = "new column 'B' has inconsistent row count (3 vs 2)")]
     fn test_dataframe_add_column_panic_inconsistent_rows() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None);
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
         let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        let new_col_b = create_i64_frame("B", vec![10], None); // Mismatch
+        let new_col_b = create_i64_typed_frame("B", vec![10, 20, 30], None); // Mismatch
         df.add_column("B".to_string(), new_col_b);
     }
 
@@ -502,79 +829,157 @@ mod tests {
     #[should_panic(expected = "new column 'B' has inconsistent index with DataFrame's index")]
     fn test_dataframe_add_column_panic_inconsistent_index() {
         let df_index = RowIndex::Int(vec![1, 2]);
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], Some(df_index.clone()));
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], Some(df_index.clone()));
         let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], Some(df_index));
 
-        let new_col_b = create_i64_frame("B", vec![10, 20], None); // Uses Range index
+        let new_col_b_index = RowIndex::Int(vec![10, 20]); // Different index
+        let new_col_b = create_i64_typed_frame("B", vec![10, 20], Some(new_col_b_index));
         df.add_column("B".to_string(), new_col_b);
     }
 
     #[test]
+    #[should_panic(expected = "provided TypedFrame must contain exactly one column named 'B'")]
+    fn test_dataframe_add_column_panic_multi_column_typedframe() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
+        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
+
+        let multi_col_b = create_multi_f64_typed_frame(
+            vec!["B", "C"],
+            vec![vec![10.0, 20.0], vec![30.0, 40.0]],
+            None,
+        );
+        df.add_column("B".to_string(), multi_col_b);
+    }
+
+    #[test]
+    #[should_panic(expected = "provided TypedFrame must contain exactly one column named 'B'")]
+    fn test_dataframe_add_column_panic_typedframe_name_mismatch() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
+        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
+
+        let col_c = create_f64_typed_frame("C", vec![10.0, 20.0], None);
+        df.add_column("B".to_string(), col_c); // Adding column named "B" but TypedFrame is named "C"
+    }
+
+    #[test]
     fn test_dataframe_delete_column() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None);
-        let col_b = create_i64_frame("B", vec![4, 5], None);
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
+        let col_b = create_i64_typed_frame("B", vec![4, 5, 6], None);
+        let col_c = create_string_typed_frame(
+            "C",
+            vec!["x".to_string(), "y".to_string(), "z".to_string()],
+            None,
+        );
+
+        let mut df = DataFrame::new(
+            vec![col_a, col_b, col_c],
+            vec!["A".to_string(), "B".to_string(), "C".to_string()],
+            None,
+        );
+
+        let deleted_col_b = df.delete_column("B");
+
+        assert_eq!(df.cols(), 2);
+        assert_eq!(df.columns(), &["A", "C"]);
+        assert_eq!(df.rows(), 3);
+
+        if let TypedFrame::I64(frame_b) = deleted_col_b {
+            assert_eq!(frame_b.columns(), &["B"]);
+            assert_eq!(frame_b.column("B"), &[4, 5, 6]);
+        } else {
+            panic!("Deleted column B is not i64 TypedFrame");
+        }
+
+        // Verify remaining columns
+        if let DataFrameColumn::F64(slice_a) = df.column("A") {
+            assert_eq!(slice_a, &[1.0, 2.0, 3.0]);
+        } else {
+            panic!("Column A is not f64");
+        }
+        if let DataFrameColumn::String(slice_c) = df.column("C") {
+            assert_eq!(
+                slice_c,
+                &["x".to_string(), "y".to_string(), "z".to_string()]
+            );
+        } else {
+            panic!("Column C is not String");
+        }
+
+        // Delete another column, ensuring subframe is removed if empty
+        let deleted_col_a = df.delete_column("A");
+        assert_eq!(df.cols(), 1);
+        assert_eq!(df.columns(), &["C"]);
+        assert_eq!(df.subframes.len(), 1); // Only the String subframe should remain
+
+        if let TypedFrame::F64(frame_a) = deleted_col_a {
+            assert_eq!(frame_a.columns(), &["A"]);
+            assert_eq!(frame_a.column("A"), &[1.0, 2.0, 3.0]);
+        } else {
+            panic!("Deleted column A is not f64 TypedFrame");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "unknown column label: 'D'")]
+    fn test_dataframe_delete_column_panic_not_found() {
+        let col_a = create_f64_typed_frame("A", vec![1.0], None);
+        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
+        df.delete_column("D");
+    }
+
+    #[test]
+    fn test_dataframe_rename_column() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0], None);
+        let col_b = create_i64_typed_frame("B", vec![10, 20], None);
         let mut df = DataFrame::new(
             vec![col_a, col_b],
             vec!["A".to_string(), "B".to_string()],
             None,
         );
 
+        df.rename_column("A", "Alpha".to_string());
+
         assert_eq!(df.cols(), 2);
-        assert_eq!(df.columns(), &["A", "B"]);
-
-        let deleted_col = df.delete_column("A");
-        assert_eq!(df.cols(), 1);
-        assert_eq!(df.columns(), &["B"]);
-        if let DataFrameColumn::F64(frame_a) = deleted_col {
-            assert_eq!(frame_a["A"], vec![1.0, 2.0]);
+        assert_eq!(df.columns(), &["Alpha", "B"]);
+        if let DataFrameColumn::F64(slice_alpha) = df.column("Alpha") {
+            assert_eq!(slice_alpha, &[1.0, 2.0]);
         } else {
-            panic!("Deleted column was not f64");
+            panic!("Column Alpha is not f64");
         }
 
-        // Delete the last column
-        df.delete_column("B");
-        assert_eq!(df.cols(), 0);
-        assert!(df.columns().is_empty());
-        assert!(df.data.is_empty());
-    }
-
-    #[test]
-    #[should_panic(expected = "unknown column label: 'C'")]
-    fn test_dataframe_delete_column_panic_unknown() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
-        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        df.delete_column("C");
-    }
-
-    #[test]
-    fn test_dataframe_rename_column() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None);
-        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-
-        df.rename_column("A", "X".to_string());
-        assert_eq!(df.columns(), &["X"]);
-        assert!(df.data.contains_key("X"));
-        assert!(!df.data.contains_key("A"));
-        if let DataFrameColumn::F64(frame_x) = df.column("X") {
-            assert_eq!(frame_x["X"], vec![1.0, 2.0]);
+        // Rename a column in a multi-column subframe
+        let multi_f64_frame = create_multi_f64_typed_frame(
+            vec!["X", "Y"],
+            vec![vec![1.0, 2.0], vec![10.0, 20.0]],
+            None,
+        );
+        let mut df_multi = DataFrame::new(
+            vec![multi_f64_frame],
+            vec!["X".to_string(), "Y".to_string()],
+            None,
+        );
+        df_multi.rename_column("X", "Ex".to_string());
+        assert_eq!(df_multi.columns(), &["Ex", "Y"]);
+        if let DataFrameColumn::F64(slice_ex) = df_multi.column("Ex") {
+            assert_eq!(slice_ex, &[1.0, 2.0]);
         } else {
-            panic!("Column X is not f64");
+            panic!("Column Ex is not f64");
         }
     }
 
     #[test]
-    #[should_panic(expected = "unknown column label: 'Z'")]
-    fn test_dataframe_rename_column_panic_old_not_found() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
+    #[should_panic(expected = "unknown column label: 'D'")]
+    fn test_dataframe_rename_column_panic_old_name_not_found() {
+        let col_a = create_f64_typed_frame("A", vec![1.0], None);
         let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        df.rename_column("Z", "Y".to_string());
+        df.rename_column("D", "E".to_string());
     }
 
     #[test]
     #[should_panic(expected = "new column name 'B' already exists")]
-    fn test_dataframe_rename_column_panic_new_exists() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
-        let col_b = create_i64_frame("B", vec![2], None);
+    fn test_dataframe_rename_column_panic_new_name_exists() {
+        let col_a = create_f64_typed_frame("A", vec![1.0], None);
+        let col_b = create_i64_typed_frame("B", vec![2], None);
         let mut df = DataFrame::new(
             vec![col_a, col_b],
             vec!["A".to_string(), "B".to_string()],
@@ -585,9 +990,9 @@ mod tests {
 
     #[test]
     fn test_dataframe_sort_columns() {
-        let col_c = create_f64_frame("C", vec![1.0, 2.0], None);
-        let col_a = create_i64_frame("A", vec![3, 4], None);
-        let col_b = create_string_frame("B", vec!["x".to_string(), "y".to_string()], None);
+        let col_c = create_f64_typed_frame("C", vec![1.0, 2.0], None);
+        let col_a = create_i64_typed_frame("A", vec![10, 20], None);
+        let col_b = create_string_typed_frame("B", vec!["x".to_string(), "y".to_string()], None);
 
         let mut df = DataFrame::new(
             vec![col_c, col_a, col_b],
@@ -600,67 +1005,20 @@ mod tests {
         assert_eq!(df.columns(), &["A", "B", "C"]);
 
         // Verify data integrity after sort
-        if let DataFrameColumn::I64(frame_a) = df.column("A") {
-            assert_eq!(frame_a["A"], vec![3, 4]);
-        }
-        if let DataFrameColumn::String(frame_b) = df.column("B") {
-            assert_eq!(frame_b["B"], vec!["x", "y"]);
-        }
-        if let DataFrameColumn::F64(frame_c) = df.column("C") {
-            assert_eq!(frame_c["C"], vec![1.0, 2.0]);
-        }
-    }
-
-    #[test]
-    fn test_dataframe_empty() {
-        let df = DataFrame::new(vec![], vec![], None);
-        assert_eq!(df.rows(), 0);
-        assert_eq!(df.cols(), 0);
-        assert!(df.columns().is_empty());
-        assert!(df.data.is_empty());
-        assert_eq!(df.index(), &RowIndex::Range(0..0));
-    }
-
-    #[test]
-    fn test_dataframe_column_accessors() {
-        let col_a = create_f64_frame("A", vec![1.0, 2.0], None);
-        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-
-        // Immutable access
-        let col_ref = df.column("A");
-        if let DataFrameColumn::F64(frame_a) = col_ref {
-            assert_eq!(frame_a["A"], vec![1.0, 2.0]);
+        if let DataFrameColumn::I64(slice_a) = df.column("A") {
+            assert_eq!(slice_a, &[10, 20]);
         } else {
-            panic!("Column A is not f64");
+            panic!("Column A is not i64");
         }
-
-        // Mutable access
-        let col_mut_ref = df.column_mut("A");
-        if let DataFrameColumn::F64(frame_a_mut) = col_mut_ref {
-            frame_a_mut["A"][0] = 99.0;
+        if let DataFrameColumn::String(slice_b) = df.column("B") {
+            assert_eq!(slice_b, &["x".to_string(), "y".to_string()]);
         } else {
-            panic!("Column A is not f64");
+            panic!("Column B is not String");
         }
-
-        // Verify mutation
-        if let DataFrameColumn::F64(frame_a) = df.column("A") {
-            assert_eq!(frame_a["A"], vec![99.0, 2.0]);
+        if let DataFrameColumn::F64(slice_c) = df.column("C") {
+            assert_eq!(slice_c, &[1.0, 2.0]);
+        } else {
+            panic!("Column C is not f64");
         }
-    }
-
-    #[test]
-    #[should_panic(expected = "unknown column label: 'Z'")]
-    fn test_dataframe_column_panic_unknown() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
-        let df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        df.column("Z");
-    }
-
-    #[test]
-    #[should_panic(expected = "unknown column label: 'Z'")]
-    fn test_dataframe_column_mut_panic_unknown() {
-        let col_a = create_f64_frame("A", vec![1.0], None);
-        let mut df = DataFrame::new(vec![col_a], vec!["A".to_string()], None);
-        df.column_mut("Z");
     }
 }
