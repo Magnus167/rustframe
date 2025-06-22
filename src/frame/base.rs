@@ -232,10 +232,17 @@ impl<T: Clone + PartialEq> Frame<T> {
                 }
                 (RowIndex::Date(vals), RowIndexLookup::Date(lookup))
             }
-            Some(RowIndex::Range(_)) => {
-                panic!(
-                    "Frame::new: Cannot explicitly provide a Range index. Use None for default range."
-                );
+            Some(RowIndex::Range(ref r)) => {
+                // If the length of the range does not match the number of rows, panic.
+                if r.end.saturating_sub(r.start) != num_rows {
+                    panic!(
+                        "Frame::new: Range index length ({}) mismatch matrix rows ({})",
+                        r.end.saturating_sub(r.start),
+                        num_rows
+                    );
+                }
+                // return the range as is.
+                (RowIndex::Range(r.clone()), RowIndexLookup::None)
             }
             None => {
                 // Default to a sequential range index.
