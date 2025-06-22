@@ -1,7 +1,5 @@
 use crate::frame::{Frame, RowIndex};
-use crate::matrix::Matrix;
 use std::collections::HashMap;
-use std::fmt;
 
 /// Represents a column in a DataFrame, holding data of a specific type.
 /// Each variant wraps a `Frame<T>` where T is the data type.
@@ -286,6 +284,8 @@ impl DataFrame {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frame::Frame;
+    use crate::matrix::Matrix;
     use chrono::NaiveDate;
 
     // Helper for dates
