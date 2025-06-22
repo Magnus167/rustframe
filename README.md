@@ -98,3 +98,101 @@ assert!(check);
 
 
 ```
+
+---
+
+## DataFrame Usage Example
+
+```rust
+use rustframe::{
+    dataframe::{DataFrame, TypedFrame, DataFrameColumn},
+    frame::{Frame, RowIndex},
+    matrix::Matrix,
+};
+
+// Helper to create a simple f64 TypedFrame (similar to test helpers)
+fn create_f64_typed_frame(name: &str, data: Vec<f64>, index: Option<RowIndex>) -> TypedFrame {
+    let rows = data.len();
+    let matrix = Matrix::from_cols(vec![data]);
+    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
+    TypedFrame::F64(Frame::new(
+        matrix,
+        vec![name.to_string()],
+        Some(frame_index),
+    ))
+}
+
+// Helper to create a simple i64 TypedFrame
+fn create_i64_typed_frame(name: &str, data: Vec<i64>, index: Option<RowIndex>) -> TypedFrame {
+    let rows = data.len();
+    let matrix = Matrix::from_cols(vec![data]);
+    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
+    TypedFrame::I64(Frame::new(
+        matrix,
+        vec![name.to_string()],
+        Some(frame_index),
+    ))
+}
+
+// Helper to create a simple String TypedFrame
+fn create_string_typed_frame(
+    name: &str,
+    data: Vec<String>,
+    index: Option<RowIndex>,
+) -> TypedFrame {
+    let rows = data.len();
+    let matrix = Matrix::from_cols(vec![data]);
+    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
+    TypedFrame::String(Frame::new(
+        matrix,
+        vec![name.to_string()],
+        Some(frame_index),
+    ))
+}
+
+fn main() {
+    // 1. Create a DataFrame with different data types
+    let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
+    let col_b = create_i64_typed_frame("B", vec![10, 20, 30], None);
+    let col_c = create_string_typed_frame(
+        "C",
+        vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()],
+        None,
+    );
+
+    let mut df = DataFrame::new(
+        vec![col_a, col_b, col_c],
+        vec!["A".to_string(), "B".to_string(), "C".to_string()],
+        None,
+    );
+
+    println!("Initial DataFrame:\n{:?}", df);
+    println!("Columns: {:?}", df.columns());
+    println!("Rows: {}", df.rows());
+
+    // 2. Accessing columns
+    if let DataFrameColumn::F64(col_a_data) = df.column("A") {
+        println!("Column 'A' (f64): {:?}", col_a_data);
+    }
+
+    if let DataFrameColumn::String(col_c_data) = df.column("C") {
+        println!("Column 'C' (String): {:?}", col_c_data);
+    }
+
+    // 3. Add a new column
+    let new_col_d = create_f64_typed_frame("D", vec![100.0, 200.0, 300.0], None);
+    df.add_column("D".to_string(), new_col_d);
+    println!("\nDataFrame after adding column 'D':\n{:?}", df);
+    println!("Columns after add: {:?}", df.columns());
+
+    // 4. Rename a column
+    df.rename_column("A", "Alpha".to_string());
+    println!("\nDataFrame after renaming 'A' to 'Alpha':\n{:?}", df);
+    println!("Columns after rename: {:?}", df.columns());
+
+    // 5. Delete a column
+    let _deleted_col_b = df.delete_column("B");
+    println!("\nDataFrame after deleting column 'B':\n{:?}", df);
+    println!("Columns after delete: {:?}", df.columns());
+}
+```
