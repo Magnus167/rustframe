@@ -252,9 +252,28 @@ impl DataFrame {
                 old_name
             )
         });
-        self.data.insert(new_name.clone(), column);
+        let new_name_clone = new_name.clone();
+        self.data.insert(new_name, column);
         if let Some(pos) = self.column_names.iter().position(|n| n == old_name) {
-            self.column_names[pos] = new_name;
+            self.column_names[pos] = new_name_clone.clone();
+        }
+
+        // rename the column in the underlying Frame as well
+        if let Some(col) = self.data.get_mut(&new_name_clone) {
+            match col {
+                DataFrameColumn::F64(frame) => {
+                    frame.rename(old_name, new_name_clone.clone());
+                }
+                DataFrameColumn::I64(frame) => {
+                    frame.rename(old_name, new_name_clone.clone());
+                }
+                DataFrameColumn::String(frame) => {
+                    frame.rename(old_name, new_name_clone.clone());
+                }
+                DataFrameColumn::Bool(frame) => {
+                    frame.rename(old_name, new_name_clone.clone());
+                }
+            }
         }
     }
 
