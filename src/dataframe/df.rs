@@ -706,7 +706,7 @@ impl fmt::Display for DataFrame {
 
         // --- Print Header ---
         output.push_str(&format!("{:>width$} ", "Index", width = max_index_width));
-        let mut displayed_cols = 0;
+        let mut _displayed_cols = 0;
         let total_cols = self.cols();
         let mut cols_to_display = Vec::new();
 
@@ -727,7 +727,7 @@ impl fmt::Display for DataFrame {
                 output.push_str(&format!("{:>width$} ", "...", width = 5)); // Fixed width for ellipsis
             } else {
                 output.push_str(&format!("{:>width$} ", col_name, width = column_widths[col_name]));
-                displayed_cols += 1;
+                _displayed_cols += 1;
             }
         }
         output.push('\n');
