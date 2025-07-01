@@ -1,6 +1,11 @@
 use crate::frame::{Frame, RowIndex};
 use crate::matrix::Matrix;
 use std::collections::HashMap;
+use std::fmt;
+
+// Add these constants at the top of the file, perhaps after the use statements
+const DEFAULT_DISPLAY_ROWS: usize = 5;
+const DEFAULT_DISPLAY_COLS: usize = 10; // Display up to 10 columns by default
 
 /// Represents a typed Frame that can hold multiple columns of a single type.
 /// This will be the underlying storage for DataFrame.
@@ -182,17 +187,17 @@ impl<'a> DataFrameColumnMut<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrame {
     /// The logical order of column names.
-    column_names: Vec<String>,
+    pub column_names: Vec<String>,
     /// A map from a unique ID to a TypedFrame (the underlying storage).
-    subframes: HashMap<usize, TypedFrame>,
+    pub subframes: HashMap<usize, TypedFrame>,
     /// A map from logical column name to its location: (subframe_id, column_name_in_subframe).
-    column_locations: HashMap<String, (usize, String)>,
+    pub column_locations: HashMap<String, (usize, String)>,
     /// The common row index for all columns in the DataFrame.
-    index: RowIndex,
+    pub index: RowIndex,
     /// The number of rows in the DataFrame.
-    rows: usize,
+    pub rows: usize,
     /// Counter for generating unique subframe IDs.
-    next_subframe_id: usize,
+    pub next_subframe_id: usize,
 }
 
 impl DataFrame {
@@ -528,6 +533,272 @@ impl DataFrame {
     /// Sorts columns alphabetically by name.
     pub fn sort_columns(&mut self) {
         self.column_names.sort();
+    }
+
+    /// Returns a new DataFrame containing the first `n` rows.
+    /// If `n` is greater than the number of rows in the DataFrame,
+    /// the entire DataFrame is returned.
+    pub fn head_n(&self, n: usize) -> Self {
+        let num_rows_to_take = n.min(self.rows());
+
+        if num_rows_to_take == 0 {
+            return DataFrame::new(vec![], vec![], Some(RowIndex::Range(0..0)));
+        }
+
+        let new_index = match &self.index {
+            RowIndex::Range(r) => RowIndex::Range(r.start..r.start + num_rows_to_take),
+            RowIndex::Int(v) => RowIndex::Int(v[0..num_rows_to_take].to_vec()),
+            RowIndex::Date(v) => RowIndex::Date(v[0..num_rows_to_take].to_vec()),
+        };
+
+        let mut new_typed_frames = Vec::new();
+        for col_name in self.columns() {
+            let col_data = self.column(col_name);
+            match col_data {
+                DataFrameColumn::F64(s) => {
+                    let new_data = s[0..num_rows_to_take].to_vec();
+                    new_typed_frames.push(TypedFrame::F64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::I64(s) => {
+                    let new_data = s[0..num_rows_to_take].to_vec();
+                    new_typed_frames.push(TypedFrame::I64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::Bool(s) => {
+                    let new_data = s[0..num_rows_to_take].to_vec();
+                    new_typed_frames.push(TypedFrame::Bool(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::String(s) => {
+                    let new_data = s[0..num_rows_to_take].to_vec();
+                    new_typed_frames.push(TypedFrame::String(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+            }
+        }
+
+        DataFrame::new(new_typed_frames, self.column_names.clone(), Some(new_index))
+    }
+
+    /// Returns a new DataFrame containing the last `n` rows.
+    /// If `n` is greater than the number of rows in the DataFrame,
+    /// the entire DataFrame is returned.
+    pub fn tail_n(&self, n: usize) -> Self {
+        let num_rows_to_take = n.min(self.rows());
+
+        if num_rows_to_take == 0 {
+            return DataFrame::new(vec![], vec![], Some(RowIndex::Range(0..0)));
+        }
+
+        let start_row_idx = self.rows() - num_rows_to_take;
+
+        let new_index = match &self.index {
+            RowIndex::Range(r) => RowIndex::Range(r.start + start_row_idx..r.start + self.rows()),
+            RowIndex::Int(v) => RowIndex::Int(v[start_row_idx..].to_vec()),
+            RowIndex::Date(v) => RowIndex::Date(v[start_row_idx..].to_vec()),
+        };
+
+        let mut new_typed_frames = Vec::new();
+        for col_name in self.columns() {
+            let col_data = self.column(col_name);
+            match col_data {
+                DataFrameColumn::F64(s) => {
+                    let new_data = s[start_row_idx..].to_vec();
+                    new_typed_frames.push(TypedFrame::F64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::I64(s) => {
+                    let new_data = s[start_row_idx..].to_vec();
+                    new_typed_frames.push(TypedFrame::I64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::Bool(s) => {
+                    let new_data = s[start_row_idx..].to_vec();
+                    new_typed_frames.push(TypedFrame::Bool(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::String(s) => {
+                    let new_data = s[start_row_idx..].to_vec();
+                    new_typed_frames.push(TypedFrame::String(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+            }
+        }
+
+        DataFrame::new(new_typed_frames, self.column_names.clone(), Some(new_index))
+    }
+
+    /// Returns a new DataFrame containing the first 5 rows.
+    /// This is a convenience method for `head_n(5)`.
+    pub fn head(&self) -> Self {
+        self.head_n(DEFAULT_DISPLAY_ROWS)
+    }
+
+    /// Returns a new DataFrame containing the last 5 rows.
+    /// This is a convenience method for `tail_n(5)`.
+    pub fn tail(&self) -> Self {
+        self.tail_n(DEFAULT_DISPLAY_ROWS)
+    }
+}
+
+impl fmt::Display for DataFrame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.rows() == 0 || self.cols() == 0 {
+            return write!(f, "Empty DataFrame\nRows: {}, Columns: {}", self.rows(), self.cols());
+        }
+
+        let mut output = String::new();
+        let mut column_widths = HashMap::new();
+
+        // Calculate max width for index column
+        let mut max_index_width = 0;
+        for i in 0..self.rows() {
+            let index_str = match &self.index {
+                RowIndex::Range(r) => format!("{}", r.start + i),
+                RowIndex::Int(v) => format!("{}", v[i]),
+                RowIndex::Date(v) => format!("{}", v[i]),
+            };
+            max_index_width = max_index_width.max(index_str.len());
+        }
+        // Ensure index header "Index" fits
+        max_index_width = max_index_width.max("Index".len());
+
+        // Calculate max width for each data column
+        for col_name in self.columns() {
+            let mut max_width = col_name.len();
+            let col_data = self.column(col_name);
+            for i in 0..self.rows() {
+                let cell_str = match col_data {
+                    DataFrameColumn::F64(s) => format!("{:.2}", s[i]), // Format floats
+                    DataFrameColumn::I64(s) => format!("{}", s[i]),
+                    DataFrameColumn::Bool(s) => format!("{}", s[i]),
+                    DataFrameColumn::String(s) => format!("{}", s[i]),
+                };
+                max_width = max_width.max(cell_str.len());
+            }
+            column_widths.insert(col_name, max_width);
+        }
+
+        // --- Print Header ---
+        output.push_str(&format!("{:>width$} ", "Index", width = max_index_width));
+        let mut displayed_cols = 0;
+        let total_cols = self.cols();
+        let mut cols_to_display = Vec::new();
+
+        // Decide which columns to display
+        if total_cols <= DEFAULT_DISPLAY_COLS {
+            cols_to_display.extend_from_slice(self.columns());
+        } else {
+            // Display first few and last few columns
+            let num_first_cols = DEFAULT_DISPLAY_COLS / 2;
+            let num_last_cols = DEFAULT_DISPLAY_COLS - num_first_cols;
+            cols_to_display.extend_from_slice(&self.columns()[0..num_first_cols]);
+            cols_to_display.push("...".to_string()); // Placeholder for omitted columns
+            cols_to_display.extend_from_slice(&self.columns()[total_cols - num_last_cols..]);
+        }
+
+        for col_name in &cols_to_display {
+            if col_name == "..." {
+                output.push_str(&format!("{:>width$} ", "...", width = 5)); // Fixed width for ellipsis
+            } else {
+                output.push_str(&format!("{:>width$} ", col_name, width = column_widths[col_name]));
+                displayed_cols += 1;
+            }
+        }
+        output.push('\n');
+
+        // --- Print Separator ---
+        output.push_str(&format!("{:-<width$}-", "", width = max_index_width));
+        for col_name in &cols_to_display {
+            if col_name == "..." {
+                output.push_str(&format!("{:-<width$}-", "", width = 5));
+            } else {
+                output.push_str(&format!("{:-<width$}-", "", width = column_widths[col_name]));
+            }
+        }
+        output.push('\n');
+
+        // --- Print Rows ---
+        let total_rows = self.rows();
+        let mut rows_to_display = Vec::new();
+
+        if total_rows <= DEFAULT_DISPLAY_ROWS {
+            rows_to_display = (0..total_rows).collect();
+        } else {
+            // Display first few and last few rows
+            let num_first_rows = DEFAULT_DISPLAY_ROWS / 2;
+            let num_last_rows = DEFAULT_DISPLAY_ROWS - num_first_rows;
+            rows_to_display.extend((0..num_first_rows).collect::<Vec<usize>>());
+            rows_to_display.push(usize::MAX); // Sentinel for ellipsis row
+            rows_to_display.extend((total_rows - num_last_rows..total_rows).collect::<Vec<usize>>());
+        }
+
+        for &row_idx in &rows_to_display {
+            if row_idx == usize::MAX {
+                // Ellipsis row
+                output.push_str(&format!("{:>width$} ", "...", width = max_index_width));
+                for _ in &cols_to_display {
+                    output.push_str(&format!("{:>width$} ", "...", width = 5)); // Use a fixed width for ellipsis cells
+                }
+                output.push('\n');
+                continue;
+            }
+
+            // Print index
+            let index_str = match &self.index {
+                RowIndex::Range(r) => format!("{}", r.start + row_idx),
+                RowIndex::Int(v) => format!("{}", v[row_idx]),
+                RowIndex::Date(v) => format!("{}", v[row_idx]),
+            };
+            output.push_str(&format!("{:>width$} ", index_str, width = max_index_width));
+
+            // Print data cells
+            for col_name in &cols_to_display {
+                if col_name == "..." {
+                    output.push_str(&format!("{:>width$} ", "...", width = 5));
+                } else {
+                    let col_data = self.column(col_name);
+                    let cell_str = match col_data {
+                        DataFrameColumn::F64(s) => format!("{:.2}", s[row_idx]),
+                        DataFrameColumn::I64(s) => format!("{}", s[row_idx]),
+                        DataFrameColumn::Bool(s) => format!("{}", s[row_idx]),
+                        DataFrameColumn::String(s) => format!("{}", s[row_idx]),
+                    };
+                    output.push_str(&format!("{:>width$} ", cell_str, width = column_widths[col_name]));
+                }
+            }
+            output.push('\n');
+        }
+
+        // --- Print Footer ---
+        output.push_str(&format!("\n[{} rows x {} columns]\n", self.rows(), self.cols()));
+
+        write!(f, "{}", output)
     }
 }
 
@@ -1040,5 +1311,255 @@ mod tests {
             vec!["A".to_string(), "A".to_string()],
             None,
         );
+    }
+
+    #[test]
+    fn test_dataframe_head_n() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], None);
+        let col_b = create_i64_typed_frame("B", vec![10, 20, 30, 40, 50, 60, 70], None);
+        let df = DataFrame::new(
+            vec![col_a, col_b],
+            vec!["A".to_string(), "B".to_string()],
+            None,
+        );
+
+        // Test head_n with n < rows
+        let head_df = df.head_n(3);
+        assert_eq!(head_df.rows(), 3);
+        assert_eq!(head_df.cols(), 2);
+        assert_eq!(head_df.columns(), &["A", "B"]);
+        assert_eq!(head_df.index(), &RowIndex::Range(0..3));
+        assert_eq!(head_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0]);
+        assert_eq!(head_df.column("B").as_i64().unwrap(), &[10, 20, 30]);
+
+        // Test head_n with n > rows
+        let head_all_df = df.head_n(10);
+        assert_eq!(head_all_df.rows(), 7);
+        assert_eq!(head_all_df.cols(), 2);
+        assert_eq!(head_all_df.columns(), &["A", "B"]);
+        assert_eq!(head_all_df.index(), &RowIndex::Range(0..7));
+        assert_eq!(head_all_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+        assert_eq!(head_all_df.column("B").as_i64().unwrap(), &[10, 20, 30, 40, 50, 60, 70]);
+
+        // Test head_n with n = 0
+        let empty_head_df = df.head_n(0);
+        assert_eq!(empty_head_df.rows(), 0);
+        assert_eq!(empty_head_df.cols(), 0);
+        assert!(empty_head_df.columns().is_empty());
+        assert_eq!(empty_head_df.index(), &RowIndex::Range(0..0));
+
+        // Test with Int index
+        let int_index = RowIndex::Int(vec![100, 101, 102, 103, 104, 105, 106]);
+        let col_a_int = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], Some(int_index.clone()));
+        let col_b_int = create_i64_typed_frame("B", vec![10, 20, 30, 40, 50, 60, 70], Some(int_index.clone()));
+        let df_int = DataFrame::new(
+            vec![col_a_int, col_b_int],
+            vec!["A".to_string(), "B".to_string()],
+            Some(int_index),
+        );
+        let head_int_df = df_int.head_n(3);
+        assert_eq!(head_int_df.rows(), 3);
+        assert_eq!(head_int_df.index(), &RowIndex::Int(vec![100, 101, 102]));
+    }
+
+    #[test]
+    fn test_dataframe_tail_n() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], None);
+        let col_b = create_i64_typed_frame("B", vec![10, 20, 30, 40, 50, 60, 70], None);
+        let df = DataFrame::new(
+            vec![col_a, col_b],
+            vec!["A".to_string(), "B".to_string()],
+            None,
+        );
+
+        // Test tail_n with n < rows
+        let tail_df = df.tail_n(3);
+        assert_eq!(tail_df.rows(), 3);
+        assert_eq!(tail_df.cols(), 2);
+        assert_eq!(tail_df.columns(), &["A", "B"]);
+        assert_eq!(tail_df.index(), &RowIndex::Range(4..7));
+        assert_eq!(tail_df.column("A").as_f64().unwrap(), &[5.0, 6.0, 7.0]);
+        assert_eq!(tail_df.column("B").as_i64().unwrap(), &[50, 60, 70]);
+
+        // Test tail_n with n > rows
+        let tail_all_df = df.tail_n(10);
+        assert_eq!(tail_all_df.rows(), 7);
+        assert_eq!(tail_all_df.cols(), 2);
+        assert_eq!(tail_all_df.columns(), &["A", "B"]);
+        assert_eq!(tail_all_df.index(), &RowIndex::Range(0..7));
+        assert_eq!(tail_all_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+        assert_eq!(tail_all_df.column("B").as_i64().unwrap(), &[10, 20, 30, 40, 50, 60, 70]);
+
+        // Test tail_n with n = 0
+        let empty_tail_df = df.tail_n(0);
+        assert_eq!(empty_tail_df.rows(), 0);
+        assert_eq!(empty_tail_df.cols(), 0);
+        assert!(empty_tail_df.columns().is_empty());
+        assert_eq!(empty_tail_df.index(), &RowIndex::Range(0..0));
+
+        // Test with Int index
+        let int_index = RowIndex::Int(vec![100, 101, 102, 103, 104, 105, 106]);
+        let col_a_int = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], Some(int_index.clone()));
+        let col_b_int = create_i64_typed_frame("B", vec![10, 20, 30, 40, 50, 60, 70], Some(int_index.clone()));
+        let df_int = DataFrame::new(
+            vec![col_a_int, col_b_int],
+            vec!["A".to_string(), "B".to_string()],
+            Some(int_index),
+        );
+        let tail_int_df = df_int.tail_n(3);
+        assert_eq!(tail_int_df.rows(), 3);
+        assert_eq!(tail_int_df.index(), &RowIndex::Int(vec![104, 105, 106]));
+    }
+
+    #[test]
+    fn test_dataframe_head() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0], None);
+        let df = DataFrame::new(
+            vec![col_a],
+            vec!["A".to_string()],
+            None,
+        );
+
+        let head_df = df.head();
+        assert_eq!(head_df.rows(), DEFAULT_DISPLAY_ROWS);
+        assert_eq!(head_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        // Test with fewer rows than DEFAULT_DISPLAY_ROWS
+        let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
+        let df_small = DataFrame::new(vec![col_b], vec!["B".to_string()], None);
+        let head_small_df = df_small.head();
+        assert_eq!(head_small_df.rows(), 2);
+        assert_eq!(head_small_df.column("B").as_f64().unwrap(), &[1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_dataframe_tail() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0], None);
+        let df = DataFrame::new(
+            vec![col_a],
+            vec!["A".to_string()],
+            None,
+        );
+
+        let tail_df = df.tail();
+        assert_eq!(tail_df.rows(), DEFAULT_DISPLAY_ROWS);
+        assert_eq!(tail_df.column("A").as_f64().unwrap(), &[6.0, 7.0, 8.0, 9.0, 10.0]);
+
+        // Test with fewer rows than DEFAULT_DISPLAY_ROWS
+        let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
+        let df_small = DataFrame::new(vec![col_b], vec!["B".to_string()], None);
+        let tail_small_df = df_small.tail();
+        assert_eq!(tail_small_df.rows(), 2);
+        assert_eq!(tail_small_df.column("B").as_f64().unwrap(), &[1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_dataframe_display_empty() {
+        let empty_df = DataFrame::new(vec![], vec![], None);
+        let expected_output = "Empty DataFrame\nRows: 0, Columns: 0";
+        assert_eq!(format!("{}", empty_df), expected_output);
+    }
+
+    #[test]
+    fn test_dataframe_display_basic() {
+        let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
+        let col_b = create_i64_typed_frame("B", vec![10, 20, 30], None);
+        let col_c = create_string_typed_frame("C", vec!["x".to_string(), "y".to_string(), "z".to_string()], None);
+        let df = DataFrame::new(
+            vec![col_a, col_b, col_c],
+            vec!["A".to_string(), "B".to_string(), "C".to_string()],
+            None,
+        );
+
+        let expected_output = "\
+ Index      A   B  C 
+------ ---- --- ---
+     0 1.00  10   x 
+     1 2.00  20   y 
+     2 3.00  30   z 
+
+[3 rows x 3 columns]
+";
+        assert_eq!(format!("{}", df), expected_output);
+    }
+
+    #[test]
+    fn test_dataframe_display_truncation_rows() {
+        let col_a = create_f64_typed_frame("A", (1..=10).map(|i| i as f64).collect(), None);
+        let col_b = create_i64_typed_frame("B", (11..=20).collect(), None);
+        let df = DataFrame::new(
+            vec![col_a, col_b],
+            vec!["A".to_string(), "B".to_string()],
+            None,
+        );
+
+        let expected_output = "\
+ Index      A   B 
+------ ---- ---
+     0 1.00  11 
+     1 2.00  12 
+     ...  ... ...
+     8 9.00  19 
+     9 10.00  20 
+
+[10 rows x 2 columns]
+";
+        assert_eq!(format!("{}", df), expected_output);
+    }
+
+    #[test]
+    fn test_dataframe_display_truncation_cols() {
+        let mut cols_data = Vec::new();
+        let mut col_names = Vec::new();
+        for i in 0..15 { // 15 columns, more than DEFAULT_DISPLAY_COLS
+            cols_data.push((1..=3).map(|r| (i * 10 + r) as f64).collect());
+            col_names.push(format!("Col{}", i));
+        }
+        let typed_frame = create_multi_f64_typed_frame(
+            col_names.iter().map(|s| s.as_str()).collect(),
+            cols_data,
+            None,
+        );
+        let df = DataFrame::new(vec![typed_frame], col_names, None);
+
+        let expected_output = "\
+ Index Col0 Col1 Col2 Col3 Col4 ... Col10 Col11 Col12 Col13 Col14 
+------ ---- ---- ---- ---- ---- --- ----- ----- ----- ----- -----
+     0 1.00 11.00 21.00 31.00 41.00 ... 101.00 111.00 121.00 131.00 141.00 
+     1 2.00 12.00 22.00 32.00 42.00 ... 102.00 112.00 122.00 132.00 142.00 
+     2 3.00 13.00 23.00 33.00 43.00 ... 103.00 113.00 123.00 133.00 143.00 
+
+[3 rows x 15 columns]
+";
+        assert_eq!(format!("{}", df), expected_output);
+    }
+
+    #[test]
+    fn test_dataframe_display_truncation_both() {
+        let mut cols_data = Vec::new();
+        let mut col_names = Vec::new();
+        for i in 0..15 { // 15 columns
+            cols_data.push((1..=10).map(|r| (i * 10 + r) as f64).collect()); // 10 rows
+            col_names.push(format!("Col{}", i));
+        }
+        let typed_frame = create_multi_f64_typed_frame(
+            col_names.iter().map(|s| s.as_str()).collect(),
+            cols_data,
+            None,
+        );
+        let df = DataFrame::new(vec![typed_frame], col_names, None);
+
+        let expected_output = "\
+ Index Col0 Col1 Col2 Col3 Col4 ... Col10 Col11 Col12 Col13 Col14 
+------ ---- ---- ---- ---- ---- --- ----- ----- ----- ----- -----
+     0 1.00 11.00 21.00 31.00 41.00 ... 101.00 111.00 121.00 131.00 141.00 
+     1 2.00 12.00 22.00 32.00 42.00 ... 102.00 112.00 122.00 132.00 142.00 
+     ...  ...  ...  ...  ...  ... ...   ...   ...   ...   ...   ...
+     8 9.00 19.00 29.00 39.00 49.00 ... 109.00 119.00 129.00 139.00 149.00 
+     9 10.00 20.00 30.00 40.00 50.00 ... 110.00 120.00 130.00 140.00 150.00 
+
+[10 rows x 15 columns]
+";
+        assert_eq!(format!("{}", df), expected_output);
     }
 }
