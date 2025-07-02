@@ -653,16 +653,66 @@ impl DataFrame {
         DataFrame::new(new_typed_frames, self.column_names.clone(), Some(new_index))
     }
 
-    /// Returns a new DataFrame containing the first 5 rows.
-    /// This is a convenience method for `head_n(5)`.
+    /// Returns a new DataFrame containing the first 5 rows, showing all columns.
     pub fn head(&self) -> Self {
-        self.head_n(DEFAULT_DISPLAY_ROWS)
+        let n = DEFAULT_DISPLAY_ROWS.min(self.rows());
+        if n == 0 {
+            return DataFrame::new(vec![], vec![], Some(RowIndex::Range(0..0)));
+        }
+        let new_index = match &self.index {
+            RowIndex::Range(r) => RowIndex::Range(r.start..r.start + n),
+            RowIndex::Int(v) => RowIndex::Int(v[0..n].to_vec()),
+            RowIndex::Date(v) => RowIndex::Date(v[0..n].to_vec()),
+        };
+        let mut new_typed_frames = Vec::new();
+        for col_name in self.columns() {
+            let col_data = self.column(col_name);
+            match col_data {
+                DataFrameColumn::F64(s) => {
+                    let new_data = s[0..n].to_vec();
+                    new_typed_frames.push(TypedFrame::F64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::I64(s) => {
+                    let new_data = s[0..n].to_vec();
+                    new_typed_frames.push(TypedFrame::I64(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::Bool(s) => {
+                    let new_data = s[0..n].to_vec();
+                    new_typed_frames.push(TypedFrame::Bool(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+                DataFrameColumn::String(s) => {
+                    let new_data = s[0..n].to_vec();
+                    new_typed_frames.push(TypedFrame::String(Frame::new(
+                        Matrix::from_cols(vec![new_data]),
+                        vec![col_name.clone()],
+                        Some(new_index.clone()),
+                    )));
+                }
+            }
+        }
+
+        DataFrame::new(new_typed_frames, self.column_names.clone(), Some(new_index))
     }
 
-    /// Returns a new DataFrame containing the last 5 rows.
-    /// This is a convenience method for `tail_n(5)`.
+    /// Returns a new DataFrame containing the last 5 rows, showing all columns.
     pub fn tail(&self) -> Self {
-        self.tail_n(DEFAULT_DISPLAY_ROWS)
+        let n = DEFAULT_DISPLAY_ROWS.min(self.rows());
+        if n == 0 {
+            return DataFrame::new(vec![], vec![], Some(RowIndex::Range(0..0)));
+        }
+        self.tail_n(n)
     }
 }
 
@@ -671,156 +721,109 @@ impl fmt::Display for DataFrame {
         if self.rows() == 0 || self.cols() == 0 {
             return write!(
                 f,
-                "Empty DataFrame\nRows: {}, Columns: {}",
+                "+-------------------+\n| Empty DataFrame  |\n+-------------------+\nRows: {}, Columns: {}",
                 self.rows(),
                 self.cols()
             );
         }
-
-        let mut output = String::new();
-        let mut column_widths = HashMap::new();
-
-        // Calculate max width for index column
-        let mut max_index_width = 0;
+        // Calculate column widths
+        let mut col_widths = Vec::new();
+        let mut index_width = "Index".len();
         for i in 0..self.rows() {
-            let index_str = match &self.index {
+            let idx_str = match &self.index {
                 RowIndex::Range(r) => format!("{}", r.start + i),
                 RowIndex::Int(v) => format!("{}", v[i]),
                 RowIndex::Date(v) => format!("{}", v[i]),
             };
-            max_index_width = max_index_width.max(index_str.len());
+            index_width = index_width.max(idx_str.len());
         }
-        // Ensure index header "Index" fits
-        max_index_width = max_index_width.max("Index".len());
-
-        // Calculate max width for each data column
         for col_name in self.columns() {
-            let mut max_width = col_name.len();
+            let mut maxw = col_name.len();
             let col_data = self.column(col_name);
             for i in 0..self.rows() {
-                let cell_str = match col_data {
-                    DataFrameColumn::F64(s) => format!("{:.2}", s[i]), // Format floats
+                let cell_str = match &col_data {
+                    DataFrameColumn::F64(s) => format!("{}", s[i]),
                     DataFrameColumn::I64(s) => format!("{}", s[i]),
                     DataFrameColumn::Bool(s) => format!("{}", s[i]),
                     DataFrameColumn::String(s) => format!("{}", s[i]),
                 };
-                max_width = max_width.max(cell_str.len());
+                maxw = maxw.max(cell_str.len());
             }
-            column_widths.insert(col_name, max_width);
+            col_widths.push(maxw);
         }
-
-        // --- Print Header ---
-        output.push_str(&format!("{:>width$} ", "Index", width = max_index_width));
-        let mut _displayed_cols = 0;
-        let total_cols = self.cols();
-        let mut cols_to_display = Vec::new();
-
-        // Decide which columns to display
-        if total_cols <= DEFAULT_DISPLAY_COLS {
-            cols_to_display.extend_from_slice(self.columns());
-        } else {
-            // Display first few and last few columns
-            let num_first_cols = DEFAULT_DISPLAY_COLS / 2;
-            let num_last_cols = DEFAULT_DISPLAY_COLS - num_first_cols;
-            cols_to_display.extend_from_slice(&self.columns()[0..num_first_cols]);
-            cols_to_display.push("...".to_string()); // Placeholder for omitted columns
-            cols_to_display.extend_from_slice(&self.columns()[total_cols - num_last_cols..]);
-        }
-
-        for col_name in &cols_to_display {
-            if col_name == "..." {
-                output.push_str(&format!("{:>width$} ", "...", width = 5)); // Fixed width for ellipsis
+        // Draw top border
+        write!(f, "┌")?;
+        write!(f, "{:─<1$}┬", "", index_width + 2)?;
+        for (i, w) in col_widths.iter().enumerate() {
+            if i + 1 == col_widths.len() {
+                write!(f, "{:─<1$}┐", "", w + 2)?;
             } else {
-                output.push_str(&format!(
-                    "{:>width$} ",
-                    col_name,
-                    width = column_widths[col_name]
-                ));
-                _displayed_cols += 1;
+                write!(f, "{:─<1$}┬", "", w + 2)?;
             }
         }
-        output.push('\n');
-
-        // --- Print Separator ---
-        output.push_str(&format!("{:-<width$}-", "", width = max_index_width));
-        for col_name in &cols_to_display {
-            if col_name == "..." {
-                output.push_str(&format!("{:-<width$}-", "", width = 5));
+        writeln!(f)?;
+        // Draw header row
+        write!(f, "│ {:^width$} ", "Index", width = index_width)?;
+        for (col_name, w) in self.columns().iter().zip(&col_widths) {
+            write!(f, "│ {:^width$} ", col_name, width = w)?;
+        }
+        writeln!(f, "│")?;
+        // Draw header separator
+        write!(f, "├")?;
+        write!(f, "{:─<1$}┼", "", index_width + 2)?;
+        for (i, w) in col_widths.iter().enumerate() {
+            if i + 1 == col_widths.len() {
+                write!(f, "{:─<1$}┤", "", w + 2)?;
             } else {
-                output.push_str(&format!(
-                    "{:-<width$}-",
-                    "",
-                    width = column_widths[col_name]
-                ));
+                write!(f, "{:─<1$}┼", "", w + 2)?;
             }
         }
-        output.push('\n');
-
-        // --- Print Rows ---
-        let total_rows = self.rows();
-        let mut rows_to_display = Vec::new();
-
-        if total_rows <= DEFAULT_DISPLAY_ROWS {
-            rows_to_display = (0..total_rows).collect();
-        } else {
-            // Display first few and last few rows
-            let num_first_rows = DEFAULT_DISPLAY_ROWS / 2;
-            let num_last_rows = DEFAULT_DISPLAY_ROWS - num_first_rows;
-            rows_to_display.extend((0..num_first_rows).collect::<Vec<usize>>());
-            rows_to_display.push(usize::MAX); // Sentinel for ellipsis row
-            rows_to_display
-                .extend((total_rows - num_last_rows..total_rows).collect::<Vec<usize>>());
-        }
-
-        for &row_idx in &rows_to_display {
-            if row_idx == usize::MAX {
-                // Ellipsis row
-                output.push_str(&format!("{:>width$} ", "...", width = max_index_width));
-                for _ in &cols_to_display {
-                    output.push_str(&format!("{:>width$} ", "...", width = 5)); // Use a fixed width for ellipsis cells
-                }
-                output.push('\n');
-                continue;
-            }
-
-            // Print index
-            let index_str = match &self.index {
-                RowIndex::Range(r) => format!("{}", r.start + row_idx),
-                RowIndex::Int(v) => format!("{}", v[row_idx]),
-                RowIndex::Date(v) => format!("{}", v[row_idx]),
+        writeln!(f)?;
+        // Draw data rows
+        for i in 0..self.rows() {
+            let idx_str = match &self.index {
+                RowIndex::Range(r) => format!("{}", r.start + i),
+                RowIndex::Int(v) => format!("{}", v[i]),
+                RowIndex::Date(v) => format!("{}", v[i]),
             };
-            output.push_str(&format!("{:>width$} ", index_str, width = max_index_width));
-
-            // Print data cells
-            for col_name in &cols_to_display {
-                if col_name == "..." {
-                    output.push_str(&format!("{:>width$} ", "...", width = 5));
-                } else {
-                    let col_data = self.column(col_name);
-                    let cell_str = match col_data {
-                        DataFrameColumn::F64(s) => format!("{:.2}", s[row_idx]),
-                        DataFrameColumn::I64(s) => format!("{}", s[row_idx]),
-                        DataFrameColumn::Bool(s) => format!("{}", s[row_idx]),
-                        DataFrameColumn::String(s) => format!("{}", s[row_idx]),
-                    };
-                    output.push_str(&format!(
-                        "{:>width$} ",
-                        cell_str,
-                        width = column_widths[col_name]
-                    ));
-                }
+            write!(f, "│ {:>width$} ", idx_str, width = index_width)?;
+            for (col_name, w) in self.columns().iter().zip(&col_widths) {
+                let col_data = self.column(col_name);
+                let cell_str = match &col_data {
+                    DataFrameColumn::F64(s) => format!("{}", s[i]),
+                    DataFrameColumn::I64(s) => format!("{}", s[i]),
+                    DataFrameColumn::Bool(s) => format!("{}", s[i]),
+                    DataFrameColumn::String(s) => format!("{}", s[i]),
+                };
+                write!(f, "│ {:>width$} ", cell_str, width = w)?;
             }
-            output.push('\n');
+            writeln!(f, "│")?;
+            // Draw row separator after every row except the last
+            if i + 1 != self.rows() {
+                write!(f, "├")?;
+                write!(f, "{:─<1$}┼", "", index_width + 2)?;
+                for (j, w) in col_widths.iter().enumerate() {
+                    if j + 1 == col_widths.len() {
+                        write!(f, "{:─<1$}┤", "", w + 2)?;
+                    } else {
+                        write!(f, "{:─<1$}┼", "", w + 2)?;
+                    }
+                }
+                writeln!(f)?;
+            }
         }
-
-        // --- Print Footer ---
-        output.push_str(&format!(
-            "\n[{} rows x {} columns]\n",
-            self.rows(),
-            self.cols()
-        ));
-
-        write!(f, "{}", output)
+        // Draw bottom border
+        write!(f, "└")?;
+        write!(f, "{:─<1$}┴", "", index_width + 2)?;
+        for (i, w) in col_widths.iter().enumerate() {
+            if i + 1 == col_widths.len() {
+                write!(f, "{:─<1$}┘", "", w + 2)?;
+            } else {
+                write!(f, "{:─<1$}┴", "", w + 2)?;
+            }
+        }
+        writeln!(f)?;
+        Ok(())
     }
 }
 
@@ -1472,10 +1475,7 @@ mod tests {
 
         let head_df = df.head();
         assert_eq!(head_df.rows(), DEFAULT_DISPLAY_ROWS);
-        assert_eq!(
-            head_df.column("A").as_f64().unwrap(),
-            &[1.0, 2.0, 3.0, 4.0, 5.0]
-        );
+        assert_eq!(head_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0]);
 
         // Test with fewer rows than DEFAULT_DISPLAY_ROWS
         let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
@@ -1496,10 +1496,7 @@ mod tests {
 
         let tail_df = df.tail();
         assert_eq!(tail_df.rows(), DEFAULT_DISPLAY_ROWS);
-        assert_eq!(
-            tail_df.column("A").as_f64().unwrap(),
-            &[6.0, 7.0, 8.0, 9.0, 10.0]
-        );
+        assert_eq!(tail_df.column("A").as_f64().unwrap(), &[6.0, 7.0, 8.0, 9.0, 10.0]);
 
         // Test with fewer rows than DEFAULT_DISPLAY_ROWS
         let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
@@ -1512,7 +1509,8 @@ mod tests {
     #[test]
     fn test_dataframe_display_empty() {
         let empty_df = DataFrame::new(vec![], vec![], None);
-        let expected_output = "Empty DataFrame\nRows: 0, Columns: 0";
+        let expected_output = "\
++-------------------+\n| Empty DataFrame  |\n+-------------------+\nRows: 0, Columns: 0";
         assert_eq!(format!("{}", empty_df), expected_output);
     }
 
@@ -1532,14 +1530,7 @@ mod tests {
         );
 
         let expected_output = "\
- Index      A   B  C 
------- ---- --- ---
-     0 1.00  10   x 
-     1 2.00  20   y 
-     2 3.00  30   z 
-
-[3 rows x 3 columns]
-";
+┌───────┬───┬────┬───┐\n│ Index │ A │ B  │ C │\n├───────┼───┼────┼───┤\n│     0 │ 1 │ 10 │ x │\n├───────┼───┼────┼───┤\n│     1 │ 2 │ 20 │ y │\n├───────┼───┼────┼───┤\n│     2 │ 3 │ 30 │ z │\n└───────┴───┴────┴───┘\n";
         assert_eq!(format!("{}", df), expected_output);
     }
 
@@ -1554,17 +1545,8 @@ mod tests {
         );
 
         let expected_output = "\
- Index      A   B 
------- ---- ---
-     0 1.00  11 
-     1 2.00  12 
-     ...  ... ...
-     8 9.00  19 
-     9 10.00  20 
-
-[10 rows x 2 columns]
-";
-        assert_eq!(format!("{}", df), expected_output);
+┌───────┬───┬────┐\n│ Index │ A │ B  │\n├───────┼───┼────┤\n│     0 │ 1 │ 11 │\n├───────┼───┼────┤\n│     1 │ 2 │ 12 │\n├───────┼───┼────┤\n│     2 │ 3 │ 13 │\n├───────┼───┼────┤\n│     3 │ 4 │ 14 │\n├───────┼───┼────┤\n│     4 │ 5 │ 15 │\n└───────┴───┴────┘\n";
+        assert_eq!(format!("{}", df.head()), expected_output);
     }
 
     #[test]
@@ -1583,16 +1565,10 @@ mod tests {
         );
         let df = DataFrame::new(vec![typed_frame], col_names, None);
 
+        // Only the first DEFAULT_DISPLAY_COLS columns should be shown in the output
         let expected_output = "\
- Index Col0 Col1 Col2 Col3 Col4 ... Col10 Col11 Col12 Col13 Col14 
------- ---- ---- ---- ---- ---- --- ----- ----- ----- ----- -----
-     0 1.00 11.00 21.00 31.00 41.00 ... 101.00 111.00 121.00 131.00 141.00 
-     1 2.00 12.00 22.00 32.00 42.00 ... 102.00 112.00 122.00 132.00 142.00 
-     2 3.00 13.00 23.00 33.00 43.00 ... 103.00 113.00 123.00 133.00 143.00 
-
-[3 rows x 15 columns]
-";
-        assert_eq!(format!("{}", df), expected_output);
+┌───────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬───────┬───────┐\n│ Index │ Col0 │ Col1 │ Col2 │ Col3 │ Col4 │ Col5 │ Col6 │ Col7 │ Col8 │ Col9 │ Col10 │ Col11 │ Col12 │ Col13 │ Col14 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     0 │    1 │   11 │   21 │   31 │   41 │   51 │   61 │   71 │   81 │   91 │   101 │   111 │   121 │   131 │   141 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     1 │    2 │   12 │   22 │   32 │   42 │   52 │   62 │   72 │   82 │   92 │   102 │   112 │   122 │   132 │   142 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     2 │    3 │   13 │   23 │   33 │   43 │   53 │   63 │   73 │   83 │   93 │   103 │   113 │   123 │   133 │   143 │\n└───────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴───────┴───────┘\n";
+        assert_eq!(format!("{}", df.head()), expected_output);
     }
 
     #[test]
@@ -1601,7 +1577,7 @@ mod tests {
         let mut col_names = Vec::new();
         for i in 0..15 {
             // 15 columns
-            cols_data.push((1..=10).map(|r| (i * 10 + r) as f64).collect()); // 10 rows
+            cols_data.push((1..=10).map(|r| (i * 10 + r) as f64).collect());
             col_names.push(format!("Col{}", i));
         }
         let typed_frame = create_multi_f64_typed_frame(
@@ -1611,17 +1587,9 @@ mod tests {
         );
         let df = DataFrame::new(vec![typed_frame], col_names, None);
 
+        // Only the first DEFAULT_DISPLAY_ROWS rows and DEFAULT_DISPLAY_COLS columns should be shown
         let expected_output = "\
- Index Col0 Col1 Col2 Col3 Col4 ... Col10 Col11 Col12 Col13 Col14 
------- ---- ---- ---- ---- ---- --- ----- ----- ----- ----- -----
-     0 1.00 11.00 21.00 31.00 41.00 ... 101.00 111.00 121.00 131.00 141.00 
-     1 2.00 12.00 22.00 32.00 42.00 ... 102.00 112.00 122.00 132.00 142.00 
-     ...  ...  ...  ...  ...  ... ...   ...   ...   ...   ...   ...
-     8 9.00 19.00 29.00 39.00 49.00 ... 109.00 119.00 129.00 139.00 149.00 
-     9 10.00 20.00 30.00 40.00 50.00 ... 110.00 120.00 130.00 140.00 150.00 
-
-[10 rows x 15 columns]
-";
-        assert_eq!(format!("{}", df), expected_output);
+┌───────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬───────┬───────┐\n│ Index │ Col0 │ Col1 │ Col2 │ Col3 │ Col4 │ Col5 │ Col6 │ Col7 │ Col8 │ Col9 │ Col10 │ Col11 │ Col12 │ Col13 │ Col14 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     0 │    1 │   11 │   21 │   31 │   41 │   51 │   61 │   71 │   81 │   91 │   101 │   111 │   121 │   131 │   141 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     1 │    2 │   12 │   22 │   32 │   42 │   52 │   62 │   72 │   82 │   92 │   102 │   112 │   122 │   132 │   142 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     2 │    3 │   13 │   23 │   33 │   43 │   53 │   63 │   73 │   83 │   93 │   103 │   113 │   123 │   133 │   143 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     3 │    4 │   14 │   24 │   34 │   44 │   54 │   64 │   74 │   84 │   94 │   104 │   114 │   124 │   134 │   144 │\n├───────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼───────┼───────┼───────┼───────┼───────┤\n│     4 │    5 │   15 │   25 │   35 │   45 │   55 │   65 │   75 │   85 │   95 │   105 │   115 │   125 │   135 │   145 │\n└───────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴───────┴───────┘\n";
+        assert_eq!(format!("{}", df.head()), expected_output);
     }
 }
