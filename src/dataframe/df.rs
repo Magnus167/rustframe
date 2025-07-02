@@ -728,8 +728,24 @@ impl fmt::Display for DataFrame {
         }
         // Calculate column widths
         let mut col_widths = Vec::new();
-        let mut index_width = "Index".len();
-        for i in 0..self.rows() {
+        let mut index_width = "Index".len().max("...".len());
+        let display_rows = DEFAULT_DISPLAY_ROWS;
+        let total_rows = self.rows();
+        let show_ellipsis = total_rows > display_rows * 2;
+        let mut row_indices = Vec::new();
+        if show_ellipsis {
+            for i in 0..display_rows {
+                row_indices.push(i);
+            }
+            for i in (total_rows - display_rows)..total_rows {
+                row_indices.push(i);
+            }
+        } else {
+            for i in 0..total_rows {
+                row_indices.push(i);
+            }
+        }
+        for &i in &row_indices {
             let idx_str = match &self.index {
                 RowIndex::Range(r) => format!("{}", r.start + i),
                 RowIndex::Int(v) => format!("{}", v[i]),
@@ -738,9 +754,9 @@ impl fmt::Display for DataFrame {
             index_width = index_width.max(idx_str.len());
         }
         for col_name in self.columns() {
-            let mut maxw = col_name.len();
+            let mut maxw = col_name.len().max("...".len());
             let col_data = self.column(col_name);
-            for i in 0..self.rows() {
+            for &i in &row_indices {
                 let cell_str = match &col_data {
                     DataFrameColumn::F64(s) => format!("{}", s[i]),
                     DataFrameColumn::I64(s) => format!("{}", s[i]),
@@ -780,7 +796,26 @@ impl fmt::Display for DataFrame {
         }
         writeln!(f)?;
         // Draw data rows
-        for i in 0..self.rows() {
+        for (row_pos, &i) in row_indices.iter().enumerate() {
+            if show_ellipsis && row_pos == display_rows {
+                // Ellipsis row
+                write!(f, "│ {:>width$} ", "...", width = index_width)?;
+                for w in &col_widths {
+                    write!(f, "│ {:>width$} ", "...", width = *w)?;
+                }
+                writeln!(f, "│")?;
+                // Draw row separator after ellipsis
+                write!(f, "├")?;
+                write!(f, "{:─<1$}┼", "", index_width + 2)?;
+                for (j, w) in col_widths.iter().enumerate() {
+                    if j + 1 == col_widths.len() {
+                        write!(f, "{:─<1$}┤", "", w + 2)?;
+                    } else {
+                        write!(f, "{:─<1$}┼", "", w + 2)?;
+                    }
+                }
+                writeln!(f)?;
+            }
             let idx_str = match &self.index {
                 RowIndex::Range(r) => format!("{}", r.start + i),
                 RowIndex::Int(v) => format!("{}", v[i]),
@@ -795,11 +830,11 @@ impl fmt::Display for DataFrame {
                     DataFrameColumn::Bool(s) => format!("{}", s[i]),
                     DataFrameColumn::String(s) => format!("{}", s[i]),
                 };
-                write!(f, "│ {:>width$} ", cell_str, width = w)?;
+                write!(f, "│ {:>width$} ", cell_str, width = *w)?;
             }
             writeln!(f, "│")?;
             // Draw row separator after every row except the last
-            if i + 1 != self.rows() {
+            if row_pos + 1 != row_indices.len() {
                 write!(f, "├")?;
                 write!(f, "{:─<1$}┼", "", index_width + 2)?;
                 for (j, w) in col_widths.iter().enumerate() {
@@ -823,7 +858,7 @@ impl fmt::Display for DataFrame {
             }
         }
         writeln!(f)?;
-        Ok(())
+        write!(f, "[{} rows x {} columns]", self.rows(), self.cols())
     }
 }
 
@@ -1475,7 +1510,10 @@ mod tests {
 
         let head_df = df.head();
         assert_eq!(head_df.rows(), DEFAULT_DISPLAY_ROWS);
-        assert_eq!(head_df.column("A").as_f64().unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(
+            head_df.column("A").as_f64().unwrap(),
+            &[1.0, 2.0, 3.0, 4.0, 5.0]
+        );
 
         // Test with fewer rows than DEFAULT_DISPLAY_ROWS
         let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
@@ -1496,7 +1534,10 @@ mod tests {
 
         let tail_df = df.tail();
         assert_eq!(tail_df.rows(), DEFAULT_DISPLAY_ROWS);
-        assert_eq!(tail_df.column("A").as_f64().unwrap(), &[6.0, 7.0, 8.0, 9.0, 10.0]);
+        assert_eq!(
+            tail_df.column("A").as_f64().unwrap(),
+            &[6.0, 7.0, 8.0, 9.0, 10.0]
+        );
 
         // Test with fewer rows than DEFAULT_DISPLAY_ROWS
         let col_b = create_f64_typed_frame("B", vec![1.0, 2.0], None);
@@ -1530,14 +1571,14 @@ mod tests {
         );
 
         let expected_output = "\
-┌───────┬───┬────┬───┐\n│ Index │ A │ B  │ C │\n├───────┼───┼────┼───┤\n│     0 │ 1 │ 10 │ x │\n├───────┼───┼────┼───┤\n│     1 │ 2 │ 20 │ y │\n├───────┼───┼────┼───┤\n│     2 │ 3 │ 30 │ z │\n└───────┴───┴────┴───┘\n";
+┌───────┬───┬────┬───┐\n│ Index │ A │ B  │ C │\n├───────┼───┼────┼───┤\n│     0 │ 1 │ 10 │ x │\n├───────┼───┼────┼───┤\n│     1 │ 2 │ 20 │ y │\n├───────┼───┼────┼───┤\n│     2 │ 3 │ 30 │ z │\n└───────┴───┴────┴───┘\n[3 rows x 3 columns]";
         assert_eq!(format!("{}", df), expected_output);
     }
 
     #[test]
     fn test_dataframe_display_truncation_rows() {
-        let col_a = create_f64_typed_frame("A", (1..=10).map(|i| i as f64).collect(), None);
-        let col_b = create_i64_typed_frame("B", (11..=20).collect(), None);
+        let col_a = create_f64_typed_frame("A", (1..=20).map(|i| i as f64).collect(), None);
+        let col_b = create_i64_typed_frame("B", (21..=40).collect(), None);
         let df = DataFrame::new(
             vec![col_a, col_b],
             vec!["A".to_string(), "B".to_string()],
