@@ -98,7 +98,6 @@ assert!(check);
 
 
 ```
-
 ---
 
 ## DataFrame Usage Example
@@ -192,3 +191,7 @@ println!("Column names after second drop: {:?}", df.get_column_names());
 // Attempt to drop a non-existent column (will panic)
 // df.drop_column("non_existent_col"); // Uncomment to see panic
 ```
+
+### More examples
+
+See the [examples](./examples/) directory for some demonstrations of Rustframe's syntax and functionality.
