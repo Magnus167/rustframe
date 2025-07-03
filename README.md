@@ -1,4 +1,3 @@
-
 # <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50" /> rustframe
 
 <!-- though the centre tag doesn't work as it would noramlly, it achieves the desired effect -->
@@ -6,12 +5,13 @@
 📚 [Docs](https://magnus167.github.io/rustframe/) | 🐙 [GitHub](https://github.com/Magnus167/rustframe) | 🌐 [Gitea mirror](https://gitea.nulltech.uk/Magnus167/rustframe) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
 
 <!-- [![Last commit](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/rustframe/last-commit-date.json)](https://github.com/Magnus167/rustframe) -->
+
 [![codecov](https://codecov.io/gh/Magnus167/rustframe/graph/badge.svg?token=J7ULJEFTVI)](https://codecov.io/gh/Magnus167/rustframe)
 [![Coverage](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/docs/tarpaulin-badge.json)](https://magnus167.github.io/rustframe/docs/tarpaulin-report.html)
 
 ---
 
-## Rustframe: *A lightweight dataframe & math toolkit for Rust*
+## Rustframe: _A lightweight dataframe & math toolkit for Rust_
 
 Rustframe provides intuitive dataframe, matrix, and series operations small-to-mid scale data analysis and manipulation.
 
@@ -104,95 +104,91 @@ assert!(check);
 ## DataFrame Usage Example
 
 ```rust
-use rustframe::{
-    dataframe::{DataFrame, TypedFrame, DataFrameColumn},
-    frame::{Frame, RowIndex},
-    matrix::Matrix,
-};
+use rustframe::dataframe::DataFrame;
+use chrono::NaiveDate;
+use std::collections::HashMap;
+use std::any::TypeId; // Required for checking TypeId
 
-// Helper to create a simple f64 TypedFrame (similar to test helpers)
-fn create_f64_typed_frame(name: &str, data: Vec<f64>, index: Option<RowIndex>) -> TypedFrame {
-    let rows = data.len();
-    let matrix = Matrix::from_cols(vec![data]);
-    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-    TypedFrame::F64(Frame::new(
-        matrix,
-        vec![name.to_string()],
-        Some(frame_index),
-    ))
+// Helper for NaiveDate
+fn d(y: i32, m: u32, d: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(y, m, d).unwrap()
 }
 
-// Helper to create a simple i64 TypedFrame
-fn create_i64_typed_frame(name: &str, data: Vec<i64>, index: Option<RowIndex>) -> TypedFrame {
-    let rows = data.len();
-    let matrix = Matrix::from_cols(vec![data]);
-    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-    TypedFrame::I64(Frame::new(
-        matrix,
-        vec![name.to_string()],
-        Some(frame_index),
-    ))
-}
+// Create a new DataFrame
+let mut df = DataFrame::new();
 
-// Helper to create a simple String TypedFrame
-fn create_string_typed_frame(
-    name: &str,
-    data: Vec<String>,
-    index: Option<RowIndex>,
-) -> TypedFrame {
-    let rows = data.len();
-    let matrix = Matrix::from_cols(vec![data]);
-    let frame_index = index.unwrap_or(RowIndex::Range(0..rows));
-    TypedFrame::String(Frame::new(
-        matrix,
-        vec![name.to_string()],
-        Some(frame_index),
-    ))
-}
+// Add columns of different types
+df.add_column("col_int1", vec![1, 2, 3, 4, 5]);
+df.add_column("col_float1", vec![1.1, 2.2, 3.3, 4.4, 5.5]);
+df.add_column("col_string", vec!["apple".to_string(), "banana".to_string(), "cherry".to_string(), "date".to_string(), "elderberry".to_string()]);
+df.add_column("col_bool", vec![true, false, true, false, true]);
+df.add_column("col_date", vec![d(2023,1,1), d(2023,1,2), d(2023,1,3), d(2023,1,4), d(2023,1,5)]);
 
-fn main() {
-    // 1. Create a DataFrame with different data types
-    let col_a = create_f64_typed_frame("A", vec![1.0, 2.0, 3.0], None);
-    let col_b = create_i64_typed_frame("B", vec![10, 20, 30], None);
-    let col_c = create_string_typed_frame(
-        "C",
-        vec!["apple".to_string(), "banana".to_string(), "cherry".to_string()],
-        None,
-    );
+println!("DataFrame after initial column additions:\n{}", df);
 
-    let mut df = DataFrame::new(
-        vec![col_a, col_b, col_c],
-        vec!["A".to_string(), "B".to_string(), "C".to_string()],
-        None,
-    );
+// Demonstrate frame re-use when adding columns of existing types
+let initial_frames_count = df.num_internal_frames();
+println!("\nInitial number of internal frames: {}", initial_frames_count);
 
-    println!("Initial DataFrame:\n{:?}", df);
-    println!("Columns: {:?}", df.columns());
-    println!("Rows: {}", df.rows());
+df.add_column("col_int2", vec![6, 7, 8, 9, 10]);
+df.add_column("col_float2", vec![6.6, 7.7, 8.8, 9.9, 10.0]);
 
-    // 2. Accessing columns
-    if let DataFrameColumn::F64(col_a_data) = df.column("A") {
-        println!("Column 'A' (f64): {:?}", col_a_data);
-    }
+let frames_after_reuse = df.num_internal_frames();
+println!("Number of internal frames after adding more columns of existing types: {}", frames_after_reuse);
+assert_eq!(initial_frames_count, frames_after_reuse); // Should be equal, demonstrating re-use
 
-    if let DataFrameColumn::String(col_c_data) = df.column("C") {
-        println!("Column 'C' (String): {:?}", col_c_data);
-    }
+println!("\nDataFrame after adding more columns of existing types:\n{}", df);
 
-    // 3. Add a new column
-    let new_col_d = create_f64_typed_frame("D", vec![100.0, 200.0, 300.0], None);
-    df.add_column("D".to_string(), new_col_d);
-    println!("\nDataFrame after adding column 'D':\n{:?}", df);
-    println!("Columns after add: {:?}", df.columns());
 
-    // 4. Rename a column
-    df.rename_column("A", "Alpha".to_string());
-    println!("\nDataFrame after renaming 'A' to 'Alpha':\n{:?}", df);
-    println!("Columns after rename: {:?}", df.columns());
+// Get number of rows and columns
+println!("Rows: {}", df.rows()); // Output: Rows: 5
+println!("Columns: {}", df.cols()); // Output: Columns: 5
 
-    // 5. Delete a column
-    let _deleted_col_b = df.delete_column("B");
-    println!("\nDataFrame after deleting column 'B':\n{:?}", df);
-    println!("Columns after delete: {:?}", df.columns());
-}
+// Get column names
+println!("Column names: {:?}", df.get_column_names());
+// Output: Column names: ["col_int", "col_float", "col_string", "col_bool", "col_date"]
+
+// Get a specific column by name and type
+let int_col = df.get_column::<i32>("col_int1").unwrap();
+println!("Integer column (col_int1): {:?}", int_col); // Output: Integer column: [1, 2, 3, 4, 5]
+
+let int_col2 = df.get_column::<i32>("col_int2").unwrap();
+println!("Integer column (col_int2): {:?}", int_col2); // Output: Integer column: [6, 7, 8, 9, 10]
+
+let float_col = df.get_column::<f64>("col_float1").unwrap();
+println!("Float column (col_float1): {:?}", float_col); // Output: Float column: [1.1, 2.2, 3.3, 4.4, 5.5]
+
+// Attempt to get a column with incorrect type (returns None)
+let wrong_type_col = df.get_column::<bool>("col_int1");
+println!("Wrong type column: {:?}", wrong_type_col); // Output: Wrong type column: None
+
+// Get a row by index
+let row_0 = df.get_row(0).unwrap();
+println!("Row 0: {:?}", row_0);
+// Output: Row 0: {"col_int1": "1", "col_float1": "1.1", "col_string": "apple", "col_bool": "true", "col_date": "2023-01-01", "col_int2": "6", "col_float2": "6.6"}
+
+let row_2 = df.get_row(2).unwrap();
+println!("Row 2: {:?}", row_2);
+// Output: Row 2: {"col_int1": "3", "col_float1": "3.3", "col_string": "cherry", "col_bool": "true", "col_date": "2023-01-03", "col_int2": "8", "col_float2": "8.8"}
+
+// Attempt to get an out-of-bounds row (returns None)
+let row_out_of_bounds = df.get_row(10);
+println!("Row out of bounds: {:?}", row_out_of_bounds); // Output: Row out of bounds: None
+
+// Drop a column
+df.drop_column("col_bool");
+println!("\nDataFrame after dropping 'col_bool':\n{}", df);
+
+println!("Columns after drop: {}", df.cols());
+println!("Column names after drop: {:?}", df.get_column_names());
+
+// Drop another column, ensuring the underlying Frame is removed if empty
+df.drop_column("col_float1");
+println!("\nDataFrame after dropping 'col_float1':\n{}", df);
+
+println!("Columns after second drop: {}", df.cols());
+println!("Column names after second drop: {:?}", df.get_column_names());
+
+// Attempt to drop a non-existent column (will panic)
+// df.drop_column("non_existent_col"); // Uncomment to see panic
 ```
