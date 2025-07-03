@@ -76,7 +76,7 @@ impl<T: Clone> Matrix<T> {
         self.data
     }
 
-    /// Creates a new Vec<T> containing the matrix data (cloned).
+    /// Creates a new `Vec<T>` containing the matrix data (cloned).
     pub fn to_vec(&self) -> Vec<T> {
         self.data.clone()
     }
