@@ -102,3 +102,15 @@ assert!(check);
 ### More examples
 
 See the [examples](./examples/) directory for some demonstrations of Rustframe's syntax and functionality.
+
+To run the examples, use:
+
+```bash
+cargo run --example <example_name>
+```
+
+E.g. to run the `game_of_life` example:
+
+```bash
+cargo run --example game_of_life
+```
