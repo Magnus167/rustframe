@@ -15,6 +15,9 @@ crate-type = ["cdylib", "lib"]
 chrono = "^0.4.10"
 criterion = { version = "0.5", features = ["html_reports"], optional = true }
 
+[dev-dependencies]
+rand = "^0.9.1"
+
 [features]
 bench = ["dep:criterion"]
 
