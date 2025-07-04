@@ -106,7 +106,7 @@ jobs:
 
       - name: Download last available benchmark report
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CUSTOM_GH_TOKEN }}
         run: |
           artifact_url=$(gh api -H "Accept: application/vnd.github+json" \
             /repos/${{ github.repository }}/actions/artifacts \
