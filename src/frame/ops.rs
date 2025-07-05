@@ -20,6 +20,13 @@ impl SeriesOps for Frame<f64> {
     {
         self.matrix().apply_axis(axis, f)
     }
+    fn matrix_mul(&self, other: &Self) -> FloatMatrix {
+        self.matrix().matrix_mul(other.matrix())
+    }
+
+    fn dot(&self, other: &Self) -> FloatMatrix {
+        self.matrix().dot(other.matrix())
+    }
 
     delegate_to_matrix!(
         sum_vertical -> Vec<f64>,
