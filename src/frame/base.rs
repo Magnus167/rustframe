@@ -471,6 +471,10 @@ impl<T: Clone + PartialEq> Frame<T> {
         deleted_data
     }
 
+    pub fn transpose(&mut self) -> Matrix<T> {
+        self.matrix.transpose()
+    }
+
     /// Sorts columns alphabetically by name, preserving data associations.
     pub fn sort_columns(&mut self) {
         let n = self.column_names.len();
