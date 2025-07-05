@@ -471,6 +471,8 @@ impl<T: Clone + PartialEq> Frame<T> {
         deleted_data
     }
 
+
+    /// Returns a new `Matrix` that is the transpose of the current frame's matrix.
     pub fn transpose(&mut self) -> Matrix<T> {
         self.matrix.transpose()
     }
