@@ -135,6 +135,17 @@ mod tests {
         );
         assert_eq!(frame.is_nan(), frame.matrix().is_nan());
         assert_eq!(frame.apply_axis(Axis::Row, |x| x[0] + x[1]), vec![4.0, 6.0]);
+
+
+        assert_eq!(frame.matrix_mul(&frame), frame.matrix().matrix_mul(&frame.matrix()));
+        assert_eq!(frame.dot(&frame), frame.matrix().dot(&frame.matrix()));
+        
+        // test transpose - returns a matrix.
+        let frame_transposed_mat = frame.transpose();
+        let frame_mat_transposed = frame.matrix().transpose();
+        assert_eq!(frame_transposed_mat, frame_mat_transposed);
+        assert_eq!(frame.matrix(), &frame.matrix().transpose().transpose());
+
     }
     #[test]
 
@@ -159,4 +170,7 @@ mod tests {
             vec![false, false]
         );
     }
+
+
+
 }
