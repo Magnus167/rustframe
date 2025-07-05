@@ -185,6 +185,22 @@ mod tests {
         FloatMatrix::from_vec(data, 3, 3)
     }
 
+    fn create_float_test_matrix_4x4() -> FloatMatrix {
+        // 4x4 matrix (column-major) with some NaNs
+        // 1.0  5.0  9.0  13.0
+        // 2.0  NaN  10.0 NaN
+        // 3.0  6.0  NaN  14.0
+        // NaN  7.0  11.0 NaN
+        // first make array with 16 elements
+        FloatMatrix::from_vec(
+            (0..16)
+                .map(|i| if i % 5 == 0 { f64::NAN } else { i as f64 })
+                .collect(),
+            4,
+            4,
+        )
+    }
+
     // --- Tests for SeriesOps (FloatMatrix) ---
 
     #[test]
@@ -317,6 +333,16 @@ mod tests {
         assert_eq!(result.count_nan_vertical(), expected.count_nan_vertical());
         assert_eq!(result[(0, 0)], expected[(0, 0)]);
     }
+
+    #[test]
+    #[should_panic(expected = "Cannot multiply: left is 3x3, right is 4x4")]
+    fn test_series_ops_matrix_mul_errors() {
+        let a = create_float_test_matrix();
+        let b = create_float_test_matrix_4x4();
+
+        a.dot(&b); // This should panic due to dimension mismatch
+    }
+
     // --- Edge Cases for SeriesOps ---
 
     #[test]
