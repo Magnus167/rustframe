@@ -203,6 +203,22 @@ impl<T: Clone> Matrix<T> {
         self.data = new_data;
         self.rows = new_rows;
     }
+
+    pub fn transpose(&self) -> Matrix<T> {
+        let (m, n) = (self.rows, self.cols);
+        let mut transposed_data = Vec::with_capacity(m * n);
+
+        // In the transposed matrix the old rows become the new columns.
+        for j in 0..m {
+            // new column index = old row index
+            for i in 0..n {
+                // new row index = old col index
+                transposed_data.push(self[(j, i)].clone()); // A(T)[i,j] = A[j,i]
+            }
+        }
+
+        Matrix::from_vec(transposed_data, n, m) // size is n × m
+    }
 }
 
 impl<T: Clone> Matrix<T> {
@@ -901,6 +917,40 @@ mod tests {
         assert_eq!(matrix[(1, 0)], 2); // Second row, first col
         assert_eq!(matrix[(0, 1)], 3); // First row, second col
         assert_eq!(matrix[(1, 2)], 6); // Second row, third col
+    }
+
+    #[test]
+    fn test_transpose() {
+        let matrix = static_test_matrix();
+        let transposed = matrix.transpose();
+        let round_triped = transposed.transpose();
+        assert_eq!(
+            round_triped, matrix,
+            "Transposing twice should return original matrix"
+        );
+        for r in 0..matrix.rows() {
+            for c in 0..matrix.cols() {
+                assert_eq!(matrix[(r, c)], transposed[(c, r)]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_transpose_big() {
+        let data: Vec<i32> = (1..=20000).collect(); //
+        let matrix = Matrix::from_vec(data, 100, 200);
+        let transposed = matrix.transpose();
+        assert_eq!(transposed.rows(), 200);
+        assert_eq!(transposed.cols(), 100);
+        assert_eq!(transposed.data().len(), 20000);
+        assert_eq!(transposed[(0, 0)], 1);
+
+        let round_trip = transposed.transpose();
+
+        assert_eq!(
+            round_trip, matrix,
+            "Transposing back should return original matrix"
+        );
     }
 
     #[test]
