@@ -483,6 +483,12 @@ impl<T: Clone + PartialEq> Frame<T> {
         deleted_data
     }
 
+
+    /// Returns a new `Matrix` that is the transpose of the current frame's matrix.
+    pub fn transpose(&self) -> Matrix<T> {
+        self.matrix.transpose()
+    }
+
     /// Sorts columns alphabetically by name, preserving data associations.
     pub fn sort_columns(&mut self) {
         let n = self.column_names.len();
