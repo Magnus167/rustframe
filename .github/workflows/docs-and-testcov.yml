@@ -108,9 +108,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CUSTOM_GH_TOKEN }}
         run: |
-          artifact_url=$(gh api -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/actions/artifacts \
-            | jq -r '.artifacts[] | select(.name | startswith("benchmark-reports")) | .archive_download_url' | head -n 1)
+          artifact_url=$(
+            curl -sSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/artifacts" \
+            | jq -r '
+                .artifacts[]
+                | select(.name | startswith("benchmark-reports"))
+                | .archive_download_url
+              ' \
+            | head -n 1
+          )
 
           if [ -z "$artifact_url" ]; then
             echo "No benchmark artifact found!"
