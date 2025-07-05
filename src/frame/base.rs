@@ -473,7 +473,7 @@ impl<T: Clone + PartialEq> Frame<T> {
 
 
     /// Returns a new `Matrix` that is the transpose of the current frame's matrix.
-    pub fn transpose(&mut self) -> Matrix<T> {
+    pub fn transpose(&self) -> Matrix<T> {
         self.matrix.transpose()
     }
 
