@@ -134,6 +134,25 @@ assert_eq!(transposed_matrix.rows(), 2);
 assert_eq!(transposed_matrix.cols(), 3);
 assert_eq!(transposed_matrix.data(), &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
 
+// Map
+let matrix = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
+// Map function to double each value
+let mapped_matrix = matrix.map(|x| x * 2.0);
+// Expected data after mapping
+// 2 8
+// 4 10
+// 6 12
+assert_eq!(mapped_matrix.data(), &[2.0, 4.0, 6.0, 8.0, 10.0, 12.0]);
+
+// Zip
+let a = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]); // 2x2 matrix
+let b = Matrix::from_cols(vec![vec![5.0, 6.0], vec![7.0, 8.0]]); // 2x2 matrix
+                                                                   // Zip function to add corresponding elements
+let zipped_matrix = a.zip(&b, |x, y| x + y);
+// Expected data after zipping
+// 6 10
+// 8 12
+assert_eq!(zipped_matrix.data(), &[6.0, 8.0, 10.0, 12.0]);
 ```
 
 ### More examples
