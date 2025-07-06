@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use rustframe::{
     frame::{Frame, RowIndex},
-    matrix::{BoolMatrix, Matrix, SeriesOps},
+    matrix::{Axis, BoolMatrix, Matrix, SeriesOps},
     utils::{DateFreq, DatesList},
 };
 use std::time::Duration;
@@ -109,6 +109,47 @@ fn matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
                 let _result = &ma / 2.0;
             });
         });
+        c.bench_function(
+            &format!("matrix matrix_multiply ({}x{})", size, size),
+            |b| {
+                b.iter(|| {
+                    let _result = ma.matrix_mul(&ma);
+                });
+            },
+        );
+        c.bench_function(&format!("matrix sum_horizontal ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = ma.sum_horizontal();
+            });
+        });
+        c.bench_function(&format!("matrix sum_vertical ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = ma.sum_vertical();
+            });
+        });
+        c.bench_function(
+            &format!("matrix prod_horizontal ({}x{})", size, size),
+            |b| {
+                b.iter(|| {
+                    let _result = ma.prod_horizontal();
+                });
+            },
+        );
+        c.bench_function(&format!("matrix prod_vertical ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = ma.prod_vertical();
+            });
+        });
+        c.bench_function(&format!("matrix apply_axis ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = ma.apply_axis(Axis::Col, |col| col.iter().sum::<f64>());
+            });
+        });
+        c.bench_function(&format!("matrix transpose ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = ma.transpose();
+            });
+        });
     }
 
     for &size in sizes {
@@ -187,6 +228,12 @@ fn benchmark_frame_operations(c: &mut Criterion, sizes: &[usize]) {
             });
         });
 
+        c.bench_function(&format!("frame matrix_multiply ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.matrix_mul(&fb);
+            });
+        });
+
         c.bench_function(&format!("frame sum_horizontal ({}x{})", size, size), |b| {
             b.iter(|| {
                 let _result = fa.sum_horizontal();
@@ -205,6 +252,16 @@ fn benchmark_frame_operations(c: &mut Criterion, sizes: &[usize]) {
         c.bench_function(&format!("frame prod_vertical ({}x{})", size, size), |b| {
             b.iter(|| {
                 let _result = fa.prod_vertical();
+            });
+        });
+        c.bench_function(&format!("frame apply_axis ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.apply_axis(Axis::Col, |col| col.iter().sum::<f64>());
+            });
+        });
+        c.bench_function(&format!("frame transpose ({}x{})", size, size), |b| {
+            b.iter(|| {
+                let _result = fa.transpose();
             });
         });
     }

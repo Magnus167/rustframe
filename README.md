@@ -1,4 +1,6 @@
-# <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50" /> rustframe
+# rustframe
+
+<!-- # <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50px" /> rustframe -->
 
 <!-- though the centre tag doesn't work as it would noramlly, it achieves the desired effect -->
 
@@ -109,3 +111,15 @@ assert!(check);
 ### More examples
 
 See the [examples](./examples/) directory for some demonstrations of Rustframe's syntax and functionality.
+
+To run the examples, use:
+
+```bash
+cargo run --example <example_name>
+```
+
+E.g. to run the `game_of_life` example:
+
+```bash
+cargo run --example game_of_life
+```

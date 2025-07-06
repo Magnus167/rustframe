@@ -1,7 +1,113 @@
-// src/gol.rs
-
 use rand::{self, Rng};
-use rustframe::matrix::{BoolMatrix, IntMatrix, Matrix};
+use rustframe::matrix::{BoolMatrix, BoolOps, IntMatrix, Matrix};
+use std::{thread, time};
+
+const BOARD_SIZE: usize = 50; // Size of the board (50x50)
+const TICK_DURATION_MS: u64 = 10; // Milliseconds per frame
+
+fn main() {
+    // Initialize the game board.
+    // This demonstrates `BoolMatrix::from_vec`.
+    let mut current_board =
+        BoolMatrix::from_vec(vec![false; BOARD_SIZE * BOARD_SIZE], BOARD_SIZE, BOARD_SIZE);
+
+    let primes = generate_primes((BOARD_SIZE * BOARD_SIZE) as i32);
+
+    add_simulated_activity(&mut current_board, BOARD_SIZE);
+
+    let mut generation_count: u32 = 0;
+    // `previous_board_state` will store a clone of the board.
+    // This demonstrates `Matrix::clone()` and later `PartialEq` for `Matrix`.
+    let mut previous_board_state: Option<BoolMatrix> = None;
+    let mut board_hashes = Vec::new();
+    // let mut print_board_bool = true;
+    let mut print_bool_int = 0;
+
+    loop {
+        // print!("{}[2J", 27 as char); // Clear screen and move cursor to top-left
+
+        // if print_board_bool {
+        if print_bool_int % 10 == 0 {
+            print!("{}[2J", 27 as char);
+            println!("Conway's Game of Life - Generation: {}", generation_count);
+
+            print_board(&current_board);
+            println!("Alive cells: {}", &current_board.count());
+
+            // print_board_bool = false;
+            print_bool_int = 0;
+        } else {
+            // print_board_bool = true;
+            print_bool_int += 1;
+        }
+        // `current_board.count()` demonstrates a method from `BoolOps`.
+        board_hashes.push(hash_board(&current_board, primes.clone()));
+        if detect_stable_state(&current_board, &previous_board_state) {
+            println!(
+                "\nStable state detected at generation {}.",
+                generation_count
+            );
+            add_simulated_activity(&mut current_board, BOARD_SIZE);
+        }
+        if detect_repeating_state(&mut board_hashes) {
+            println!(
+                "\nRepeating state detected at generation {}.",
+                generation_count
+            );
+            add_simulated_activity(&mut current_board, BOARD_SIZE);
+        }
+        if !&current_board.any() {
+            println!("\nExtinction at generation {}.", generation_count);
+            add_simulated_activity(&mut current_board, BOARD_SIZE);
+        }
+
+        // `current_board.clone()` demonstrates `Clone` for `Matrix`.
+        previous_board_state = Some(current_board.clone());
+
+        // This is the core call to your game logic.
+        let next_board = game_of_life_next_frame(&current_board);
+        current_board = next_board;
+
+        generation_count += 1;
+        thread::sleep(time::Duration::from_millis(TICK_DURATION_MS));
+
+        // if generation_count > 500 { // Optional limit
+        //     println!("\nReached generation limit.");
+        //     break;
+        // }
+    }
+}
+
+/// Prints the Game of Life board to the console.
+///
+/// - `board`: A reference to the `BoolMatrix` representing the current game state.
+/// This function demonstrates `board.rows()`, `board.cols()`, and `board[(r, c)]` (Index trait).
+fn print_board(board: &BoolMatrix) {
+    let mut print_str = String::new();
+    print_str.push_str("+");
+    for _ in 0..board.cols() {
+        print_str.push_str("--");
+    }
+    print_str.push_str("+\n");
+    for r in 0..board.rows() {
+        print_str.push_str("| ");
+        for c in 0..board.cols() {
+            if board[(r, c)] {
+                // Using Index trait for Matrix<bool>
+                print_str.push_str("██");
+            } else {
+                print_str.push_str("  ");
+            }
+        }
+        print_str.push_str(" |\n");
+    }
+    print_str.push_str("+");
+    for _ in 0..board.cols() {
+        print_str.push_str("--");
+    }
+    print_str.push_str("+\n\n");
+    print!("{}", print_str);
+}
 
 /// Helper function to create a shifted version of the game board.
 /// (Using the version provided by the user)
