@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 use rustframe::{
     frame::{Frame, RowIndex},
-    matrix::{BoolMatrix, Matrix, SeriesOps},
+    matrix::{Axis, BoolMatrix, Matrix, SeriesOps},
     utils::{DateFreq, DatesList},
 };
 use std::time::Duration;
@@ -142,7 +142,7 @@ fn matrix_operations_benchmark(c: &mut Criterion, sizes: &[usize]) {
         });
         c.bench_function(&format!("matrix apply_axis ({}x{})", size, size), |b| {
             b.iter(|| {
-                let _result = ma.apply_axis(0, |col| col.iter().sum::<f64>());
+                let _result = ma.apply_axis(Axis::Col, |col| col.iter().sum::<f64>());
             });
         });
         c.bench_function(&format!("matrix transpose ({}x{})", size, size), |b| {
@@ -256,7 +256,7 @@ fn benchmark_frame_operations(c: &mut Criterion, sizes: &[usize]) {
         });
         c.bench_function(&format!("frame apply_axis ({}x{})", size, size), |b| {
             b.iter(|| {
-                let _result = fa.apply_axis(0, |col| col.iter().sum::<f64>());
+                let _result = fa.apply_axis(Axis::Col, |col| col.iter().sum::<f64>());
             });
         });
         c.bench_function(&format!("frame transpose ({}x{})", size, size), |b| {
