@@ -33,3 +33,22 @@ impl LinReg {
         }
     }
 }
+
+mod tests {
+
+    use super::LinReg;
+    use crate::matrix::{Matrix};
+
+    #[test]
+    fn test_linreg_fit_predict() {
+        let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 4, 1);
+        let y = Matrix::from_vec(vec![2.0, 3.0, 4.0, 5.0], 4, 1);
+        let mut model = LinReg::new(1);
+        model.fit(&x, &y, 0.01, 10000);
+        let preds = model.predict(&x);
+        assert!((preds[(0, 0)] - 2.0).abs() < 1e-2);
+        assert!((preds[(1, 0)] - 3.0).abs() < 1e-2);
+        assert!((preds[(2, 0)] - 4.0).abs() < 1e-2);
+        assert!((preds[(3, 0)] - 5.0).abs() < 1e-2);
+    }
+}
