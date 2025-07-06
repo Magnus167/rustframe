@@ -1,5 +1,5 @@
+use crate::compute::activations::{drelu, relu, sigmoid};
 use crate::matrix::{Matrix, SeriesOps};
-use crate::compute::activations::{relu, drelu, sigmoid};
 use rand::prelude::*;
 
 /// Supported activation functions
@@ -118,7 +118,7 @@ impl DenseNN {
         );
 
         let mut weights = Vec::with_capacity(sizes.len() - 1);
-        let mut biases  = Vec::with_capacity(sizes.len() - 1);
+        let mut biases = Vec::with_capacity(sizes.len() - 1);
 
         for i in 0..sizes.len() - 1 {
             let w = config.initializer.initialize(sizes[i], sizes[i + 1]);
@@ -167,7 +167,11 @@ impl DenseNN {
                 LossKind::BCE => self.loss.gradient(&y_hat, y),
                 LossKind::MSE => {
                     let grad = self.loss.gradient(&y_hat, y);
-                    let dz = self.activations.last().unwrap().derivative(zs.last().unwrap());
+                    let dz = self
+                        .activations
+                        .last()
+                        .unwrap()
+                        .derivative(zs.last().unwrap());
                     grad.zip(&dz, |g, da| g * da)
                 }
             };
@@ -180,7 +184,7 @@ impl DenseNN {
 
                 // Update weights & biases
                 self.weights[l] = &self.weights[l] - &(dw * self.lr);
-                self.biases[l]  = &self.biases[l]  - &(db * self.lr);
+                self.biases[l] = &self.biases[l] - &(db * self.lr);
 
                 // Propagate delta to previous layer
                 if l > 0 {
