@@ -101,10 +101,38 @@ assert!(check);
 
 // The above math can also be written as:
 let check: bool = ((((ma.clone() + 1.0) - 1.0) * 2.0) / 2.0)
-    .eq_elem(ma)
+    .eq_elem(ma.clone())
     .all();
 assert!(check);
 
+// Matrix multiplication
+let mc: Matrix<f64> = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
+let md: Matrix<f64> = Matrix::from_cols(vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
+let mul_result: Matrix<f64> = mc.matrix_mul(&md);
+// Expected:
+// 1*5 + 3*6 = 5 + 18 = 23
+// 2*5 + 4*6 = 10 + 24 = 34
+// 1*7 + 3*8 = 7 + 24 = 31
+// 2*7 + 4*8 = 14 + 32 = 46
+assert_eq!(mul_result.data(), &[23.0, 34.0, 31.0, 46.0]);
+
+// Dot product (alias for matrix_mul for FloatMatrix)
+let dot_result: Matrix<f64> = mc.dot(&md);
+assert_eq!(dot_result, mul_result);
+
+// Transpose
+let original_matrix: Matrix<f64> = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
+// Original:
+// 1 4
+// 2 5
+// 3 6
+let transposed_matrix: Matrix<f64> = original_matrix.transpose();
+// Transposed:
+// 1 2 3
+// 4 5 6
+assert_eq!(transposed_matrix.rows(), 2);
+assert_eq!(transposed_matrix.cols(), 3);
+assert_eq!(transposed_matrix.data(), &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
 
 ```
 
