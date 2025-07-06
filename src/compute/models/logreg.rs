@@ -1,5 +1,5 @@
-use crate::matrix::{Matrix, SeriesOps};
 use crate::compute::activations::sigmoid;
+use crate::matrix::{Matrix, SeriesOps};
 
 pub struct LogReg {
     w: Matrix<f64>,
@@ -15,14 +15,14 @@ impl LogReg {
     }
 
     pub fn predict_proba(&self, x: &Matrix<f64>) -> Matrix<f64> {
-        sigmoid(&(x.dot(&self.w) + self.b))          // σ(Xw + b)
+        sigmoid(&(x.dot(&self.w) + self.b)) // σ(Xw + b)
     }
 
     pub fn fit(&mut self, x: &Matrix<f64>, y: &Matrix<f64>, lr: f64, epochs: usize) {
         let m = x.rows() as f64;
         for _ in 0..epochs {
-            let p  = self.predict_proba(x);          // shape (m,1)
-            let err = &p - y;                        // derivative of BCE wrt pre-sigmoid
+            let p = self.predict_proba(x); // shape (m,1)
+            let err = &p - y; // derivative of BCE wrt pre-sigmoid
             let grad_w = x.transpose().dot(&err) / m;
             let grad_b = err.sum_vertical().iter().sum::<f64>() / m;
             self.w = &self.w - &(grad_w * lr);
@@ -31,14 +31,14 @@ impl LogReg {
     }
 
     pub fn predict(&self, x: &Matrix<f64>) -> Matrix<f64> {
-        self.predict_proba(x).map(|p| if p >= 0.5 { 1.0 } else { 0.0 })
+        self.predict_proba(x)
+            .map(|p| if p >= 0.5 { 1.0 } else { 0.0 })
     }
 }
 
-
+#[cfg(test)]
 mod tests {
-    use super::LogReg;
-    use crate::matrix::Matrix;
+    use super::*;
 
     #[test]
     fn test_logreg_fit_predict() {
