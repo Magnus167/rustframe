@@ -89,6 +89,10 @@ impl<T: Clone> Matrix<T> {
         self.cols
     }
 
+    pub fn shape(&self) -> (usize, usize) {
+        (self.rows, self.cols)
+    }
+
     /// Get element reference (immutable). Panics on out-of-bounds.
     pub fn get(&self, r: usize, c: usize) -> &T {
         &self[(r, c)]
@@ -1151,6 +1155,14 @@ mod tests {
         assert_eq!(ma.row(0), &[1, 4, 7]);
         assert_eq!(ma.row(1), &[2, 5, 8]);
         assert_eq!(ma.row(2), &[3, 6, 9]);
+    }
+
+    #[test]
+    fn test_shape(){
+        let ma = static_test_matrix_2x4();
+        assert_eq!(ma.shape(), (2, 4));
+        assert_eq!(ma.rows(), 2);
+        assert_eq!(ma.cols(), 4);
     }
 
     #[test]
