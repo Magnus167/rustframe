@@ -1721,6 +1721,16 @@ mod tests {
         assert!((zipped_frame["B"][2] - 6.6).abs() < FLOAT_TOLERANCE);
     }
 
+    #[test]
+    #[should_panic(expected = "Frame::frame_zip: incompatible dimensions (self: 3x1, other: 3x2)")]
+    fn test_frame_zip_panic() {
+        let mut f1 = create_test_frame_f64();
+        let f2 = create_test_frame_f64_alt();
+        f1.delete_column("B");
+
+        f1.frame_zip(&f2, |x, y| x + y); // Should panic due to different column counts
+    }
+
     // --- Element-wise Arithmetic Ops Tests ---
     #[test]
     fn test_frame_arithmetic_ops_f64() {
