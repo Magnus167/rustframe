@@ -1,4 +1,4 @@
-use crate::compute::activations::{drelu, relu, sigmoid};
+use crate::compute::models::activations::{drelu, relu, sigmoid};
 use crate::matrix::{Matrix, SeriesOps};
 use rand::prelude::*;
 

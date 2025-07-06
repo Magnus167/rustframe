@@ -1,4 +1,4 @@
-use crate::compute::activations::sigmoid;
+use crate::compute::models::activations::sigmoid;
 use crate::matrix::{Matrix, SeriesOps};
 
 pub struct LogReg {
