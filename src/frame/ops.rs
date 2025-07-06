@@ -20,6 +20,21 @@ impl SeriesOps for Frame<f64> {
     {
         self.matrix().apply_axis(axis, f)
     }
+
+    fn map<F>(&self, f: F) -> FloatMatrix
+    where
+        F: Fn(f64) -> f64,
+    {
+        self.matrix().map(f)
+    }
+
+    fn zip<F>(&self, other: &Self, f: F) -> FloatMatrix
+    where
+        F: Fn(f64, f64) -> f64,
+    {
+        self.matrix().zip(other.matrix(), f)
+    }
+
     fn matrix_mul(&self, other: &Self) -> FloatMatrix {
         self.matrix().matrix_mul(other.matrix())
     }
@@ -113,7 +128,7 @@ mod tests {
         let col_names = vec!["A".to_string(), "B".to_string()];
         let frame = Frame::new(
             Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]),
-            col_names,
+            col_names.clone(),
             None,
         );
         assert_eq!(frame.sum_vertical(), frame.matrix().sum_vertical());
@@ -136,16 +151,32 @@ mod tests {
         assert_eq!(frame.is_nan(), frame.matrix().is_nan());
         assert_eq!(frame.apply_axis(Axis::Row, |x| x[0] + x[1]), vec![4.0, 6.0]);
 
-
-        assert_eq!(frame.matrix_mul(&frame), frame.matrix().matrix_mul(&frame.matrix()));
+        assert_eq!(
+            frame.matrix_mul(&frame),
+            frame.matrix().matrix_mul(&frame.matrix())
+        );
         assert_eq!(frame.dot(&frame), frame.matrix().dot(&frame.matrix()));
-        
+
         // test transpose - returns a matrix.
         let frame_transposed_mat = frame.transpose();
         let frame_mat_transposed = frame.matrix().transpose();
         assert_eq!(frame_transposed_mat, frame_mat_transposed);
         assert_eq!(frame.matrix(), &frame.matrix().transpose().transpose());
 
+        // test map
+        let mapped_frame = frame.map(|x| x * 2.0);
+        let expected_matrix = frame.matrix().map(|x| x * 2.0);
+        assert_eq!(mapped_frame, expected_matrix);
+
+        // test zip
+        let other_frame = Frame::new(
+            Matrix::from_cols(vec![vec![5.0, 6.0], vec![7.0, 8.0]]),
+            col_names.clone(),
+            None,
+        );
+        let zipped_frame = frame.zip(&other_frame, |x, y| x + y);
+        let expected_zipped_matrix = frame.matrix().zip(other_frame.matrix(), |x, y| x + y);
+        assert_eq!(zipped_frame, expected_zipped_matrix);
     }
     #[test]
 
@@ -170,7 +201,4 @@ mod tests {
             vec![false, false]
         );
     }
-
-
-
 }
