@@ -130,6 +130,6 @@ mod tests {
     fn test_dleaky_relu_edge_case() {
         let x = Matrix::from_vec(vec![-1e-10, 0.0, 1e10], 3, 1);
         let expected = Matrix::from_vec(vec![0.01, 0.01, 1.0], 3, 1);
-        assert_eq!(dleaky_relu(&x), expectewd);
+        assert_eq!(dleaky_relu(&x), expected);
     }
 }
