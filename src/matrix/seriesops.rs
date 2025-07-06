@@ -189,18 +189,12 @@ impl SeriesOps for FloatMatrix {
     where
         F: Fn(f64, f64) -> f64,
     {
-        assert_eq!(
+        assert!(
+            self.rows() == other.rows() && self.cols() == other.cols(),
+            "Matrix dimensions mismatch: left is {}x{}, right is {}x{}",
             self.rows(),
+            self.cols(),
             other.rows(),
-            "Row count mismatch: {} vs {}",
-            self.rows(),
-            other.rows()
-        );
-        assert_eq!(
-            self.cols(),
-            other.cols(),
-            "Column count mismatch: {} vs {}",
-            self.cols(),
             other.cols()
         );
 
@@ -418,6 +412,15 @@ mod tests {
         let expected_data = vec![6.0, 8.0, 10.0, 12.0];
         let expected_matrix = FloatMatrix::from_vec(expected_data, 2, 2);
         assert_eq!(zipped_matrix, expected_matrix);
+    }
+
+    #[test]
+    #[should_panic(expected = "Matrix dimensions mismatch: left is 2x2, right is 3x2")]
+    fn test_series_ops_zip_panic() {
+        let a = FloatMatrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2); // 2x2 matrix
+        let b = FloatMatrix::from_vec(vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0], 3, 2); // 3x2 matrix
+                                                                                  // This should panic due to dimension mismatch
+        a.zip(&b, |x, y| x + y);
     }
 
     // --- Edge Cases for SeriesOps ---
