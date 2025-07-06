@@ -471,7 +471,6 @@ impl<T: Clone + PartialEq> Frame<T> {
         deleted_data
     }
 
-
     /// Returns a new `Matrix` that is the transpose of the current frame's matrix.
     pub fn transpose(&self) -> Matrix<T> {
         self.matrix.transpose()
@@ -511,6 +510,45 @@ impl<T: Clone + PartialEq> Frame<T> {
                 "Inconsistent col_lookup after sort_columns"
             );
         }
+    }
+
+    pub fn frame_map(&self, f: impl Fn(&T) -> T) -> Frame<T> {
+        Frame::new(
+            Matrix::from_vec(
+                self.matrix.data().iter().map(f).collect(),
+                self.matrix.rows(),
+                self.matrix.cols(),
+            ),
+            self.column_names.clone(),
+            Some(self.index.clone()),
+        )
+    }
+
+    pub fn frame_zip(&self, other: &Frame<T>, f: impl Fn(&T, &T) -> T) -> Frame<T> {
+        if self.rows() != other.rows() || self.cols() != other.cols() {
+            panic!(
+                "Frame::frame_zip: incompatible dimensions (self: {}x{}, other: {}x{})",
+                self.rows(),
+                self.cols(),
+                other.rows(),
+                other.cols()
+            );
+        }
+
+        Frame::new(
+            Matrix::from_vec(
+                self.matrix
+                    .data()
+                    .iter()
+                    .zip(other.matrix.data())
+                    .map(|(a, b)| f(a, b))
+                    .collect(),
+                self.rows(),
+                self.cols(),
+            ),
+            self.column_names.clone(),
+            Some(self.index.clone()),
+        )
     }
 
     // Internal helpers
@@ -1652,6 +1690,35 @@ mod tests {
         frame1.sort_columns(); // Should be a no-op
         assert_eq!(frame1, frame1_clone);
         assert_eq!(frame1.columns(), &["Z"]);
+    }
+
+    #[test]
+    fn test_frame_map() {
+        let frame = create_test_frame_f64(); // A=[1,2,3], B=[4,5,6]
+        let mapped_frame = frame.frame_map(|x| x * 2.0); // Multiply each value by 2.0
+        assert_eq!(mapped_frame.columns(), frame.columns());
+        assert_eq!(mapped_frame.index(), frame.index());
+        assert!((mapped_frame["A"][0] - 2.0).abs() < FLOAT_TOLERANCE);
+        assert!((mapped_frame["A"][1] - 4.0).abs() < FLOAT_TOLERANCE);
+        assert!((mapped_frame["A"][2] - 6.0).abs() < FLOAT_TOLERANCE);
+        assert!((mapped_frame["B"][0] - 8.0).abs() < FLOAT_TOLERANCE);
+        assert!((mapped_frame["B"][1] - 10.0).abs() < FLOAT_TOLERANCE);
+        assert!((mapped_frame["B"][2] - 12.0).abs() < FLOAT_TOLERANCE);
+    }
+
+    #[test]
+    fn test_frame_zip() {
+        let f1 = create_test_frame_f64(); // A=[1,2,3], B=[4,5,6]
+        let f2 = create_test_frame_f64_alt(); // A=[0.1,0.2,0.3], B=[0.4,0.5,0.6]
+        let zipped_frame = f1.frame_zip(&f2, |x, y| x + y); // Element-wise addition
+        assert_eq!(zipped_frame.columns(), f1.columns());
+        assert_eq!(zipped_frame.index(), f1.index());
+        assert!((zipped_frame["A"][0] - 1.1).abs() < FLOAT_TOLERANCE);
+        assert!((zipped_frame["A"][1] - 2.2).abs() < FLOAT_TOLERANCE);
+        assert!((zipped_frame["A"][2] - 3.3).abs() < FLOAT_TOLERANCE);
+        assert!((zipped_frame["B"][0] - 4.4).abs() < FLOAT_TOLERANCE);
+        assert!((zipped_frame["B"][1] - 5.5).abs() < FLOAT_TOLERANCE);
+        assert!((zipped_frame["B"][2] - 6.6).abs() < FLOAT_TOLERANCE);
     }
 
     // --- Element-wise Arithmetic Ops Tests ---
