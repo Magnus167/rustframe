@@ -34,10 +34,10 @@ impl LinReg {
     }
 }
 
+#[cfg(test)]
 mod tests {
 
-    use super::LinReg;
-    use crate::matrix::{Matrix};
+    use super::*;
 
     #[test]
     fn test_linreg_fit_predict() {
