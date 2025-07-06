@@ -263,7 +263,7 @@ mod tests {
             initializer: InitializerKind::He,
             loss: LossKind::BCE,
             learning_rate: 0.01,
-            epochs: 5000,
+            epochs: 10000,
         };
         let mut model = DenseNN::new(config);
         let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 4, 1);
