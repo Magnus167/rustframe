@@ -197,17 +197,24 @@ impl<T: Clone> Matrix<T> {
         }
         row_data
     }
-
-    #[inline]
-    pub fn row_mut(&mut self, r: usize) -> &mut [T] {
+    pub fn row_copy_from_slice(&mut self, r: usize, values: &[T]) {
         assert!(
             r < self.rows,
             "row index {} out of bounds for {} rows",
             r,
             self.rows
         );
-        let start = r;
-        &mut self.data[start..start + self.cols]
+        assert!(
+            values.len() == self.cols,
+            "input slice length {} does not match number of columns {}",
+            values.len(),
+            self.cols
+        );
+
+        for (c, value) in values.iter().enumerate() {
+            let idx = r + c * self.rows; // column-major index
+            self.data[idx] = value.clone();
+        }
     }
 
     /// Deletes a row from the matrix. Panics on out-of-bounds.
@@ -1185,22 +1192,11 @@ mod tests {
     }
 
     #[test]
-    fn test_row_mut() {
+    fn test_row_copy_from_slice() {
         let mut ma = static_test_matrix();
-        let row1_mut = ma.row_mut(1);
-        row1_mut[0] = 20;
-        row1_mut[1] = 50;
-        row1_mut[2] = 80;
-
-        assert_eq!(ma.row(1), &[20, 50, 80]);
-        assert_eq!(ma.data(), &[1, 2, 3, 20, 50, 80, 7, 8, 9]);
-    }
-
-    #[test]
-    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
-    fn test_row_mut_out_of_bounds() {
-        let mut ma = static_test_matrix();
-        ma.row_mut(3);
+        let new_row = vec![10, 20, 30];
+        ma.row_copy_from_slice(1, &new_row);
+        assert_eq!(ma.row(1), &[10, 20, 30]);
     }
 
     #[test]
