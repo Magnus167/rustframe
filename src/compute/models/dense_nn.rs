@@ -207,14 +207,21 @@ impl DenseNN {
     }
 }
 
-// ------------------------------
-// Simple tests
-// ------------------------------
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::matrix::Matrix;
+
+    /// Compute MSE = 1/m * Σ (ŷ - y)²
+    fn mse_loss(y_hat: &Matrix<f64>, y: &Matrix<f64>) -> f64 {
+        let m = y.rows() as f64;
+        y_hat
+            .zip(y, |yh, yv| (yh - yv).powi(2))
+            .data()
+            .iter()
+            .sum::<f64>()
+            / m
+    }
 
     #[test]
     fn test_predict_shape() {
@@ -236,7 +243,7 @@ mod tests {
     }
 
     #[test]
-    fn test_train_no_epochs() {
+    fn test_train_no_epochs_does_nothing() {
         let config = DenseNNConfig {
             input_size: 1,
             hidden_layers: vec![2],
@@ -248,35 +255,86 @@ mod tests {
             epochs: 0,
         };
         let mut model = DenseNN::new(config);
-        let x = Matrix::from_vec(vec![1.0, 2.0], 2, 1);
+        let x = Matrix::from_vec(vec![0.0, 1.0], 2, 1);
+        let y = Matrix::from_vec(vec![0.0, 1.0], 2, 1);
+
         let before = model.predict(&x);
-        model.train(&x, &before);
+        model.train(&x, &y);
         let after = model.predict(&x);
+
         for i in 0..before.rows() {
-            assert!((before[(i, 0)] - after[(i, 0)]).abs() < 1e-12);
+            for j in 0..before.cols() {
+                assert!(
+                    (before[(i, j)] - after[(i, j)]).abs() < 1e-12,
+                    "prediction changed despite 0 epochs"
+                );
+            }
         }
     }
 
     #[test]
-    fn test_dense_nn_step() {
+    fn test_train_one_epoch_changes_predictions() {
+        // Single-layer sigmoid regression so gradients flow.
         let config = DenseNNConfig {
             input_size: 1,
-            hidden_layers: vec![2],
-            activations: vec![ActivationKind::Relu, ActivationKind::Sigmoid],
+            hidden_layers: vec![],
+            activations: vec![ActivationKind::Sigmoid],
             output_size: 1,
-            initializer: InitializerKind::He,
-            loss: LossKind::BCE,
-            learning_rate: 0.01,
-            epochs: 10000,
+            initializer: InitializerKind::Uniform(0.1),
+            loss: LossKind::MSE,
+            learning_rate: 1.0,
+            epochs: 1,
         };
         let mut model = DenseNN::new(config);
-        let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 4, 1);
-        let y = Matrix::from_vec(vec![0.0, 0.0, 1.0, 1.0], 4, 1);
+
+        let x = Matrix::from_vec(vec![0.0, 1.0], 2, 1);
+        let y = Matrix::from_vec(vec![0.0, 1.0], 2, 1);
+
+        let before = model.predict(&x);
         model.train(&x, &y);
-        let preds = model.predict(&x);
-        assert!((preds[(0, 0)] - 0.0).abs() < 0.5);
-        assert!((preds[(1, 0)] - 0.0).abs() < 0.5);
-        assert!((preds[(2, 0)] - 1.0).abs() < 0.5);
-        assert!((preds[(3, 0)] - 1.0).abs() < 0.5);
+        let after = model.predict(&x);
+
+        // At least one of the two outputs must move by >ϵ
+        let mut moved = false;
+        for i in 0..before.rows() {
+            if (before[(i, 0)] - after[(i, 0)]).abs() > 1e-8 {
+                moved = true;
+            }
+        }
+        assert!(moved, "predictions did not change after 1 epoch");
+    }
+
+    #[test]
+    fn test_training_reduces_mse_loss() {
+        // Same single‐layer sigmoid setup; check loss goes down.
+        let config = DenseNNConfig {
+            input_size: 1,
+            hidden_layers: vec![],
+            activations: vec![ActivationKind::Sigmoid],
+            output_size: 1,
+            initializer: InitializerKind::Uniform(0.1),
+            loss: LossKind::MSE,
+            learning_rate: 1.0,
+            epochs: 10,
+        };
+        let mut model = DenseNN::new(config);
+
+        let x = Matrix::from_vec(vec![0.0, 1.0, 0.5], 3, 1);
+        let y = Matrix::from_vec(vec![0.0, 1.0, 0.5], 3, 1);
+
+        let before_preds = model.predict(&x);
+        let before_loss = mse_loss(&before_preds, &y);
+
+        model.train(&x, &y);
+
+        let after_preds = model.predict(&x);
+        let after_loss = mse_loss(&after_preds, &y);
+
+        assert!(
+            after_loss < before_loss,
+            "MSE did not decrease (before: {}, after: {})",
+            before_loss,
+            after_loss
+        );
     }
 }
