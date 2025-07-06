@@ -179,6 +179,21 @@ impl<T: Clone> Matrix<T> {
         self.cols -= 1;
     }
 
+    #[inline]
+    pub fn row(&self, r: usize) -> Vec<T> {
+        assert!(
+            r < self.rows,
+            "row index {} out of bounds for {} rows",
+            r,
+            self.rows
+        );
+        let mut row_data = Vec::with_capacity(self.cols);
+        for c in 0..self.cols {
+            row_data.push(self[(r, c)].clone()); // Clone each element
+        }
+        row_data
+    }
+
     /// Deletes a row from the matrix. Panics on out-of-bounds.
     /// This is O(N) where N is the number of elements, as it rebuilds the data vec.
     pub fn delete_row(&mut self, row: usize) {
@@ -1128,6 +1143,21 @@ mod tests {
     fn test_index_mut_out_of_bounds_col() {
         let mut matrix = static_test_matrix();
         matrix[(0, 3)] = 99;
+    }
+
+    #[test]
+    fn test_row() {
+        let ma = static_test_matrix();
+        assert_eq!(ma.row(0), &[1, 4, 7]);
+        assert_eq!(ma.row(1), &[2, 5, 8]);
+        assert_eq!(ma.row(2), &[3, 6, 9]);
+    }
+
+    #[test]
+    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
+    fn test_row_out_of_bounds() {
+        let ma = static_test_matrix();
+        ma.row(3);
     }
 
     #[test]
