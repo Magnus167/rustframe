@@ -1206,6 +1206,21 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
+    fn test_row_out_of_bounds_index() {
+        let ma = static_test_matrix();
+        ma.row(3);
+    }
+
+    #[test]
+    #[should_panic(expected = "input slice length 2 does not match number of columns 3")]
+    fn test_row_copy_from_slice_wrong_length() {
+        let mut ma = static_test_matrix();
+        let new_row = vec![10, 20]; // Only 2 elements, but row length is 3
+        ma.row_copy_from_slice(1, &new_row);
+    }
+
+    #[test]
     fn test_shape() {
         let ma = static_test_matrix_2x4();
         assert_eq!(ma.shape(), (2, 4));
