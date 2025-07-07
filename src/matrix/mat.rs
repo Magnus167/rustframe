@@ -63,6 +63,19 @@ impl<T: Clone> Matrix<T> {
         Matrix { rows, cols, data }
     }
 
+    /// Build from a flat Vec, assuming row-major order.
+    pub fn from_rows_vec(data: Vec<T>, rows: usize, cols: usize) -> Self {
+        let mut new_vec = Vec::with_capacity(rows * cols);
+
+        for c in 0..cols {
+            for r in 0..rows {
+                new_vec.push(data[r * cols + c].clone());
+            }
+        }
+
+        Matrix::from_vec(new_vec, rows, cols)
+    }
+
     pub fn data(&self) -> &[T] {
         &self.data
     }
@@ -976,6 +989,20 @@ mod tests {
         let expected = make_f64_matrix(1.0, 2.0, 3.0, 4.0);
         assert_eq!(m, expected);
         assert_eq!(m.to_vec(), vec![1.0, 3.0, 2.0, 4.0]);
+    }
+
+    #[test]
+    fn test_from_rows_vec() {
+        // Representing:
+        // 1 2 3
+        // 4 5 6
+        let rows_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let matrix = Matrix::from_rows_vec(rows_data, 2, 3);
+
+        let data = vec![1.0, 4.0, 2.0, 5.0, 3.0, 6.0]; // Column-major
+        let expected = Matrix::from_vec(data, 2, 3);
+
+        assert_eq!(matrix, expected);
     }
 
     // Helper function to create a basic Matrix for testing
