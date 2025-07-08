@@ -376,11 +376,6 @@ mod tests {
         let x = Matrix::filled(5, 5, 1.0);
         let expected = lower_incomplete_gamma_func(2.0, 1.0);
         let result = lower_incomplete_gamma(s, x);
-        assert!(
-            (result.data()[0] - expected).abs() < 1e-7,
-            "Expected: {}, Got: {}",
-            expected,
-            result.data()[0]
-        );
+        assert!((result.data()[0] - expected).abs() < 1e-7);
     }
 }
