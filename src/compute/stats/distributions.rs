@@ -247,12 +247,7 @@ mod tests {
     fn test_math_funcs() {
         // Test erf function
         assert!((erf_func(0.0) - 0.0).abs() < 1e-7);
-        assert!(
-            (erf_func(1.0) - 0.8427007).abs() < 1e-7,
-            "{} != {}",
-            erf_func(1.0),
-            0.8427007
-        );
+        assert!((erf_func(1.0) - 0.8427007).abs() < 1e-7);
         assert!((erf_func(-1.0) + 0.8427007).abs() < 1e-7);
 
         // Test gamma function
@@ -261,6 +256,10 @@ mod tests {
         assert!((gamma_func(3.0) - 2.0).abs() < 1e-7);
         assert!((gamma_func(4.0) - 6.0).abs() < 1e-7);
         assert!((gamma_func(5.0) - 24.0).abs() < 1e-7);
+
+        let z = 0.3;
+        let expected = PI / ((PI * z).sin() * gamma_func(1.0 - z));
+        assert!((gamma_func(z) - expected).abs() < 1e-7);
     }
 
     #[test]
@@ -293,6 +292,14 @@ mod tests {
         assert_eq!(uniform_pdf_func(0.5, 0.0, 1.0), 1.0);
         assert_eq!(uniform_cdf_func(-1.0, 0.0, 1.0), 0.0);
         assert_eq!(uniform_cdf_func(0.5, 0.0, 1.0), 0.5);
+
+        // x<a (or x>b) should return 0
+        assert_eq!(uniform_pdf_func(-0.5, 0.0, 1.0), 0.0);
+        assert_eq!(uniform_pdf_func(1.5, 0.0, 1.0), 0.0);
+
+        // for cdf x>a AND x>b should return 1
+        assert_eq!(uniform_cdf_func(1.5, 0.0, 1.0), 1.0);
+        assert_eq!(uniform_cdf_func(2.0, 0.0, 1.0), 1.0);
     }
 
     #[test]
@@ -310,6 +317,9 @@ mod tests {
         assert!((pmf - 0.3125).abs() < 1e-7);
         let cdf = binomial_cdf_func(5, 2, 0.5);
         assert!((cdf - (0.03125 + 0.15625 + 0.3125)).abs() < 1e-7);
+
+        let pmf_zero = binomial_pmf_func(5, 6, 0.5);
+        assert!(pmf_zero == 0.0, "PMF should be 0 for k > n");
     }
 
     #[test]
@@ -347,6 +357,9 @@ mod tests {
         // For k=1, θ=1 the Gamma(1,1) is Exp(1), so pdf(x)=e^-x
         assert!((gamma_pdf_func(2.0, 1.0, 1.0) - (-2.0 as f64).exp()).abs() < 1e-7);
         assert!((gamma_cdf_func(2.0, 1.0, 1.0) - (1.0 - (-2.0 as f64).exp())).abs() < 1e-7);
+
+        // <0 case
+        assert_eq!(gamma_pdf_func(-1.0, 1.0, 1.0), 0.0);
     }
     #[test]
     fn test_gamma_matrix() {
@@ -355,5 +368,19 @@ mod tests {
         let cdf = gamma_cdf(x, 1.0, 1.0);
         assert!((pdf.data()[0] - (-2.0 as f64).exp()).abs() < 1e-7);
         assert!((cdf.data()[0] - (1.0 - (-2.0 as f64).exp())).abs() < 1e-7);
+    }
+
+    #[test]
+    fn test_lower_incomplete_gamma() {
+        let s = Matrix::filled(5, 5, 2.0);
+        let x = Matrix::filled(5, 5, 1.0);
+        let expected = lower_incomplete_gamma_func(2.0, 1.0);
+        let result = lower_incomplete_gamma(s, x);
+        assert!(
+            (result.data()[0] - expected).abs() < 1e-7,
+            "Expected: {}, Got: {}",
+            expected,
+            result.data()[0]
+        );
     }
 }
