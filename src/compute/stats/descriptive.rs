@@ -295,6 +295,10 @@ mod tests {
 
         let expected_v = vec![2.5, 3.5, 4.5];
         assert_eq!(mv, expected_v, "{:?} expected: {:?}", expected_v, mv);
+
+        let mh = median_horizontal(&x).column(0).to_vec();
+        let expected_h = vec![2.0, 5.0];
+        assert_eq!(mh, expected_h, "{:?} expected: {:?}", expected_h, mh);
     }
 
     #[test]
