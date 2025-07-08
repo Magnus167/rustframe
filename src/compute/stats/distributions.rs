@@ -360,6 +360,7 @@ mod tests {
 
         // <0 case
         assert_eq!(gamma_pdf_func(-1.0, 1.0, 1.0), 0.0);
+        assert_eq!(gamma_cdf_func(-1.0, 1.0, 1.0), 0.0);
     }
     #[test]
     fn test_gamma_matrix() {
