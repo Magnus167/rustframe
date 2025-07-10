@@ -337,4 +337,193 @@ mod tests {
             after_loss
         );
     }
+
+    #[test]
+    fn test_activation_kind_forward_tanh() {
+        let input = Matrix::from_vec(vec![-1.0, 0.0, 1.0], 3, 1);
+        let expected = Matrix::from_vec(vec![-0.76159415595, 0.0, 0.76159415595], 3, 1);
+        let output = ActivationKind::Tanh.forward(&input);
+
+        for i in 0..input.rows() {
+            for j in 0..input.cols() {
+                assert!(
+                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
+                    "Tanh forward output mismatch at ({}, {})",
+                    i, j
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_activation_kind_derivative_relu() {
+        let input = Matrix::from_vec(vec![-1.0, 0.0, 1.0], 3, 1);
+        let expected = Matrix::from_vec(vec![0.0, 0.0, 1.0], 3, 1);
+        let output = ActivationKind::Relu.derivative(&input);
+
+        for i in 0..input.rows() {
+            for j in 0..input.cols() {
+                assert!(
+                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
+                    "ReLU derivative output mismatch at ({}, {})",
+                    i, j
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_activation_kind_derivative_tanh() {
+        let input = Matrix::from_vec(vec![-1.0, 0.0, 1.0], 3, 1);
+        let expected = Matrix::from_vec(vec![0.41997434161, 1.0, 0.41997434161], 3, 1); // 1 - tanh(x)^2
+        let output = ActivationKind::Tanh.derivative(&input);
+
+        for i in 0..input.rows() {
+            for j in 0..input.cols() {
+                assert!(
+                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
+                    "Tanh derivative output mismatch at ({}, {})",
+                    i, j
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_initializer_kind_xavier() {
+        let rows = 10;
+        let cols = 20;
+        let initializer = InitializerKind::Xavier;
+        let matrix = initializer.initialize(rows, cols);
+        let limit = (6.0 / (rows + cols) as f64).sqrt();
+
+        assert_eq!(matrix.rows(), rows);
+        assert_eq!(matrix.cols(), cols);
+
+        for val in matrix.data() {
+            assert!(*val >= -limit && *val <= limit, "Xavier initialized value out of range");
+        }
+    }
+
+    #[test]
+    fn test_initializer_kind_he() {
+        let rows = 10;
+        let cols = 20;
+        let initializer = InitializerKind::He;
+        let matrix = initializer.initialize(rows, cols);
+        let limit = (2.0 / rows as f64).sqrt();
+
+        assert_eq!(matrix.rows(), rows);
+        assert_eq!(matrix.cols(), cols);
+
+        for val in matrix.data() {
+            assert!(*val >= -limit && *val <= limit, "He initialized value out of range");
+        }
+    }
+
+    #[test]
+    fn test_loss_kind_bce_gradient() {
+        let y_hat = Matrix::from_vec(vec![0.1, 0.9, 0.4], 3, 1);
+        let y = Matrix::from_vec(vec![0.0, 1.0, 0.5], 3, 1);
+        let expected_gradient = Matrix::from_vec(vec![0.1 / 3.0, -0.1 / 3.0, -0.1 / 3.0], 3, 1); // (y_hat - y) * (1.0 / m)
+        let output_gradient = LossKind::BCE.gradient(&y_hat, &y);
+
+        assert_eq!(output_gradient.rows(), expected_gradient.rows());
+        assert_eq!(output_gradient.cols(), expected_gradient.cols());
+
+        for i in 0..output_gradient.rows() {
+            for j in 0..output_gradient.cols() {
+                assert!(
+                    (output_gradient[(i, j)] - expected_gradient[(i, j)]).abs() < 1e-9,
+                    "BCE gradient output mismatch at ({}, {})",
+                    i, j
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_training_reduces_bce_loss() {
+        // Single-layer sigmoid setup; check BCE loss goes down.
+        let config = DenseNNConfig {
+            input_size: 1,
+            hidden_layers: vec![],
+            activations: vec![ActivationKind::Sigmoid],
+            output_size: 1,
+            initializer: InitializerKind::Uniform(0.1),
+            loss: LossKind::BCE,
+            learning_rate: 1.0,
+            epochs: 10,
+        };
+        let mut model = DenseNN::new(config);
+
+        let x = Matrix::from_vec(vec![0.0, 1.0, 0.5], 3, 1);
+        let y = Matrix::from_vec(vec![0.0, 1.0, 0.5], 3, 1);
+
+        let before_preds = model.predict(&x);
+        // BCE loss calculation for testing
+        let before_loss = -1.0 / (y.rows() as f64) * before_preds.zip(&y, |yh, yv| {
+            yv * yh.ln() + (1.0 - yv) * (1.0 - yh).ln()
+        }).data().iter().sum::<f64>();
+
+        model.train(&x, &y);
+
+        let after_preds = model.predict(&x);
+        let after_loss = -1.0 / (y.rows() as f64) * after_preds.zip(&y, |yh, yv| {
+            yv * yh.ln() + (1.0 - yv) * (1.0 - yh).ln()
+        }).data().iter().sum::<f64>();
+
+        assert!(
+            after_loss < before_loss,
+            "BCE did not decrease (before: {}, after: {})",
+            before_loss,
+            after_loss
+        );
+    }
+
+    #[test]
+    fn test_train_backprop_delta_propagation() {
+        // Network with two layers to test delta propagation to previous layer (l > 0)
+        let config = DenseNNConfig {
+            input_size: 2,
+            hidden_layers: vec![3],
+            activations: vec![ActivationKind::Sigmoid, ActivationKind::Sigmoid],
+            output_size: 1,
+            initializer: InitializerKind::Uniform(0.1),
+            loss: LossKind::MSE,
+            learning_rate: 0.1,
+            epochs: 1,
+        };
+        let mut model = DenseNN::new(config);
+
+        // Store initial weights and biases to compare after training
+        let initial_weights_l0 = model.weights[0].clone();
+        let initial_biases_l0 = model.biases[0].clone();
+        let initial_weights_l1 = model.weights[1].clone();
+        let initial_biases_l1 = model.biases[1].clone();
+
+        let x = Matrix::from_vec(vec![0.1, 0.2, 0.3, 0.4], 2, 2);
+        let y = Matrix::from_vec(vec![0.5, 0.6], 2, 1);
+
+        model.train(&x, &y);
+
+        // Verify that weights and biases of both layers have changed,
+        // implying delta propagation occurred for l > 0
+        assert!(
+            model.weights[0] != initial_weights_l0,
+            "Weights of first layer did not change, delta propagation might not have occurred"
+        );
+        assert!(
+            model.biases[0] != initial_biases_l0,
+            "Biases of first layer did not change, delta propagation might not have occurred"
+        );
+        assert!(
+            model.weights[1] != initial_weights_l1,
+            "Weights of second layer did not change"
+        );
+        assert!(
+            model.biases[1] != initial_biases_l1,
+            "Biases of second layer did not change"
+        );
+    }
 }
