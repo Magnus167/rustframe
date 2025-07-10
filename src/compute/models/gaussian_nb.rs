@@ -59,9 +59,7 @@ impl GaussianNB {
             let bits = label.to_bits();
             groups.entry(bits).or_default().push(i);
         }
-        if groups.is_empty() {
-            panic!("No class labels found in y");
-        }
+        assert!(!groups.is_empty(), "No class labels found in y"); //-- panicked earlier
 
         // Extract and sort class labels
         self.classes = groups.keys().cloned().map(f64::from_bits).collect();
@@ -209,6 +207,5 @@ mod tests {
         let y = Matrix::from_vec(vec![0.0], 1, 1);
         let mut clf = GaussianNB::new(1e-9, false);
         clf.fit(&x, &y);
-        clf.predict(&x);
     }
 }
