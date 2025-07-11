@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn test_bool_ops_count_overall() {
         let matrix = create_bool_test_matrix(); // Data: [T, F, T, F, T, F, T, F, F]
-        // Count of true values: 4
+                                                // Count of true values: 4
         assert_eq!(matrix.count(), 4);
 
         let matrix_all_false = BoolMatrix::from_vec(vec![false; 5], 5, 1); // 5x1
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn test_bool_ops_1xn_matrix() {
         let matrix = BoolMatrix::from_vec(vec![true, false, false, true], 1, 4); // 1 row, 4 cols
-        // Data: [T, F, F, T]
+                                                                                 // Data: [T, F, F, T]
 
         assert_eq!(matrix.any_vertical(), vec![true, false, false, true]);
         assert_eq!(matrix.all_vertical(), vec![true, false, false, true]);
@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn test_bool_ops_nx1_matrix() {
         let matrix = BoolMatrix::from_vec(vec![true, false, false, true], 4, 1); // 4 rows, 1 col
-        // Data: [T, F, F, T]
+                                                                                 // Data: [T, F, F, T]
 
         assert_eq!(matrix.any_vertical(), vec![true]); // T|F|F|T = T
         assert_eq!(matrix.all_vertical(), vec![false]); // T&F&F&T = F

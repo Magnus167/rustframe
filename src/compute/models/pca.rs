@@ -1,6 +1,6 @@
-use crate::matrix::{Axis, Matrix, SeriesOps};
-use crate::compute::stats::descriptive::mean_vertical;
 use crate::compute::stats::correlation::covariance_matrix;
+use crate::compute::stats::descriptive::mean_vertical;
+use crate::matrix::{Axis, Matrix, SeriesOps};
 
 /// Returns the `n_components` principal axes (rows) and the centred data's mean.
 pub struct PCA {
@@ -24,10 +24,7 @@ impl PCA {
             }
         }
 
-        PCA {
-            components,
-            mean,
-        }
+        PCA { components, mean }
     }
 
     /// Project new data on the learned axes.

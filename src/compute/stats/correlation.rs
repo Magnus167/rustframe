@@ -94,7 +94,7 @@ pub fn covariance_matrix(x: &Matrix<f64>, axis: Axis) -> Matrix<f64> {
         }
         Axis::Row => {
             let mean_matrix = mean_horizontal(x); // n_samples x 1
-            // Manually create a matrix by broadcasting the column vector across columns
+                                                  // Manually create a matrix by broadcasting the column vector across columns
             let mut broadcasted_mean = Matrix::zeros(n_samples, n_features);
             for r in 0..n_samples {
                 let mean_val = mean_matrix.get(r, 0);
