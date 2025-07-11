@@ -1250,6 +1250,13 @@ mod tests {
         ma.row_copy_from_slice(1, &new_row);
         assert_eq!(ma.row(1), &[10, 20, 30]);
     }
+    #[test]
+    #[should_panic(expected = "row index 4 out of bounds for 3 rows")]
+    fn test_row_copy_from_slice_out_of_bounds() {
+        let mut ma = static_test_matrix();
+        let new_row = vec![10, 20, 30];
+        ma.row_copy_from_slice(4, &new_row);
+    }
 
     #[test]
     #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
