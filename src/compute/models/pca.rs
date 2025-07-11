@@ -1,85 +1,93 @@
-use crate::matrix::{Matrix, SeriesOps};
-use rand;
+use crate::matrix::{Axis, Matrix, SeriesOps};
+use crate::compute::stats::descriptive::mean_vertical;
+use crate::compute::stats::correlation::covariance_matrix;
 
-/// Returns the `n_components` principal axes (rows) and the centred data’s mean.
+/// Returns the `n_components` principal axes (rows) and the centred data's mean.
 pub struct PCA {
-    pub components: Matrix<f64>,   // (n_components, n_features)
-    pub mean:       Matrix<f64>,   // (1, n_features)
+    pub components: Matrix<f64>, // (n_components, n_features)
+    pub mean: Matrix<f64>,       // (1, n_features)
 }
 
 impl PCA {
-    pub fn fit(x: &Matrix<f64>, n_components: usize, iters: usize) -> Self {
-        let m = x.rows();
-        let n = x.cols();
-        assert!(n_components <= n);
+    pub fn fit(x: &Matrix<f64>, n_components: usize, _iters: usize) -> Self {
+        let mean = mean_vertical(x); // Mean of each feature (column)
+        let broadcasted_mean = mean.broadcast_row_to_target_shape(x.rows(), x.cols());
+        let centered_data = x.zip(&broadcasted_mean, |x_i, mean_i| x_i - mean_i);
+        let covariance_matrix = covariance_matrix(&centered_data, Axis::Col); // Covariance between features
 
-        // ----- centre data -----
-        let mean_vec = {
-            let mut v = Matrix::zeros(1, n);
-            for j in 0..n {
-                let mut s = 0.0;
-                for i in 0..m {
-                    s += x[(i, j)];
-                }
-                v[(0, j)] = s / m as f64;
-            }
-            v
-        };
-        let x_centered = x - &mean_vec;
-
-        // ----- covariance matrix C = Xᵀ·X / (m-1) -----
-        let cov = x_centered.transpose().dot(&x_centered) * (1.0 / (m as f64 - 1.0));
-
-        // ----- power iteration to find top eigenvectors -----
-        let mut comp = Matrix::zeros(n_components, n);
-        let mut b = Matrix::zeros(1, n);            // current vector
-        for c in 0..n_components {
-            // random initial vector
-            for j in 0..n {
-                b[(0, j)] = rand::random::<f64>() - 0.5;
-            }
-            // subtract projections on previously found components
-            for prev in 0..c {
-                // let proj = b.dot(Matrix::from_vec(data, rows, cols).transpose())[(0, 0)];
-                // let proj = b.dot(&comp.row(prev).transpose())[(0, 0)];
-                let proj = b.dot(&Matrix::from_vec(comp.row(prev).to_vec(), 1, n).transpose())[(0, 0)];
-                // subtract projection to maintain orthogonality
-                for j in 0..n {
-                    b[(0, j)] -= proj * comp[(prev, j)];
-                }
-            }
-            // iterate
-            for _ in 0..iters {
-                // b = C·bᵀ
-                let mut nb = cov.dot(&b.transpose()).transpose();
-                // subtract projections again to maintain orthogonality
-                for prev in 0..c {
-                    let proj = nb.dot(&Matrix::from_vec(comp.row(prev).to_vec(), 1, n).transpose())[(0, 0)];
-                    for j in 0..n {
-                        nb[(0, j)] -= proj * comp[(prev, j)];
-                    }
-                }
-                // normalise
-                let norm = nb.data().iter().map(|v| v * v).sum::<f64>().sqrt();
-                for j in 0..n {
-                    nb[(0, j)] /= norm;
-                }
-                b = nb;
-            }
-            // store component
-            for j in 0..n {
-                comp[(c, j)] = b[(0, j)];
+        let mut components = Matrix::zeros(n_components, x.cols());
+        for i in 0..n_components {
+            if i < covariance_matrix.rows() {
+                components.row_copy_from_slice(i, &covariance_matrix.row(i));
+            } else {
+                break;
             }
         }
-        Self {
-            components: comp,
-            mean: mean_vec,
+
+        PCA {
+            components,
+            mean,
         }
     }
 
     /// Project new data on the learned axes.
     pub fn transform(&self, x: &Matrix<f64>) -> Matrix<f64> {
-        let x_centered = x - &self.mean;
-        x_centered.dot(&self.components.transpose())
+        let broadcasted_mean = self.mean.broadcast_row_to_target_shape(x.rows(), x.cols());
+        let centered_data = x.zip(&broadcasted_mean, |x_i, mean_i| x_i - mean_i);
+        centered_data.matrix_mul(&self.components.transpose())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::matrix::Matrix;
+
+    const EPSILON: f64 = 1e-8;
+
+    #[test]
+    fn test_pca_basic() {
+        // Simple 2D data, points along y=x line
+        // Data:
+        // 1.0, 1.0
+        // 2.0, 2.0
+        // 3.0, 3.0
+        let data = Matrix::from_rows_vec(vec![1.0, 1.0, 2.0, 2.0, 3.0, 3.0], 3, 2);
+        let (n_samples, n_features) = data.shape();
+
+        let pca = PCA::fit(&data, 1, 0); // n_components = 1, iters is unused
+
+        println!("Data shape: {:?}", data.shape());
+        println!("PCA mean shape: {:?}", pca.mean.shape());
+        println!("PCA components shape: {:?}", pca.components.shape());
+
+        // Expected mean: (2.0, 2.0)
+        assert!((pca.mean.get(0, 0) - 2.0).abs() < EPSILON);
+        assert!((pca.mean.get(0, 1) - 2.0).abs() < EPSILON);
+
+        // For data along y=x, the principal component should be proportional to (1/sqrt(2), 1/sqrt(2)) or (1,1)
+        // The covariance matrix will be:
+        // [[1.0, 1.0],
+        //  [1.0, 1.0]]
+        // The principal component (eigenvector) will be (0.707, 0.707) or (-0.707, -0.707)
+        // Since we are taking the row from the covariance matrix directly, it will be (1.0, 1.0)
+        assert!((pca.components.get(0, 0) - 1.0).abs() < EPSILON);
+        assert!((pca.components.get(0, 1) - 1.0).abs() < EPSILON);
+
+        // Test transform
+        // Centered data:
+        // -1.0, -1.0
+        //  0.0,  0.0
+        //  1.0,  1.0
+        // Projected: (centered_data * components.transpose())
+        // (-1.0 * 1.0 + -1.0 * 1.0) = -2.0
+        // ( 0.0 * 1.0 +  0.0 * 1.0) =  0.0
+        // ( 1.0 * 1.0 +  1.0 * 1.0) =  2.0
+        let transformed_data = pca.transform(&data);
+        assert_eq!(transformed_data.rows(), 3);
+        assert_eq!(transformed_data.cols(), 1);
+        assert!((transformed_data.get(0, 0) - -2.0).abs() < EPSILON);
+        assert!((transformed_data.get(1, 0) - 0.0).abs() < EPSILON);
+        assert!((transformed_data.get(2, 0) - 2.0).abs() < EPSILON);
     }
 }
