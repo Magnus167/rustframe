@@ -208,4 +208,26 @@ mod tests {
         let mut clf = GaussianNB::new(1e-9, false);
         clf.fit(&x, &y);
     }
+
+    #[test]
+    fn test_variance_smoothing_override_with_zero_smoothing() {
+        // Scenario: var_smoothing is 0, and a feature has zero variance within a class.
+        // This should trigger the `if var[(0, j)] <= 0.0 { var[(0, j)] = smoothing; }` line.
+        let x = Matrix::from_vec(vec![1.0, 1.0, 2.0], 3, 1); // Class 0: [1.0, 1.0], Class 1: [2.0]
+        let y = Matrix::from_vec(vec![0.0, 0.0, 1.0], 3, 1);
+        let mut clf = GaussianNB::new(0.0, false); // var_smoothing = 0.0
+        clf.fit(&x, &y);
+
+        // For class 0 (index 0 in clf.classes), the feature (index 0) had values [1.0, 1.0], so variance was 0.
+        // Since var_smoothing was 0, smoothing is 0.
+        // The line `var[(0, j)] = smoothing;` should have set the variance to 0.0.
+        let class_0_idx = clf.classes.iter().position(|&c| c == 0.0).unwrap();
+        assert_eq!(clf.variances[class_0_idx][(0, 0)], 0.0);
+
+        // For class 1 (index 1 in clf.classes), the feature (index 0) had value [2.0].
+        // Variance calculation for a single point results in 0.
+        // The if condition will be true, and var[(0, j)] will be set to smoothing (0.0).
+        let class_1_idx = clf.classes.iter().position(|&c| c == 1.0).unwrap();
+        assert_eq!(clf.variances[class_1_idx][(0, 0)], 0.0);
+    }
 }
