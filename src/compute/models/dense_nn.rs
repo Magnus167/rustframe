@@ -243,6 +243,22 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Number of activation functions must match number of layers")]
+    fn test_invalid_activation_count() {
+        let config = DenseNNConfig {
+            input_size: 2,
+            hidden_layers: vec![3],
+            activations: vec![ActivationKind::Relu], // Only one activation for two layers
+            output_size: 1,
+            initializer: InitializerKind::Uniform(0.1),
+            loss: LossKind::MSE,
+            learning_rate: 0.01,
+            epochs: 0,
+        };
+        let _model = DenseNN::new(config);
+    }
+
+    #[test]
     fn test_train_no_epochs_does_nothing() {
         let config = DenseNNConfig {
             input_size: 1,
@@ -496,7 +512,6 @@ mod tests {
         // Verify that weights and biases of both layers have changed,
         // implying delta propagation occurred for l > 0
 
-        
         // Weights of first layer did not change, delta propagation might not have occurred
         assert!(model.weights[0] != initial_weights_l0);
         // Biases of first layer did not change, delta propagation might not have occurred
