@@ -50,7 +50,7 @@ mod tests {
         // 2.0, 2.0
         // 3.0, 3.0
         let data = Matrix::from_rows_vec(vec![1.0, 1.0, 2.0, 2.0, 3.0, 3.0], 3, 2);
-        let (n_samples, n_features) = data.shape();
+        let (_n_samples, _n_features) = data.shape();
 
         let pca = PCA::fit(&data, 1, 0); // n_components = 1, iters is unused
 
@@ -86,5 +86,29 @@ mod tests {
         assert!((transformed_data.get(0, 0) - -2.0).abs() < EPSILON);
         assert!((transformed_data.get(1, 0) - 0.0).abs() < EPSILON);
         assert!((transformed_data.get(2, 0) - 2.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_pca_fit_break_branch() {
+        // Data with 2 features
+        let data = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 3, 2);
+        let (_n_samples, n_features) = data.shape();
+
+        // Set n_components greater than n_features to trigger the break branch
+        let n_components_large = n_features + 1;
+        let pca = PCA::fit(&data, n_components_large, 0);
+
+        // The components matrix should be initialized with n_components_large rows,
+        // but only the first n_features rows should be copied from the covariance matrix.
+        // The remaining rows should be zeros.
+        assert_eq!(pca.components.rows(), n_components_large);
+        assert_eq!(pca.components.cols(), n_features);
+
+        // Verify that rows beyond n_features are all zeros
+        for i in n_features..n_components_large {
+            for j in 0..n_features {
+                assert!((pca.components.get(i, j) - 0.0).abs() < EPSILON);
+            }
+        }
     }
 }
