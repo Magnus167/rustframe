@@ -264,10 +264,8 @@ mod tests {
 
         for i in 0..before.rows() {
             for j in 0..before.cols() {
-                assert!(
-                    (before[(i, j)] - after[(i, j)]).abs() < 1e-12,
-                    "prediction changed despite 0 epochs"
-                );
+                // "prediction changed despite 0 epochs"
+                assert!((before[(i, j)] - after[(i, j)]).abs() < 1e-12);
             }
         }
     }
@@ -330,12 +328,8 @@ mod tests {
         let after_preds = model.predict(&x);
         let after_loss = mse_loss(&after_preds, &y);
 
-        assert!(
-            after_loss < before_loss,
-            "MSE did not decrease (before: {}, after: {})",
-            before_loss,
-            after_loss
-        );
+        // MSE did not decrease (before: {}, after: {})
+        assert!(after_loss < before_loss);
     }
 
     #[test]
@@ -346,12 +340,8 @@ mod tests {
 
         for i in 0..input.rows() {
             for j in 0..input.cols() {
-                assert!(
-                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
-                    "Tanh forward output mismatch at ({}, {})",
-                    i,
-                    j
-                );
+                // Tanh forward output mismatch at ({}, {})
+                assert!((output[(i, j)] - expected[(i, j)]).abs() < 1e-9);
             }
         }
     }
@@ -364,12 +354,8 @@ mod tests {
 
         for i in 0..input.rows() {
             for j in 0..input.cols() {
-                assert!(
-                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
-                    "ReLU derivative output mismatch at ({}, {})",
-                    i,
-                    j
-                );
+                // "ReLU derivative output mismatch at ({}, {})"
+                assert!((output[(i, j)] - expected[(i, j)]).abs() < 1e-9);
             }
         }
     }
@@ -382,12 +368,8 @@ mod tests {
 
         for i in 0..input.rows() {
             for j in 0..input.cols() {
-                assert!(
-                    (output[(i, j)] - expected[(i, j)]).abs() < 1e-9,
-                    "Tanh derivative output mismatch at ({}, {})",
-                    i,
-                    j
-                );
+                // "Tanh derivative output mismatch at ({}, {})"
+                assert!((output[(i, j)] - expected[(i, j)]).abs() < 1e-9);
             }
         }
     }
@@ -404,10 +386,8 @@ mod tests {
         assert_eq!(matrix.cols(), cols);
 
         for val in matrix.data() {
-            assert!(
-                *val >= -limit && *val <= limit,
-                "Xavier initialized value out of range"
-            );
+            // Xavier initialized value out of range
+            assert!(*val >= -limit && *val <= limit);
         }
     }
 
@@ -423,10 +403,8 @@ mod tests {
         assert_eq!(matrix.cols(), cols);
 
         for val in matrix.data() {
-            assert!(
-                *val >= -limit && *val <= limit,
-                "He initialized value out of range"
-            );
+            // He initialized value out of range
+            assert!(*val >= -limit && *val <= limit);
         }
     }
 
@@ -442,12 +420,8 @@ mod tests {
 
         for i in 0..output_gradient.rows() {
             for j in 0..output_gradient.cols() {
-                assert!(
-                    (output_gradient[(i, j)] - expected_gradient[(i, j)]).abs() < 1e-9,
-                    "BCE gradient output mismatch at ({}, {})",
-                    i,
-                    j
-                );
+                // BCE gradient output mismatch at ({}, {})
+                assert!((output_gradient[(i, j)] - expected_gradient[(i, j)]).abs() < 1e-9);
             }
         }
     }
@@ -489,12 +463,8 @@ mod tests {
                 .iter()
                 .sum::<f64>();
 
-        assert!(
-            after_loss < before_loss,
-            "BCE did not decrease (before: {}, after: {})",
-            before_loss,
-            after_loss
-        );
+        // BCE did not decrease (before: {}, after: {})
+        assert!(after_loss < before_loss,);
     }
 
     #[test]
@@ -525,21 +495,15 @@ mod tests {
 
         // Verify that weights and biases of both layers have changed,
         // implying delta propagation occurred for l > 0
-        assert!(
-            model.weights[0] != initial_weights_l0,
-            "Weights of first layer did not change, delta propagation might not have occurred"
-        );
-        assert!(
-            model.biases[0] != initial_biases_l0,
-            "Biases of first layer did not change, delta propagation might not have occurred"
-        );
-        assert!(
-            model.weights[1] != initial_weights_l1,
-            "Weights of second layer did not change"
-        );
-        assert!(
-            model.biases[1] != initial_biases_l1,
-            "Biases of second layer did not change"
-        );
+
+        
+        // Weights of first layer did not change, delta propagation might not have occurred
+        assert!(model.weights[0] != initial_weights_l0);
+        // Biases of first layer did not change, delta propagation might not have occurred
+        assert!(model.biases[0] != initial_biases_l0);
+        // Weights of second layer did not change
+        assert!(model.weights[1] != initial_weights_l1);
+        // Biases of second layer did not change
+        assert!(model.biases[1] != initial_biases_l1);
     }
 }
