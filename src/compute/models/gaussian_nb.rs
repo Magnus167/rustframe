@@ -88,9 +88,6 @@ impl GaussianNB {
         for &c in &self.classes {
             let idx = &groups[&c.to_bits()];
             let count = idx.len();
-            if count == 0 {
-                panic!("Class group for label {} is empty", c);
-            }
             // Prior
             self.priors.push(count as f64 / m as f64);
 
