@@ -365,11 +365,11 @@ mod tests {
         // The crucial assertion: After re-initialization, no cluster should remain empty.
         // This verifies that the "furthest point" logic successfully re-assigned a point
         // to the previously empty cluster.
-        assert!(counts.iter().all(|&c| c > 0), "All clusters should have at least one point after re-initialization.");
+        assert!(counts.iter().all(|&c| c > 0));
 
         // The crucial assertion: After re-initialization, no cluster should remain empty.
         // This verifies that the "furthest point" logic successfully re-assigned a point
         // to the previously empty cluster.
-        assert!(counts.iter().all(|&c| c > 0), "All clusters should have at least one point after re-initialization.");
+        assert!(counts.iter().all(|&c| c > 0));
     }
 }
