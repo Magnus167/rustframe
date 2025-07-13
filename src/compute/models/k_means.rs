@@ -328,13 +328,12 @@ mod tests {
         // Two distinct groups of points, but we ask for 3 clusters.
         // This should cause one cluster to be empty and re-initialized.
         let data = vec![
-            1.0, 1.0,
-            1.1, 1.1,
-            1.2, 1.2,
-            // Large gap to ensure distinct clusters
-            100.0, 100.0,
-            100.1, 100.1,
-            100.2, 100.2,
+            0.0, 0.0, // Single point cluster
+            10.0, 10.0,
+            10.1, 10.1,
+            10.2, 10.2,
+            10.3, 10.3,
+            10.4, 10.4,
         ];
         let x = FloatMatrix::from_rows_vec(data, 6, 2);
         let k = 3; // Request 3 clusters for 2 natural groups
@@ -362,10 +361,6 @@ mod tests {
             counts[label] += 1;
         }
 
-        // The crucial assertion: After re-initialization, no cluster should remain empty.
-        // This verifies that the "furthest point" logic successfully re-assigned a point
-        // to the previously empty cluster.
-        assert!(counts.iter().all(|&c| c > 0));
 
         // The crucial assertion: After re-initialization, no cluster should remain empty.
         // This verifies that the "furthest point" logic successfully re-assigned a point
