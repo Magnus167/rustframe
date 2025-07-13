@@ -321,4 +321,55 @@ mod tests {
         assert_eq!(predicted_label.len(), 1);
         assert!(predicted_label[0] < k);
     }
+
+    #[test]
+    fn test_k_means_fit_empty_cluster_reinitialization() {
+        // Create data where one cluster is likely to become empty
+        // Two distinct groups of points, but we ask for 3 clusters.
+        // This should cause one cluster to be empty and re-initialized.
+        let data = vec![
+            1.0, 1.0,
+            1.1, 1.1,
+            1.2, 1.2,
+            // Large gap to ensure distinct clusters
+            100.0, 100.0,
+            100.1, 100.1,
+            100.2, 100.2,
+        ];
+        let x = FloatMatrix::from_rows_vec(data, 6, 2);
+        let k = 3; // Request 3 clusters for 2 natural groups
+        let max_iter = 100;
+        let tol = 1e-6;
+
+        // The test aims to verify the empty cluster re-initialization logic.
+        // With random initialization, it's highly probable that one of the
+        // three requested clusters will initially be empty or become empty
+        // during the first few iterations, triggering the re-initialization.
+
+        let (kmeans_model, labels) = KMeans::fit(&x, k, max_iter, tol);
+
+        assert_eq!(kmeans_model.centroids.rows(), k);
+        assert_eq!(labels.len(), x.rows());
+
+        // Verify that all labels are assigned and within bounds
+        for &label in &labels {
+            assert!(label < k);
+        }
+
+        // Count points assigned to each cluster
+        let mut counts = vec![0; k];
+        for &label in &labels {
+            counts[label] += 1;
+        }
+
+        // The crucial assertion: After re-initialization, no cluster should remain empty.
+        // This verifies that the "furthest point" logic successfully re-assigned a point
+        // to the previously empty cluster.
+        assert!(counts.iter().all(|&c| c > 0), "All clusters should have at least one point after re-initialization.");
+
+        // The crucial assertion: After re-initialization, no cluster should remain empty.
+        // This verifies that the "furthest point" logic successfully re-assigned a point
+        // to the previously empty cluster.
+        assert!(counts.iter().all(|&c| c > 0), "All clusters should have at least one point after re-initialization.");
+    }
 }
