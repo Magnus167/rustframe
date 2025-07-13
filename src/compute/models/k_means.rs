@@ -256,11 +256,8 @@ mod tests {
         let mut sorted_labels = labels.clone();
         sorted_labels.sort_unstable();
         sorted_labels.dedup();
-        assert_eq!(
-            sorted_labels.len(),
-            k,
-            "Labels should all be unique when k==m"
-        );
+        // Labels should all be unique when k==m
+        assert_eq!(sorted_labels.len(), k);
     }
 
     #[test]
