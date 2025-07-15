@@ -106,11 +106,7 @@ mod tests {
         let sample1 = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0], 1, 5);
         let sample2 = Matrix::from_vec(vec![6.0, 7.0, 8.0, 9.0, 10.0], 1, 5);
         let (t_statistic, p_value) = t_test(&sample1, &sample2);
-        assert!(
-            (t_statistic + 5.0).abs() < EPS,
-            "Expected t-statistic close to -5.0 found: {}",
-            t_statistic
-        );
+        assert!((t_statistic + 5.0).abs() < EPS);
         assert!(p_value > 0.0 && p_value < 1.0);
     }
 
