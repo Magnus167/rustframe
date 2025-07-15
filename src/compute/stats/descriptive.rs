@@ -287,6 +287,17 @@ mod tests {
         let vh = population_variance_horizontal(&x);
         assert!((vh.get(0, 0) - (2.0 / 3.0)).abs() < EPSILON);
         assert!((vh.get(1, 0) - (2.0 / 3.0)).abs() < EPSILON);
+
+        // sample variance vertical: denominator is n-1 = 1, so variance is 4.5
+        let svv = sample_variance_vertical(&x);
+        for c in 0..3 {
+            assert!((svv.get(0, c) - 4.5).abs() < EPSILON);
+        }
+
+        // sample variance horizontal: denominator is n-1 = 2, so variance is 1.0
+        let svh = sample_variance_horizontal(&x);
+        assert!((svh.get(0, 0) - 1.0).abs() < EPSILON);
+        assert!((svh.get(1, 0) - 1.0).abs() < EPSILON);
     }
 
     #[test]
@@ -305,6 +316,17 @@ mod tests {
         let expected = (2.0 / 3.0 as f64).sqrt();
         assert!((sh.get(0, 0) - expected).abs() < EPSILON);
         assert!((sh.get(1, 0) - expected).abs() < EPSILON);
+
+        // sample stddev vertical: sqrt(4.5) ≈ 2.12132034
+        let ssv = sample_variance_vertical(&x).map(|v| v.sqrt());
+        for c in 0..3 {
+            assert!((ssv.get(0, c) - 2.1213203435596424).abs() < EPSILON);
+        }
+
+        // sample stddev horizontal: sqrt(1.0) = 1.0
+        let ssh = sample_variance_horizontal(&x).map(|v| v.sqrt());
+        assert!((ssh.get(0, 0) - 1.0).abs() < EPSILON);
+        assert!((ssh.get(1, 0) - 1.0).abs() < EPSILON);
     }
 
     #[test]
