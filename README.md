@@ -17,16 +17,43 @@
 
 Rustframe provides intuitive dataframe, matrix, and series operations for data analysis and manipulation.
 
-Rustframe keeps things simple, safe, and readable. It is handy for quick numeric experiments and small analytical tasks, but it is **not** meant to compete with powerhouse crates like `polars` or `ndarray`.
+Rustframe keeps things simple, safe, and readable. It is handy for quick numeric experiments and small analytical tasks as well as for educational purposes. It is designed to be easy to use and understand, with a clean API implemented in 100% safe Rust.
 
-Rustframe is an educational project, and is not intended for production use. It is a work in progress, and the API is subject to change. There are no guarantees of stability or performance, and it is not optimized for large datasets or high-performance computing.
+Rustframe is an educational project, and is not intended for production use. It is **not** meant to compete with powerhouse crates like `polars` or `ndarray`. It is a work in progress, and the API is subject to change. There are no guarantees of stability or performance, and it is not optimized for large datasets or high-performance computing.
 
 ### What it offers
 
+- **Matrix operations** - Element-wise arithmetic, boolean logic, transpose, and more.
 - **Math that reads like math** - element‑wise `+`, `−`, `×`, `÷` on entire frames or scalars.
-- **Broadcast & reduce** - sum, product, any/all across rows or columns without boilerplate.
-- **Boolean masks made simple** - chain comparisons, combine with `&`/`|`, get a tidy `BoolMatrix` back.
-- **Pure safe Rust** - 100 % safe, zero `unsafe`.
+- **Frames** - Column major data structure for single-type data, with labeled columns and typed row indices.
+- **Compute module** - Implements various statistical computations and machine learning models.
+
+- **[Coming Soon]** _DataFrame_ - Multi-type data structure for heterogeneous data, with labeled columns and typed row indices.
+
+- **[Coming Soon]** _Random number utils_ - Random number generation utilities for statistical sampling and simulations. (Currently using the [`rand`](https://crates.io/crates/rand) crate.)
+
+#### Matrix and Frame functionality
+
+- **Matrix operations** - Element-wise arithmetic, boolean logic, transpose, and more.
+- **Frame operations** - Column manipulation, sorting, and more.
+
+#### Compute Module
+
+The `compute` module provides implementations for various statistical computations and machine learning models.
+
+**Statistics, Data Analysis, and Machine Learning:**
+
+- Correlation analysis
+- Descriptive statistics
+- Distributions
+- Inferential statistics
+
+- Dense Neural Networks
+- Gaussian Naive Bayes
+- K-Means Clustering
+- Linear Regression
+- Logistic Regression
+- Principal Component Analysis
 
 ### Heads up
 
@@ -163,4 +190,12 @@ E.g. to run the `game_of_life` example:
 
 ```bash
 cargo run --example game_of_life
+```
+
+### Running benchmarks
+
+To run the benchmarks, use:
+
+```bash
+cargo bench --features "bench"
 ```
