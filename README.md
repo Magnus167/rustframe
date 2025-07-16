@@ -2,7 +2,7 @@
 
 <!-- # <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50px" /> rustframe -->
 
-<!-- though the centre tag doesn't work as it would noramlly, it achieves the desired effect -->
+<!-- though the centre tag doesn't work as it would normally, it achieves the desired effect -->
 
 📚 [Docs](https://magnus167.github.io/rustframe/) | 🐙 [GitHub](https://github.com/Magnus167/rustframe) | 🌐 [Gitea mirror](https://gitea.nulltech.uk/Magnus167/rustframe) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
 
@@ -24,7 +24,7 @@ Rustframe is an educational project, and is not intended for production use. It 
 ### What it offers
 
 - **Matrix operations** - Element-wise arithmetic, boolean logic, transpose, and more.
-- **Math that reads like math** - element‑wise `+`, `−`, `×`, `÷` on entire frames or scalars.
+- **Math that reads like math** - element-wise `+`, `−`, `×`, `÷` on entire frames or scalars.
 - **Frames** - Column major data structure for single-type data, with labeled columns and typed row indices.
 - **Compute module** - Implements various statistical computations and machine learning models.
 
@@ -58,11 +58,11 @@ The `compute` module provides implementations for various statistical computatio
 ### Heads up
 
 - **Not memory‑efficient (yet)** - footprint needs work.
-- **Feature set still small** - expect missing pieces.
+- **The feature set is still limited** - expect missing pieces.
 
 ### Somewhere down the line
 
-- Optional GPU help (Vulkan or similar) for heavier workloads.
+- Optional GPU acceleration (Vulkan or similar) for heavier workloads.
 - Straightforward Python bindings using `pyo3`.
 
 ---
@@ -79,7 +79,7 @@ use rustframe::{
 
 let n_periods = 4;
 
-// Four business days starting 2024‑01‑02
+// Four business days starting 2024-01-02
 let dates: Vec<NaiveDate> =
     BDatesList::from_n_periods("2024-01-02".to_string(), DateFreq::Daily, n_periods)
         .unwrap()
@@ -114,13 +114,13 @@ let result: Matrix<f64> = result / 2.0; // divide by scalar
 let check: bool = result.eq_elem(ma.clone()).all();
 assert!(check);
 
-// The above math can also be written as:
+// Alternatively:
 let check: bool = (&(&(&(&ma + 1.0) - 1.0) * 2.0) / 2.0)
     .eq_elem(ma.clone())
     .all();
 assert!(check);
 
-// The above math can also be written as:
+// or even as:
 let check: bool = ((((ma.clone() + 1.0) - 1.0) * 2.0) / 2.0)
     .eq_elem(ma.clone())
     .all();
