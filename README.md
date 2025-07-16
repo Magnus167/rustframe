@@ -15,16 +15,17 @@
 
 ## Rustframe: _A lightweight dataframe & math toolkit for Rust_
 
-Rustframe provides intuitive dataframe, matrix, and series operations small-to-mid scale data analysis and manipulation.
+Rustframe provides intuitive dataframe, matrix, and series operations for data analysis and manipulation.
 
 Rustframe keeps things simple, safe, and readable. It is handy for quick numeric experiments and small analytical tasks, but it is **not** meant to compete with powerhouse crates like `polars` or `ndarray`.
+
+Rustframe is an educational project, and is not intended for production use. It is a work in progress, and the API is subject to change. There are no guarantees of stability or performance, and it is not optimized for large datasets or high-performance computing.
 
 ### What it offers
 
 - **Math that reads like math** - element‑wise `+`, `−`, `×`, `÷` on entire frames or scalars.
 - **Broadcast & reduce** - sum, product, any/all across rows or columns without boilerplate.
 - **Boolean masks made simple** - chain comparisons, combine with `&`/`|`, get a tidy `BoolMatrix` back.
-- **Date‑centric row index** - business‑day ranges and calendar slicing built in.
 - **Pure safe Rust** - 100 % safe, zero `unsafe`.
 
 ### Heads up
@@ -32,7 +33,7 @@ Rustframe keeps things simple, safe, and readable. It is handy for quick numeric
 - **Not memory‑efficient (yet)** - footprint needs work.
 - **Feature set still small** - expect missing pieces.
 
-### On the horizon
+### Somewhere down the line
 
 - Optional GPU help (Vulkan or similar) for heavier workloads.
 - Straightforward Python bindings using `pyo3`.
