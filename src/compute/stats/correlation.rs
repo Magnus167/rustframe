@@ -1,4 +1,4 @@
-use crate::compute::stats::{mean, mean_horizontal, mean_vertical};
+use crate::compute::stats::{mean, mean_horizontal, mean_vertical, rank, stddev};
 use crate::matrix::{Axis, Matrix, SeriesOps};
 
 /// Population covariance between two equally-sized matrices (flattened)
@@ -111,6 +111,31 @@ pub fn covariance_matrix(x: &Matrix<f64>, axis: Axis) -> Matrix<f64> {
     // centered_data.transpose() is (n_features, n_samples)
     // Result is (n_features, n_features)
     centered_data.transpose().matrix_mul(&centered_data) / (n_samples as f64 - 1.0)
+}
+
+pub fn pearson(x: &Matrix<f64>, y: &Matrix<f64>) -> f64 {
+    assert_eq!(x.rows(), y.rows());
+    assert_eq!(x.cols(), y.cols());
+
+    let cov = covariance(x, y);
+    let std_x = stddev(x);
+    let std_y = stddev(y);
+
+    if std_x == 0.0 || std_y == 0.0 {
+        return 0.0; // Avoid division by zero
+    }
+
+    cov / (std_x * std_y)
+}
+
+pub fn spearman(x: &Matrix<f64>, y: &Matrix<f64>) -> f64 {
+    assert_eq!(x.rows(), y.rows());
+    assert_eq!(x.cols(), y.cols());
+
+    let rank_x = rank(x);
+    let rank_y = rank(y);
+
+    pearson(&rank_x, &rank_y)
 }
 
 #[cfg(test)]
