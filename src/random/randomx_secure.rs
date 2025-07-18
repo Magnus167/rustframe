@@ -5,7 +5,7 @@
 //!
 //! Usage:
 //! ```
-//! use crate::random::randomx_secure::SecureRandomX;
+//! use rustframe::random::randomx_secure::SecureRandomX;
 //! let mut rng = SecureRandomX::new().expect("secure rng");
 //! let x = rng.normal(0.0, 1.0);
 //! ```
