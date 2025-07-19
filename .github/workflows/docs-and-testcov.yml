@@ -151,6 +151,8 @@ jobs:
           mkdir -p target/doc/docs
           mv target/doc/rustframe/* target/doc/docs/
 
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=../docs/index.html\">" > target/doc/rustframe/index.html
+
           mkdir output
           cp tarpaulin-report.html target/doc/docs/
           cp tarpaulin-report.json target/doc/docs/
