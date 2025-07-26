@@ -45,3 +45,16 @@ fn finance_demo() {
     println!("Reduced shape: {:?}", reduced.shape());
     println!("First row -> {:.2?}", [reduced[(0, 0)], reduced[(0, 1)]]);
 }
+
+#[test]
+fn test_sensor_demo() {
+    let raw = vec![
+        2.5, 2.4, 0.5, 0.5, 0.7, 1.5, 2.2, 2.9, 0.7, 1.9, 2.2, 1.0, 3.1, 3.0, 0.6, 2.3, 2.7, 0.9,
+        2.0, 1.6, 1.1, 1.0, 1.1, 1.9, 1.5, 1.6, 2.2, 1.1, 0.9, 2.1,
+    ];
+    let x = Matrix::from_rows_vec(raw, 10, 3);
+    let pca = PCA::fit(&x, 2, 0);
+    let reduced = pca.transform(&x);
+    assert_eq!(reduced.rows(), 10);
+    assert_eq!(reduced.cols(), 2);
+}
