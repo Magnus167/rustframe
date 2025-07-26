@@ -113,6 +113,6 @@ fn test_linear_regression_two_features() {
     model.fit(&x, &y, 0.01, 50000);
     let preds = model.predict(&x);
     for i in 0..y.rows() {
-        assert!((preds[(i, 0)] - prices[i]).abs() < -1.0);
+        assert!((preds[(i, 0)] - prices[i]).abs() < 1.0);
     }
 }
