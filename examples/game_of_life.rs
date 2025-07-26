@@ -1,11 +1,26 @@
+//! Conway's Game of Life Example
+//! This example implements Conway's Game of Life using a `BoolMatrix` to represent the game board.
+//! It demonstrates matrix operations like shifting, counting neighbors, and applying game rules.
+//! The game runs in a loop, updating the board state and printing it to the console.
+//! To modify the behaviour of the example, please change the constants at the top of this file.
+//! By default,
+
 use rand::{self, Rng};
 use rustframe::matrix::{BoolMatrix, BoolOps, IntMatrix, Matrix};
 use std::{thread, time};
 
-const BOARD_SIZE: usize = 50; // Size of the board (50x50)
-const TICK_DURATION_MS: u64 = 10; // Milliseconds per frame
+const BOARD_SIZE: usize = 20; // Size of the board (50x50)
+const MAX_FRAMES: u32 = 1000;
+
+const TICK_DURATION_MS: u64 = 0; // Milliseconds per frame
+const SKIP_FRAMES: u32 = 1;
+const PRINT_BOARD: bool = true; // Set to false to disable printing the board
 
 fn main() {
+    let args = std::env::args().collect::<Vec<String>>();
+    let debug_mode = args.contains(&"--debug".to_string());
+    let print_mode = if debug_mode { false } else { PRINT_BOARD };
+
     // Initialize the game board.
     // This demonstrates `BoolMatrix::from_vec`.
     let mut current_board =
@@ -24,20 +39,12 @@ fn main() {
     let mut print_bool_int = 0;
 
     loop {
-        // print!("{}[2J", 27 as char); // Clear screen and move cursor to top-left
-
         // if print_board_bool {
-        if print_bool_int % 10 == 0 {
-            print!("{}[2J", 27 as char);
-            println!("Conway's Game of Life - Generation: {}", generation_count);
+        if print_bool_int % SKIP_FRAMES == 0 {
+            print_board(&current_board, generation_count, print_mode);
 
-            print_board(&current_board);
-            println!("Alive cells: {}", &current_board.count());
-
-            // print_board_bool = false;
             print_bool_int = 0;
         } else {
-            // print_board_bool = true;
             print_bool_int += 1;
         }
         // `current_board.count()` demonstrates a method from `BoolOps`.
@@ -71,10 +78,10 @@ fn main() {
         generation_count += 1;
         thread::sleep(time::Duration::from_millis(TICK_DURATION_MS));
 
-        // if generation_count > 500 { // Optional limit
-        //     println!("\nReached generation limit.");
-        //     break;
-        // }
+        if (MAX_FRAMES > 0) && (generation_count > MAX_FRAMES) {
+            println!("\nReached generation limit.");
+            break;
+        }
     }
 }
 
@@ -82,7 +89,13 @@ fn main() {
 ///
 /// - `board`: A reference to the `BoolMatrix` representing the current game state.
 /// This function demonstrates `board.rows()`, `board.cols()`, and `board[(r, c)]` (Index trait).
-fn print_board(board: &BoolMatrix) {
+fn print_board(board: &BoolMatrix, generation_count: u32, print_mode: bool) {
+    if !print_mode {
+        return;
+    }
+
+    print!("{}[2J", 27 as char);
+    println!("Conway's Game of Life - Generation: {}", generation_count);
     let mut print_str = String::new();
     print_str.push_str("+");
     for _ in 0..board.cols() {
@@ -107,6 +120,8 @@ fn print_board(board: &BoolMatrix) {
     }
     print_str.push_str("+\n\n");
     print!("{}", print_str);
+
+    println!("Alive cells: {}", board.count());
 }
 
 /// Helper function to create a shifted version of the game board.

@@ -12,14 +12,12 @@ concurrency:
 
 jobs:
   pick-runner:
-
     if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
     outputs:
       runner: ${{ steps.choose.outputs.use-runner }}
     steps:
-
       - uses: actions/checkout@v4
       - id: choose
         uses: ./.github/actions/runner-fallback
@@ -27,7 +25,6 @@ jobs:
           primary-runner: "self-hosted"
           fallback-runner: "ubuntu-latest"
           github-token: ${{ secrets.CUSTOM_GH_TOKEN }}
-          
 
   run-unit-tests:
     needs: pick-runner
@@ -55,6 +52,20 @@ jobs:
 
       - name: Test docs generation
         run: cargo doc --no-deps --release
+
+      - name: Test examples
+        run: cargo test --examples --release
+
+      - name: Run all examples
+        run: |
+          for example in examples/*.rs; do
+            name=$(basename "$example" .rs)
+            echo "Running example: $name"
+            cargo run --release --example "$name" -- --debug || exit 1
+          done
+
+      - name: Cargo test all targets
+        run: cargo test --all-targets --release
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
