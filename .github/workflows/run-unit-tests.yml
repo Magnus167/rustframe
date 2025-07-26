@@ -56,6 +56,14 @@ jobs:
       - name: Test examples
         run: cargo test --examples --release
 
+      - name: Run all examples
+        run: |
+          for example in examples/*.rs; do
+            name=$(basename "$example" .rs)
+            echo "Running example: $name"
+            cargo run --release --example "$name" -- --debug || exit 1
+          done
+
       - name: Cargo test all targets
         run: cargo test --all-targets --release
 
