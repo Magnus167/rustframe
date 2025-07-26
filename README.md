@@ -199,6 +199,11 @@ cargo run --example linear_regression
 cargo run --example logistic_regression
 cargo run --example k_means
 cargo run --example pca
+cargo run --example stats_overview
+cargo run --example descriptive_stats
+cargo run --example correlation
+cargo run --example inferential_stats
+cargo run --example distributions
 ```
 
 To simply list all available examples, you can run:
