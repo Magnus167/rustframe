@@ -192,6 +192,24 @@ E.g. to run the `game_of_life` example:
 cargo run --example game_of_life
 ```
 
+More demos:
+
+```bash
+cargo run --example linear_regression
+cargo run --example logistic_regression
+cargo run --example k_means
+cargo run --example pca
+```
+
+To simply list all available examples, you can run:
+
+```bash
+# this technically raises an error, but it will list all examples
+cargo run --example
+```
+
+Each demo runs a couple of mini-scenarios showcasing the APIs.
+
 ### Running benchmarks
 
 To run the benchmarks, use:
