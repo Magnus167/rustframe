@@ -1,5 +1,6 @@
 [package]
 name = "rustframe"
+authors = ["Palash Tyagi (https://github.com/Magnus167)"]
 version = "0.0.1-a.20250716"
 edition = "2021"
 license = "GPL-3.0-or-later"
