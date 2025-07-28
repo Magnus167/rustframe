@@ -30,7 +30,7 @@ Rustframe is an educational project, and is not intended for production use. It 
 
 - **[Coming Soon]** _DataFrame_ - Multi-type data structure for heterogeneous data, with labeled columns and typed row indices.
 
-- **[Coming Soon]** _Random number utils_ - Random number generation utilities for statistical sampling and simulations. (Currently using the [`rand`](https://crates.io/crates/rand) crate.)
+- **Random number utils** - Built-in pseudo and cryptographically secure generators for simulations.
 
 #### Matrix and Frame functionality
 
