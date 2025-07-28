@@ -39,3 +39,120 @@ impl Rng for Prng {
 pub fn rng() -> Prng {
     Prng::from_entropy()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::random::Rng;
+
+    #[test]
+    fn test_prng_determinism() {
+        let mut a = Prng::new(42);
+        let mut b = Prng::new(42);
+        for _ in 0..5 {
+            assert_eq!(a.next_u64(), b.next_u64());
+        }
+    }
+
+    #[test]
+    fn test_random_range_f64() {
+        let mut rng = Prng::new(1);
+        for _ in 0..10 {
+            let v = rng.random_range(-1.0..1.0);
+            assert!(v >= -1.0 && v < 1.0);
+        }
+    }
+
+    #[test]
+    fn test_random_range_usize() {
+        let mut rng = Prng::new(9);
+        for _ in 0..100 {
+            let v = rng.random_range(10..20);
+            assert!(v >= 10 && v < 20);
+        }
+    }
+
+    #[test]
+    fn test_gen_bool_balance() {
+        let mut rng = Prng::new(123);
+        let mut trues = 0;
+        for _ in 0..1000 {
+            if rng.gen_bool() {
+                trues += 1;
+            }
+        }
+        let ratio = trues as f64 / 1000.0;
+        assert!(ratio > 0.4 && ratio < 0.6);
+    }
+
+    #[test]
+    fn test_normal_distribution() {
+        let mut rng = Prng::new(7);
+        let mut sum = 0.0;
+        let mut sum_sq = 0.0;
+        let mean = 5.0;
+        let sd = 2.0;
+        let n = 5000;
+        for _ in 0..n {
+            let val = rng.normal(mean, sd);
+            sum += val;
+            sum_sq += val * val;
+        }
+        let sample_mean = sum / n as f64;
+        let sample_var = sum_sq / n as f64 - sample_mean * sample_mean;
+        assert!((sample_mean - mean).abs() < 0.1);
+        assert!((sample_var - sd * sd).abs() < 0.2 * sd * sd);
+    }
+
+    #[test]
+    fn test_prng_from_entropy_unique() {
+        use std::{collections::HashSet, thread, time::Duration};
+        let mut seen = HashSet::new();
+        for _ in 0..5 {
+            let mut rng = Prng::from_entropy();
+            seen.insert(rng.next_u64());
+            thread::sleep(Duration::from_micros(1));
+        }
+        assert!(seen.len() > 1, "Entropy seeds produced identical outputs");
+    }
+
+    #[test]
+    fn test_prng_uniform_distribution() {
+        let mut rng = Prng::new(12345);
+        let mut counts = [0usize; 10];
+        for _ in 0..10000 {
+            let v = rng.random_range(0..10usize);
+            counts[v] += 1;
+        }
+        for &c in &counts {
+            assert!(
+                (c as isize - 1000).abs() < 150,
+                "PRNG counts far from uniform: {c}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_prng_different_seeds_different_output() {
+        let mut a = Prng::new(1);
+        let mut b = Prng::new(2);
+        let va = a.next_u64();
+        let vb = b.next_u64();
+        assert_ne!(va, vb);
+    }
+
+    #[test]
+    fn test_prng_gen_bool_varies() {
+        let mut rng = Prng::new(99);
+        let mut seen_true = false;
+        let mut seen_false = false;
+        for _ in 0..100 {
+            if rng.gen_bool() {
+                seen_true = true;
+            } else {
+                seen_false = true;
+            }
+        }
+        assert!(seen_true && seen_false);
+    }
+}
