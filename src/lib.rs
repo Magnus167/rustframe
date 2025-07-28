@@ -11,3 +11,6 @@ pub mod utils;
 
 /// Documentation for the [`crate::compute`] module.
 pub mod compute;
+
+/// Documentation for the [`crate::random`] module.
+pub mod random;
