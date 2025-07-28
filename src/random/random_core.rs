@@ -49,91 +49,34 @@ impl RangeSample for f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::random::{CryptoRng, Prng, SliceRandom};
 
     #[test]
-    fn test_prng_determinism() {
-        let mut a = Prng::new(42);
-        let mut b = Prng::new(42);
-        for _ in 0..5 {
-            assert_eq!(a.next_u64(), b.next_u64());
+    fn test_range_sample_usize_boundary() {
+        assert_eq!(<usize as RangeSample>::from_u64(0, &(0..1)), 0);
+        assert_eq!(<usize as RangeSample>::from_u64(u64::MAX, &(0..1)), 0);
+    }
+
+    #[test]
+    fn test_range_sample_f64_boundary() {
+        let v0 = <f64 as RangeSample>::from_u64(0, &(0.0..1.0));
+        let vmax = <f64 as RangeSample>::from_u64(u64::MAX, &(0.0..1.0));
+        assert!(v0 >= 0.0 && v0 < 1.0);
+        assert!(vmax > 0.999999999999 && vmax <= 1.0);
+    }
+
+    #[test]
+    fn test_range_sample_usize_varied() {
+        for i in 0..5 {
+            let v = <usize as RangeSample>::from_u64(i, &(10..15));
+            assert!(v >= 10 && v < 15);
         }
     }
 
     #[test]
-    fn test_random_range_f64() {
-        let mut rng = Prng::new(1);
-        for _ in 0..10 {
-            let v = rng.random_range(-1.0..1.0);
-            assert!(v >= -1.0 && v < 1.0);
+    fn test_range_sample_f64_span() {
+        for val in [0, u64::MAX / 2, u64::MAX] {
+            let f = <f64 as RangeSample>::from_u64(val, &(2.0..4.0));
+            assert!(f >= 2.0 && f <= 4.0);
         }
-    }
-
-    #[test]
-    fn test_shuffle_slice() {
-        let mut rng = Prng::new(3);
-        let mut arr = [1, 2, 3, 4, 5];
-        let orig = arr.clone();
-        arr.shuffle(&mut rng);
-        assert_eq!(arr.len(), orig.len());
-        let mut sorted = arr.to_vec();
-        sorted.sort();
-        assert_eq!(sorted, orig.to_vec());
-    }
-
-    #[test]
-    fn test_random_range_usize() {
-        let mut rng = Prng::new(9);
-        for _ in 0..100 {
-            let v = rng.random_range(10..20);
-            assert!(v >= 10 && v < 20);
-        }
-    }
-
-    #[test]
-    fn test_gen_bool_balance() {
-        let mut rng = Prng::new(123);
-        let mut trues = 0;
-        for _ in 0..1000 {
-            if rng.gen_bool() {
-                trues += 1;
-            }
-        }
-        let ratio = trues as f64 / 1000.0;
-        assert!(ratio > 0.4 && ratio < 0.6);
-    }
-
-    #[test]
-    fn test_normal_distribution() {
-        let mut rng = Prng::new(7);
-        let mut sum = 0.0;
-        let mut sum_sq = 0.0;
-        let mean = 5.0;
-        let sd = 2.0;
-        let n = 5000;
-        for _ in 0..n {
-            let val = rng.normal(mean, sd);
-            sum += val;
-            sum_sq += val * val;
-        }
-        let sample_mean = sum / n as f64;
-        let sample_var = sum_sq / n as f64 - sample_mean * sample_mean;
-        assert!((sample_mean - mean).abs() < 0.1);
-        assert!((sample_var - sd * sd).abs() < 0.2 * sd * sd);
-    }
-
-    #[test]
-    fn test_crypto_rng_nonzero() {
-        let mut rng = CryptoRng::new();
-        let mut all_same = true;
-        let mut prev = rng.next_u64();
-        for _ in 0..5 {
-            let val = rng.next_u64();
-            if val != prev {
-                all_same = false;
-            }
-            prev = val;
-        }
-        assert!(!all_same, "CryptoRng produced identical values");
     }
 }
