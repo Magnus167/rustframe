@@ -155,4 +155,76 @@ mod tests {
         }
         assert!(seen_true && seen_false);
     }
+
+    #[test]
+    fn test_random_range_single_usize() {
+        let mut rng = Prng::new(42);
+        for _ in 0..10 {
+            let v = rng.random_range(5..6);
+            assert_eq!(v, 5);
+        }
+    }
+
+    #[test]
+    fn test_random_range_single_f64() {
+        let mut rng = Prng::new(42);
+        for _ in 0..10 {
+            let v = rng.random_range(1.234..1.235);
+            assert!(v >= 1.234 && v < 1.235);
+        }
+    }
+
+    #[test]
+    fn test_prng_normal_zero_sd() {
+        let mut rng = Prng::new(7);
+        for _ in 0..5 {
+            let v = rng.normal(3.0, 0.0);
+            assert_eq!(v, 3.0);
+        }
+    }
+
+    #[test]
+    fn test_random_range_extreme_usize() {
+        let mut rng = Prng::new(5);
+        for _ in 0..10 {
+            let v = rng.random_range(0..usize::MAX);
+            assert!(v < usize::MAX);
+        }
+    }
+
+    #[test]
+    fn test_prng_chi_square_uniform() {
+        let mut rng = Prng::new(12345);
+        let mut counts = [0usize; 10];
+        let samples = 10000;
+        for _ in 0..samples {
+            let v = rng.random_range(0..10usize);
+            counts[v] += 1;
+        }
+        let expected = samples as f64 / 10.0;
+        let chi2: f64 = counts
+            .iter()
+            .map(|&c| {
+                let diff = c as f64 - expected;
+                diff * diff / expected
+            })
+            .sum();
+        assert!(chi2 < 20.0, "chi-square statistic too high: {chi2}");
+    }
+
+    #[test]
+    fn test_prng_monobit() {
+        let mut rng = Prng::new(42);
+        let mut ones = 0usize;
+        let samples = 1000;
+        for _ in 0..samples {
+            ones += rng.next_u64().count_ones() as usize;
+        }
+        let total_bits = samples * 64;
+        let ratio = ones as f64 / total_bits as f64;
+        assert!(
+            (ratio - 0.5).abs() < 0.01,
+            "bit ratio far from 0.5: {ratio}"
+        );
+    }
 }

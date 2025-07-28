@@ -111,4 +111,58 @@ mod tests {
         let mut rng = crypto_rng();
         let _ = rng.next_u64();
     }
+
+    #[test]
+    fn test_crypto_normal_zero_sd() {
+        let mut rng = CryptoRng::new();
+        for _ in 0..5 {
+            let v = rng.normal(10.0, 0.0);
+            assert_eq!(v, 10.0);
+        }
+    }
+
+    #[test]
+    fn test_crypto_shuffle_empty_slice() {
+        use crate::random::SliceRandom;
+        let mut rng = CryptoRng::new();
+        let mut arr: [u8; 0] = [];
+        arr.shuffle(&mut rng);
+        assert!(arr.is_empty());
+    }
+
+    #[test]
+    fn test_crypto_chi_square_uniform() {
+        let mut rng = CryptoRng::new();
+        let mut counts = [0usize; 10];
+        let samples = 10000;
+        for _ in 0..samples {
+            let v = rng.random_range(0..10usize);
+            counts[v] += 1;
+        }
+        let expected = samples as f64 / 10.0;
+        let chi2: f64 = counts
+            .iter()
+            .map(|&c| {
+                let diff = c as f64 - expected;
+                diff * diff / expected
+            })
+            .sum();
+        assert!(chi2 < 40.0, "chi-square statistic too high: {chi2}");
+    }
+
+    #[test]
+    fn test_crypto_monobit() {
+        let mut rng = CryptoRng::new();
+        let mut ones = 0usize;
+        let samples = 1000;
+        for _ in 0..samples {
+            ones += rng.next_u64().count_ones() as usize;
+        }
+        let total_bits = samples * 64;
+        let ratio = ones as f64 / total_bits as f64;
+        assert!(
+            (ratio - 0.5).abs() < 0.02,
+            "bit ratio far from 0.5: {ratio}"
+        );
+    }
 }

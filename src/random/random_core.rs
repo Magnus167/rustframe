@@ -79,4 +79,20 @@ mod tests {
             assert!(f >= 2.0 && f <= 4.0);
         }
     }
+
+    #[test]
+    fn test_range_sample_usize_single_value() {
+        for val in [0, 1, u64::MAX] {
+            let n = <usize as RangeSample>::from_u64(val, &(5..6));
+            assert_eq!(n, 5);
+        }
+    }
+
+    #[test]
+    fn test_range_sample_f64_negative_range() {
+        for val in [0, u64::MAX / 3, u64::MAX] {
+            let f = <f64 as RangeSample>::from_u64(val, &(-2.0..2.0));
+            assert!(f >= -2.0 && f <= 2.0);
+        }
+    }
 }

@@ -73,4 +73,33 @@ mod tests {
         arr2.shuffle(&mut rng);
         assert_ne!(arr1, arr2);
     }
+
+    #[test]
+    fn test_shuffle_empty_slice() {
+        let mut rng = Prng::new(1);
+        let mut arr: [i32; 0] = [];
+        arr.shuffle(&mut rng);
+        assert!(arr.is_empty());
+    }
+
+    #[test]
+    fn test_shuffle_three_uniform() {
+        use std::collections::HashMap;
+        let mut rng = Prng::new(123);
+        let mut counts: HashMap<[u8; 3], usize> = HashMap::new();
+        for _ in 0..6000 {
+            let mut arr = [1u8, 2, 3];
+            arr.shuffle(&mut rng);
+            *counts.entry(arr).or_insert(0) += 1;
+        }
+        let expected = 1000.0;
+        let chi2: f64 = counts
+            .values()
+            .map(|&c| {
+                let diff = c as f64 - expected;
+                diff * diff / expected
+            })
+            .sum();
+        assert!(chi2 < 30.0, "shuffle chi-square too high: {chi2}");
+    }
 }
