@@ -1,6 +1,6 @@
 use crate::compute::models::activations::{drelu, relu, sigmoid};
 use crate::matrix::{Matrix, SeriesOps};
-use rand::prelude::*;
+use crate::random::prelude::*;
 
 /// Supported activation functions
 #[derive(Clone)]
@@ -46,7 +46,7 @@ pub enum InitializerKind {
 
 impl InitializerKind {
     pub fn initialize(&self, rows: usize, cols: usize) -> Matrix<f64> {
-        let mut rng = rand::rng();
+        let mut rng = rng();
         let fan_in = rows;
         let fan_out = cols;
         let limit = match self {

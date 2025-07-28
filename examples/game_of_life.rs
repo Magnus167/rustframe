@@ -5,8 +5,8 @@
 //! To modify the behaviour of the example, please change the constants at the top of this file.
 //! By default,
 
-use rand::{self, Rng};
 use rustframe::matrix::{BoolMatrix, BoolOps, IntMatrix, Matrix};
+use rustframe::random::{rng, Rng};
 use std::{thread, time};
 
 const BOARD_SIZE: usize = 20; // Size of the board (50x50)
@@ -265,7 +265,7 @@ pub fn generate_glider(board: &mut BoolMatrix, board_size: usize) {
     // Initialize with a Glider pattern.
     // It demonstrates how to set specific cells in the matrix.
     // This demonstrates `IndexMut` for `current_board[(r, c)] = true;`.
-    let mut rng = rand::rng();
+    let mut rng = rng();
     let r_offset = rng.random_range(0..(board_size - 3));
     let c_offset = rng.random_range(0..(board_size - 3));
     if board.rows() >= r_offset + 3 && board.cols() >= c_offset + 3 {
@@ -281,7 +281,7 @@ pub fn generate_pulsar(board: &mut BoolMatrix, board_size: usize) {
     // Initialize with a Pulsar pattern.
     // This demonstrates how to set specific cells in the matrix.
     // This demonstrates `IndexMut` for `current_board[(r, c)] = true;`.
-    let mut rng = rand::rng();
+    let mut rng = rng();
     let r_offset = rng.random_range(0..(board_size - 17));
     let c_offset = rng.random_range(0..(board_size - 17));
     if board.rows() >= r_offset + 17 && board.cols() >= c_offset + 17 {
