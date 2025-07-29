@@ -1,7 +1,6 @@
 use crate::compute::stats::mean_vertical;
 use crate::matrix::Matrix;
-use rand::rng;
-use rand::seq::SliceRandom;
+use crate::random::prelude::*;
 
 pub struct KMeans {
     pub centroids: Matrix<f64>, // (k, n_features)
@@ -193,7 +192,8 @@ mod tests {
                                 break;
                             }
                         }
-                        assert!(matches_data_point, "Centroid {} (empty cluster) does not match any data point", c);
+                        // "Centroid {} (empty cluster) does not match any data point",c
+                        assert!(matches_data_point);
                     }
                 }
                 break;
@@ -360,5 +360,4 @@ mod tests {
         assert_eq!(predicted_label.len(), 1);
         assert!(predicted_label[0] < k);
     }
-
 }

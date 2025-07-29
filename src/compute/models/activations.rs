@@ -25,6 +25,7 @@ pub fn dleaky_relu(x: &Matrix<f64>) -> Matrix<f64> {
     x.map(|v| if v > 0.0 { 1.0 } else { 0.01 })
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
