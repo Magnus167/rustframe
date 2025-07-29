@@ -57,7 +57,7 @@ impl Rng for CryptoRng {
 fn win_fill(buf: &mut [u8]) -> Result<(), ()> {
     use core::ffi::c_void;
 
-    type BCRYPT_ALG_HANDLE = *mut c_void;
+    type BcryptAlgHandle = *mut c_void;
     type NTSTATUS = i32;
 
     const BCRYPT_USE_SYSTEM_PREFERRED_RNG: u32 = 0x0000_0002;
@@ -65,7 +65,7 @@ fn win_fill(buf: &mut [u8]) -> Result<(), ()> {
     #[link(name = "bcrypt")]
     extern "system" {
         fn BCryptGenRandom(
-            hAlgorithm: BCRYPT_ALG_HANDLE,
+            hAlgorithm: BcryptAlgHandle,
             pbBuffer: *mut u8,
             cbBuffer: u32,
             dwFlags: u32,
