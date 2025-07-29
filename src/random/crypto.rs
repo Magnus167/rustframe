@@ -71,10 +71,8 @@ mod tests {
             counts[v] += 1;
         }
         for &c in &counts {
-            assert!(
-                (c as isize - 100).abs() < 50,
-                "Crypto RNG counts far from uniform: {c}"
-            );
+            // "Crypto RNG counts far from uniform: {c}"
+            assert!((c as isize - 100).abs() < 50);
         }
     }
 
@@ -160,9 +158,7 @@ mod tests {
         }
         let total_bits = samples * 64;
         let ratio = ones as f64 / total_bits as f64;
-        assert!(
-            (ratio - 0.5).abs() < 0.02,
-            "bit ratio far from 0.5: {ratio}"
-        );
+        // "bit ratio far from 0.5: {ratio}"
+        assert!((ratio - 0.5).abs() < 0.02);
     }
 }

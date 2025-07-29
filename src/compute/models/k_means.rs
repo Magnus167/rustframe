@@ -192,11 +192,8 @@ mod tests {
                                 break;
                             }
                         }
-                        assert!(
-                            matches_data_point,
-                            "Centroid {} (empty cluster) does not match any data point",
-                            c
-                        );
+                        // "Centroid {} (empty cluster) does not match any data point",c
+                        assert!(matches_data_point);
                     }
                 }
                 break;

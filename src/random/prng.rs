@@ -125,10 +125,8 @@ mod tests {
             counts[v] += 1;
         }
         for &c in &counts {
-            assert!(
-                (c as isize - 1000).abs() < 150,
-                "PRNG counts far from uniform: {c}"
-            );
+            // "PRNG counts far from uniform: {c}"
+            assert!((c as isize - 1000).abs() < 150);
         }
     }
 
@@ -209,7 +207,8 @@ mod tests {
                 diff * diff / expected
             })
             .sum();
-        assert!(chi2 < 20.0, "chi-square statistic too high: {chi2}");
+        //  "chi-square statistic too high: {chi2}"
+        assert!(chi2 < 20.0);
     }
 
     #[test]
@@ -222,9 +221,7 @@ mod tests {
         }
         let total_bits = samples * 64;
         let ratio = ones as f64 / total_bits as f64;
-        assert!(
-            (ratio - 0.5).abs() < 0.01,
-            "bit ratio far from 0.5: {ratio}"
-        );
+        // "bit ratio far from 0.5: {ratio}"
+        assert!((ratio - 0.5).abs() < 0.01);
     }
 }
