@@ -1,21 +1,23 @@
-use std::fs::File;
-use std::io::Read;
+#[cfg(unix)]
+use std::{fs::File, io::Read};
 
 use crate::random::Rng;
 
-/// Cryptographically secure RNG sourcing randomness from `/dev/urandom`.
+#[cfg(unix)]
 pub struct CryptoRng {
     file: File,
 }
 
+#[cfg(unix)]
 impl CryptoRng {
-    /// Open `/dev/urandom` and create a new generator.
+    /// Open `/dev/urandom`.
     pub fn new() -> Self {
         let file = File::open("/dev/urandom").expect("failed to open /dev/urandom");
         Self { file }
     }
 }
 
+#[cfg(unix)]
 impl Rng for CryptoRng {
     fn next_u64(&mut self) -> u64 {
         let mut buf = [0u8; 8];
@@ -23,6 +25,67 @@ impl Rng for CryptoRng {
             .read_exact(&mut buf)
             .expect("failed reading from /dev/urandom");
         u64::from_ne_bytes(buf)
+    }
+}
+
+#[cfg(windows)]
+pub struct CryptoRng;
+
+#[cfg(windows)]
+impl CryptoRng {
+    /// No handle is needed on Windows.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+#[cfg(windows)]
+impl Rng for CryptoRng {
+    fn next_u64(&mut self) -> u64 {
+        let mut buf = [0u8; 8];
+        win_fill(&mut buf).expect("BCryptGenRandom failed");
+        u64::from_ne_bytes(buf)
+    }
+}
+
+/// Fill `buf` with cryptographically secure random bytes using CNG.
+///
+/// * `BCryptGenRandom(NULL, buf, len, BCRYPT_USE_SYSTEM_PREFERRED_RNG)`
+///   asks the OS for its system‑preferred DRBG (CTR_DRBG on modern
+///   Windows).
+#[cfg(windows)]
+fn win_fill(buf: &mut [u8]) -> Result<(), ()> {
+    use core::ffi::c_void;
+
+    type BcryptAlgHandle = *mut c_void;
+    type NTSTATUS = i32;
+
+    const BCRYPT_USE_SYSTEM_PREFERRED_RNG: u32 = 0x0000_0002;
+
+    #[link(name = "bcrypt")]
+    extern "system" {
+        fn BCryptGenRandom(
+            hAlgorithm: BcryptAlgHandle,
+            pbBuffer: *mut u8,
+            cbBuffer: u32,
+            dwFlags: u32,
+        ) -> NTSTATUS;
+    }
+
+    // NT_SUCCESS(status) == status >= 0
+    let status = unsafe {
+        BCryptGenRandom(
+            core::ptr::null_mut(),
+            buf.as_mut_ptr(),
+            buf.len() as u32,
+            BCRYPT_USE_SYSTEM_PREFERRED_RNG,
+        )
+    };
+
+    if status >= 0 {
+        Ok(())
+    } else {
+        Err(())
     }
 }
 
