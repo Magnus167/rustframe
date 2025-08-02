@@ -6,9 +6,9 @@ use rustframe::matrix::{Axis, Matrix};
 /// Demonstrates some of the statistics utilities in Rustframe.
 ///
 /// The example is split into three parts:
-///   1. Basic descriptive statistics on a small data set.
-///   2. Covariance and correlation calculations.
-///   3. Simple inferential tests (t-test and chi-square).
+///   - Basic descriptive statistics on a small data set
+///   - Covariance and correlation calculations
+///   - Simple inferential tests (t-test and chi-square)
 fn main() {
     descriptive_demo();
     println!("\n-----\n");

@@ -1,9 +1,5 @@
 # rustframe
 
-<!-- # <img align="center" alt="Rustframe" src=".github/rustframe_logo.png" height="50px" /> rustframe -->
-
-<!-- though the centre tag doesn't work as it would normally, it achieves the desired effect -->
-
 📚 [Docs](https://magnus167.github.io/rustframe/) | 🐙 [GitHub](https://github.com/Magnus167/rustframe) | 🌐 [Gitea mirror](https://gitea.nulltech.uk/Magnus167/rustframe) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
 
 <!-- [![Last commit](https://img.shields.io/endpoint?url=https://magnus167.github.io/rustframe/rustframe/last-commit-date.json)](https://github.com/Magnus167/rustframe) -->
@@ -131,10 +127,6 @@ let mc: Matrix<f64> = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
 let md: Matrix<f64> = Matrix::from_cols(vec![vec![5.0, 6.0], vec![7.0, 8.0]]);
 let mul_result: Matrix<f64> = mc.matrix_mul(&md);
 // Expected:
-// 1*5 + 3*6 = 5 + 18 = 23
-// 2*5 + 4*6 = 10 + 24 = 34
-// 1*7 + 3*8 = 7 + 24 = 31
-// 2*7 + 4*8 = 14 + 32 = 46
 assert_eq!(mul_result.data(), &[23.0, 34.0, 31.0, 46.0]);
 
 // Dot product (alias for matrix_mul for FloatMatrix)
@@ -143,14 +135,7 @@ assert_eq!(dot_result, mul_result);
 
 // Transpose
 let original_matrix: Matrix<f64> = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
-// Original:
-// 1 4
-// 2 5
-// 3 6
 let transposed_matrix: Matrix<f64> = original_matrix.transpose();
-// Transposed:
-// 1 2 3
-// 4 5 6
 assert_eq!(transposed_matrix.rows(), 2);
 assert_eq!(transposed_matrix.cols(), 3);
 assert_eq!(transposed_matrix.data(), &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
@@ -159,10 +144,6 @@ assert_eq!(transposed_matrix.data(), &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
 let matrix = Matrix::from_cols(vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]]);
 // Map function to double each value
 let mapped_matrix = matrix.map(|x| x * 2.0);
-// Expected data after mapping
-// 2 8
-// 4 10
-// 6 12
 assert_eq!(mapped_matrix.data(), &[2.0, 4.0, 6.0, 8.0, 10.0, 12.0]);
 
 // Zip
@@ -170,9 +151,6 @@ let a = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]); // 2x2 matrix
 let b = Matrix::from_cols(vec![vec![5.0, 6.0], vec![7.0, 8.0]]); // 2x2 matrix
                                                                    // Zip function to add corresponding elements
 let zipped_matrix = a.zip(&b, |x, y| x + y);
-// Expected data after zipping
-// 6 10
-// 8 12
 assert_eq!(zipped_matrix.data(), &[6.0, 8.0, 10.0, 12.0]);
 ```
 
