@@ -23,10 +23,8 @@ Rustframe is an educational project, and is not intended for production use. It 
 - **Math that reads like math** - element-wise `+`, `−`, `×`, `÷` on entire frames or scalars.
 - **Frames** - Column major data structure for single-type data, with labeled columns and typed row indices.
 - **Compute module** - Implements various statistical computations and machine learning models.
-
-- **[Coming Soon]** _DataFrame_ - Multi-type data structure for heterogeneous data, with labeled columns and typed row indices.
-
 - **Random number utils** - Built-in pseudo and cryptographically secure generators for simulations.
+- **[Coming Soon]** _DataFrame_ - Multi-type data structure for heterogeneous data, with labeled columns and typed row indices.
 
 #### Matrix and Frame functionality
 
