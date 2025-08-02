@@ -350,11 +350,7 @@ mod tests {
         let data: Vec<f64> = (1..=24).map(|x| x as f64).collect();
         let x = Matrix::from_vec(data, 4, 6);
 
-        // columns:
-        //  1,  5,  9, 13, 17, 21
-        //  2,  6, 10, 14, 18, 22
-        //  3,  7, 11, 15, 19, 23
-        //  4,  8, 12, 16, 20, 24
+        // columns contain sequences increasing by four starting at 1 through 4
 
         let er0 = vec![1., 5., 9., 13., 17., 21.];
         let er50 = vec![3., 7., 11., 15., 19., 23.];

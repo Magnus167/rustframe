@@ -1028,9 +1028,7 @@ mod tests {
 
     #[test]
     fn test_from_rows_vec() {
-        // Representing:
-        // 1 2 3
-        // 4 5 6
+        // Matrix with rows [1, 2, 3] and [4, 5, 6]
         let rows_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         let matrix = Matrix::from_rows_vec(rows_data, 2, 3);
 
@@ -1042,19 +1040,14 @@ mod tests {
 
     // Helper function to create a basic Matrix for testing
     fn static_test_matrix() -> Matrix<i32> {
-        // Column-major data:
-        // 1 4 7
-        // 2 5 8
-        // 3 6 9
+        // Column-major data representing a 3x3 matrix of sequential integers
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
         Matrix::from_vec(data, 3, 3)
     }
 
     // Another helper for a different size
     fn static_test_matrix_2x4() -> Matrix<i32> {
-        // Column-major data:
-        // 1 3 5 7
-        // 2 4 6 8
+        // Column-major data representing a 2x4 matrix of sequential integers
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
         Matrix::from_vec(data, 2, 4)
     }
@@ -1132,10 +1125,7 @@ mod tests {
 
     #[test]
     fn test_from_cols_basic() {
-        // Representing:
-        // 1 4 7
-        // 2 5 8
-        // 3 6 9
+        // Matrix with columns forming a 3x3 sequence
         let cols_data = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
         let matrix = Matrix::from_cols(cols_data);
 
@@ -1512,8 +1502,7 @@ mod tests {
 
         // Delete the first row
         matrix.delete_row(0);
-        // Should be:
-        // 3 6 9
+        // Resulting data should be [3, 6, 9]
         assert_eq!(matrix.rows(), 1);
         assert_eq!(matrix.cols(), 3);
         assert_eq!(matrix.data(), &[3, 6, 9]);

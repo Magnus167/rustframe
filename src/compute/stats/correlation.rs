@@ -137,10 +137,7 @@ mod tests {
 
     #[test]
     fn test_covariance_scalar_same_matrix() {
-        // M =
-        // 1,2
-        // 3,4
-        // mean = 2.5
+        // Matrix with rows [1, 2] and [3, 4]; mean is 2.5
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let m = Matrix::from_vec(data.clone(), 2, 2);
 
@@ -152,10 +149,7 @@ mod tests {
 
     #[test]
     fn test_covariance_scalar_diff_matrix() {
-        // x =
-        // 1,2
-        // 3,4
-        // y = 2*x
+        // Matrix x has rows [1, 2] and [3, 4]; y is two times x
         let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
         let y = Matrix::from_vec(vec![2.0, 4.0, 6.0, 8.0], 2, 2);
 
@@ -167,10 +161,7 @@ mod tests {
 
     #[test]
     fn test_covariance_vertical() {
-        // M =
-        // 1,2
-        // 3,4
-        // cols are [1,3] and [2,4], each var=1, cov=1
+        // Matrix with rows [1, 2] and [3, 4]; columns are [1,3] and [2,4], each var=1, cov=1
         let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
         let cov_mat = covariance_vertical(&m);
 
@@ -184,10 +175,7 @@ mod tests {
 
     #[test]
     fn test_covariance_horizontal() {
-        // M =
-        // 1,2
-        // 3,4
-        // rows are [1,2] and [3,4], each var=0.25, cov=0.25
+        // Matrix with rows [1,2] and [3,4], each var=0.25, cov=0.25
         let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
         let cov_mat = covariance_horizontal(&m);
 
@@ -201,10 +189,7 @@ mod tests {
 
     #[test]
     fn test_covariance_matrix_vertical() {
-        // Test with a simple 2x2 matrix
-        // M =
-        // 1, 2
-        // 3, 4
+        // Test with a simple 2x2 matrix with rows [1, 2] and [3, 4]
         // Expected covariance matrix (vertical, i.e., between columns):
         // Col1: [1, 3], mean = 2
         // Col2: [2, 4], mean = 3
@@ -212,9 +197,7 @@ mod tests {
         // Cov(Col2, Col2) = ((2-3)^2 + (4-3)^2) / (2-1) = (1+1)/1 = 2
         // Cov(Col1, Col2) = ((1-2)*(2-3) + (3-2)*(4-3)) / (2-1) = ((-1)*(-1) + (1)*(1))/1 = (1+1)/1 = 2
         // Cov(Col2, Col1) = 2
-        // Expected:
-        // 2, 2
-        // 2, 2
+        // Expected matrix filled with 2
         let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
         let cov_mat = covariance_matrix(&m, Axis::Col);
 
@@ -226,10 +209,7 @@ mod tests {
 
     #[test]
     fn test_covariance_matrix_horizontal() {
-        // Test with a simple 2x2 matrix
-        // M =
-        // 1, 2
-        // 3, 4
+        // Test with a simple 2x2 matrix with rows [1, 2] and [3, 4]
         // Expected covariance matrix (horizontal, i.e., between rows):
         // Row1: [1, 2], mean = 1.5
         // Row2: [3, 4], mean = 3.5
@@ -237,9 +217,7 @@ mod tests {
         // Cov(Row2, Row2) = ((3-3.5)^2 + (4-3.5)^2) / (2-1) = (0.25+0.25)/1 = 0.5
         // Cov(Row1, Row2) = ((1-1.5)*(3-3.5) + (2-1.5)*(4-3.5)) / (2-1) = ((-0.5)*(-0.5) + (0.5)*(0.5))/1 = (0.25+0.25)/1 = 0.5
         // Cov(Row2, Row1) = 0.5
-        // Expected:
-        // 0.5, -0.5
-        // -0.5, 0.5
+        // Expected matrix: [[0.5, -0.5], [-0.5, 0.5]]
         let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
         let cov_mat = covariance_matrix(&m, Axis::Row);
 

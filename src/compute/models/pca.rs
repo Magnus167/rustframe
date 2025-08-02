@@ -44,11 +44,7 @@ mod tests {
 
     #[test]
     fn test_pca_basic() {
-        // Simple 2D data, points along y=x line
-        // Data:
-        // 1.0, 1.0
-        // 2.0, 2.0
-        // 3.0, 3.0
+        // Simple 2D data with points along the y = x line
         let data = Matrix::from_rows_vec(vec![1.0, 1.0, 2.0, 2.0, 3.0, 3.0], 3, 2);
         let (_n_samples, _n_features) = data.shape();
 
@@ -71,15 +67,7 @@ mod tests {
         assert!((pca.components.get(0, 0) - 1.0).abs() < EPSILON);
         assert!((pca.components.get(0, 1) - 1.0).abs() < EPSILON);
 
-        // Test transform
-        // Centered data:
-        // -1.0, -1.0
-        //  0.0,  0.0
-        //  1.0,  1.0
-        // Projected: (centered_data * components.transpose())
-        // (-1.0 * 1.0 + -1.0 * 1.0) = -2.0
-        // ( 0.0 * 1.0 +  0.0 * 1.0) =  0.0
-        // ( 1.0 * 1.0 +  1.0 * 1.0) =  2.0
+        // Test transform: centered data projects to [-2.0, 0.0, 2.0]
         let transformed_data = pca.transform(&data);
         assert_eq!(transformed_data.rows(), 3);
         assert_eq!(transformed_data.cols(), 1);
