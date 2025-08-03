@@ -178,7 +178,7 @@ jobs:
       - name: Copy user guide to output directory
         run: |
           mkdir -p target/doc/user-guide
-          cp -r docs/book/* target/doc/user-guide/
+          cp -r docs/book/* output/user-guide/
 
       - name: Add index.html to output directory
         run: |
@@ -189,7 +189,8 @@ jobs:
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: target/doc/
+          # path: target/doc/
+          path: output/
 
       - name: Deploy to GitHub Pages
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
