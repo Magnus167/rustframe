@@ -81,7 +81,5 @@ jobs:
 
       - name: Test build user guide
         run: |
-          cargo binstall mdbook -q
-          cd docs
-          ./build.sh
-          cd ..
+          cargo binstall mdbook
+          bash ./build.sh
