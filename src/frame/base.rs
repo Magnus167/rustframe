@@ -316,7 +316,7 @@ impl<T: Clone + PartialEq> Frame<T> {
         )
     }
 
-    /// Returns an immutable slice of the specified column's data.
+    /// Returns an immutable slice of the specified column's data by name.
     /// Panics if the column name is not found.
     pub fn column(&self, name: &str) -> &[T] {
         let idx = self
@@ -325,12 +325,24 @@ impl<T: Clone + PartialEq> Frame<T> {
         self.matrix.column(idx)
     }
 
-    /// Returns a mutable slice of the specified column's data.
+    /// Returns an immutable slice of the specified column's data by its physical index.
+    /// Panics if the index is out of bounds.
+    pub fn column_by_physical_idx(&self, idx: usize) -> &[T] {
+        self.matrix.column(idx)
+    }
+
+    /// Returns a mutable slice of the specified column's data by name.
     /// Panics if the column name is not found.
     pub fn column_mut(&mut self, name: &str) -> &mut [T] {
         let idx = self
             .column_index(name)
             .unwrap_or_else(|| panic!("Frame::column_mut: unknown column label: '{}'", name));
+        self.matrix.column_mut(idx)
+    }
+
+    /// Returns a mutable slice of the specified column's data by its physical index.
+    /// Panics if the index is out of bounds.
+    pub fn column_mut_by_physical_idx(&mut self, idx: usize) -> &mut [T] {
         self.matrix.column_mut(idx)
     }
 

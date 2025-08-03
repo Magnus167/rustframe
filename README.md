@@ -152,6 +152,133 @@ let zipped_matrix = a.zip(&b, |x, y| x + y);
 assert_eq!(zipped_matrix.data(), &[6.0, 8.0, 10.0, 12.0]);
 ```
 
+---
+
+## DataFrame Usage Example
+
+```rust
+use chrono::NaiveDate;
+use rustframe::dataframe::DataFrame;
+use rustframe::utils::{BDateFreq, BDatesList};
+use std::any::TypeId;
+use std::collections::HashMap;
+
+// Helper for NaiveDate
+fn d(y: i32, m: u32, d: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(y, m, d).unwrap()
+}
+
+// Create a new DataFrame
+let mut df = DataFrame::new();
+
+// Add columns of different types
+df.add_column("col_int1", vec![1, 2, 3, 4, 5]);
+df.add_column("col_float1", vec![1.1, 2.2, 3.3, 4.4, 5.5]);
+df.add_column(
+    "col_string",
+    vec![
+        "apple".to_string(),
+        "banana".to_string(),
+        "cherry".to_string(),
+        "date".to_string(),
+        "elderberry".to_string(),
+    ],
+);
+df.add_column("col_bool", vec![true, false, true, false, true]);
+// df.add_column("col_date", vec![d(2023,1,1), d(2023,1,2), d(2023,1,3), d(2023,1,4), d(2023,1,5)]);
+df.add_column(
+    "col_date",
+    BDatesList::from_n_periods("2023-01-01".to_string(), BDateFreq::Daily, 5)
+        .unwrap()
+        .list()
+        .unwrap(),
+);
+
+println!("DataFrame after initial column additions:\n{}", df);
+
+// Demonstrate frame re-use when adding columns of existing types
+let initial_frames_count = df.num_internal_frames();
+println!(
+    "\nInitial number of internal frames: {}",
+    initial_frames_count
+);
+
+df.add_column("col_int2", vec![6, 7, 8, 9, 10]);
+df.add_column("col_float2", vec![6.6, 7.7, 8.8, 9.9, 10.0]);
+
+let frames_after_reuse = df.num_internal_frames();
+println!(
+    "Number of internal frames after adding more columns of existing types: {}",
+    frames_after_reuse
+);
+assert_eq!(initial_frames_count, frames_after_reuse); // Should be equal, demonstrating re-use
+
+println!(
+    "\nDataFrame after adding more columns of existing types:\n{}",
+    df
+);
+
+// Get number of rows and columns
+println!("Rows: {}", df.rows()); // Output: Rows: 5
+println!("Columns: {}", df.cols()); // Output: Columns: 5
+
+// Get column names
+println!("Column names: {:?}", df.get_column_names());
+// Output: Column names: ["col_int", "col_float", "col_string", "col_bool", "col_date"]
+
+// Get a specific column by name and type
+let int_col = df.get_column::<i32>("col_int1").unwrap();
+// Output: Integer column: [1, 2, 3, 4, 5]
+println!("Integer column (col_int1): {:?}", int_col);
+
+let int_col2 = df.get_column::<i32>("col_int2").unwrap();
+// Output: Integer column: [6, 7, 8, 9, 10]
+println!("Integer column (col_int2): {:?}", int_col2);
+
+let float_col = df.get_column::<f64>("col_float1").unwrap();
+// Output: Float column: [1.1, 2.2, 3.3, 4.4, 5.5]
+println!("Float column (col_float1): {:?}", float_col);
+
+// Attempt to get a column with incorrect type (returns None)
+let wrong_type_col = df.get_column::<bool>("col_int1");
+// Output: Wrong type column: None
+println!("Wrong type column: {:?}", wrong_type_col);
+
+// Get a row by index
+let row_0 = df.get_row(0).unwrap();
+println!("Row 0: {:?}", row_0);
+// Output: Row 0: {"col_int1": "1", "col_float1": "1.1", "col_string": "apple", "col_bool": "true", "col_date": "2023-01-01", "col_int2": "6", "col_float2": "6.6"}
+
+let row_2 = df.get_row(2).unwrap();
+println!("Row 2: {:?}", row_2);
+// Output: Row 2: {"col_int1": "3", "col_float1": "3.3", "col_string": "cherry", "col_bool": "true", "col_date": "2023-01-03", "col_int2": "8", "col_float2": "8.8"}
+
+// Attempt to get an out-of-bounds row (returns None)
+let row_out_of_bounds = df.get_row(10);
+// Output: Row out of bounds: None
+println!("Row out of bounds: {:?}", row_out_of_bounds);
+
+// Drop a column
+df.drop_column("col_bool");
+println!("\nDataFrame after dropping 'col_bool':\n{}", df);
+
+println!("Columns after drop: {}", df.cols());
+println!("Column names after drop: {:?}", df.get_column_names());
+
+// Drop another column, ensuring the underlying Frame is removed if empty
+df.drop_column("col_float1");
+println!("\nDataFrame after dropping 'col_float1':\n{}", df);
+
+println!("Columns after second drop: {}", df.cols());
+println!(
+    "Column names after second drop: {:?}",
+    df.get_column_names()
+);
+
+// Attempt to drop a non-existent column (will panic)
+// df.drop_column("non_existent_col"); // Uncomment to see panic
+```
+
 ### More examples
 
 See the [examples](./examples/) directory for some demonstrations of Rustframe's syntax and functionality.
