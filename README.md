@@ -198,3 +198,13 @@ To run the benchmarks, use:
 ```bash
 cargo bench --features "bench"
 ```
+
+## Building the user-guide
+
+To build the user guide, use:
+
+```bash
+cargo binstall mdbook
+bash docs/build.sh
+```
+This will generate the user guide in the `docs/book` directory.
