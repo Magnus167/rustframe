@@ -1,3 +1,14 @@
+//! Simple k-means clustering working on [`Matrix`] data.
+//!
+//! ```
+//! use rustframe::compute::models::k_means::KMeans;
+//! use rustframe::matrix::Matrix;
+//!
+//! let data = Matrix::from_vec(vec![1.0, 1.0, 5.0, 5.0], 2, 2);
+//! let (model, labels) = KMeans::fit(&data, 2, 10, 1e-4);
+//! assert_eq!(model.centroids.rows(), 2);
+//! assert_eq!(labels.len(), 2);
+//! ```
 use crate::compute::stats::mean_vertical;
 use crate::matrix::Matrix;
 use crate::random::prelude::*;
