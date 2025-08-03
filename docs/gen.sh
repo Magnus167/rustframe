@@ -11,4 +11,4 @@ mdbook test -L ../target/debug/deps "$@"
 mdbook build "$@"
 
 cargo build
-cargo build --release
+# cargo build --release
