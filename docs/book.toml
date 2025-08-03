@@ -1,0 +1,7 @@
+[book]
+title = "RustFrame User Guide"
+author = ["RustFrame Contributors"]
+description = "Guided journey through RustFrame capabilities."
+
+[build]
+build-dir = "book"
