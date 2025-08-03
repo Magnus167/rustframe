@@ -207,4 +207,5 @@ To build the user guide, use:
 cargo binstall mdbook
 bash docs/build.sh
 ```
+
 This will generate the user guide in the `docs/book` directory.
