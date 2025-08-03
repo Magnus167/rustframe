@@ -177,13 +177,13 @@ jobs:
 
       - name: Copy user guide to output directory
         run: |
-          mkdir -p target/doc/user-guide
+          mkdir output/user-guide
           cp -r docs/book/* output/user-guide/
 
       - name: Add index.html to output directory
         run: |
-          cp .github/htmldocs/index.html target/doc/index.html
-          cp .github/rustframe_logo.png target/doc/rustframe_logo.png
+          cp .github/htmldocs/index.html output/index.html
+          cp .github/rustframe_logo.png output/rustframe_logo.png
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
