@@ -153,7 +153,6 @@ jobs:
 
           echo "<meta http-equiv=\"refresh\" content=\"0; url=../docs/index.html\">" > target/doc/rustframe/index.html
 
-          mkdir output
           cp tarpaulin-report.html target/doc/docs/
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
@@ -165,6 +164,20 @@ jobs:
 
           # copy the benchmark report to the output directory
           cp -r benchmark-report target/doc/
+
+          mkdir output
+          cp -r target/doc/* output/
+
+      - name: Build user guide
+        run: |
+          cd docs
+          ./build.sh
+          cd ..
+
+      - name: Copy user guide to output directory
+        run: |
+          mkdir -p target/doc/user-guide
+          cp -r docs/book/* target/doc/user-guide/
 
       - name: Add index.html to output directory
         run: |
