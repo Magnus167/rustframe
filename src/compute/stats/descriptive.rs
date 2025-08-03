@@ -1,3 +1,15 @@
+//! Descriptive statistics for matrices.
+//!
+//! Provides means, variances, medians and other aggregations computed either
+//! across the whole matrix or along a specific axis.
+//!
+//! ```
+//! use rustframe::compute::stats::descriptive;
+//! use rustframe::matrix::Matrix;
+//!
+//! let m = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+//! assert_eq!(descriptive::mean(&m), 2.5);
+//! ```
 use crate::matrix::{Axis, Matrix, SeriesOps};
 
 pub fn mean(x: &Matrix<f64>) -> f64 {
