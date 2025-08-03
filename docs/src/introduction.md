@@ -1,6 +1,6 @@
 # Introduction
 
-Welcome to the **RustFrame User Guide**. Rustframe is a lightweight dataframe
+Welcome to the **Rustframe User Guide**. Rustframe is a lightweight dataframe
 and math toolkit for Rust written in 100% safe Rust. It focuses on keeping the
 API approachable while offering handy features for small analytical or
 educational projects.
