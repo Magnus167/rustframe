@@ -1,3 +1,14 @@
+//! Principal Component Analysis using covariance matrices.
+//!
+//! ```
+//! use rustframe::compute::models::pca::PCA;
+//! use rustframe::matrix::Matrix;
+//!
+//! let data = Matrix::from_rows_vec(vec![1.0, 1.0, 2.0, 2.0], 2, 2);
+//! let pca = PCA::fit(&data, 1, 0);
+//! let projected = pca.transform(&data);
+//! assert_eq!(projected.cols(), 1);
+//! ```
 use crate::compute::stats::correlation::covariance_matrix;
 use crate::compute::stats::descriptive::mean_vertical;
 use crate::matrix::{Axis, Matrix, SeriesOps};

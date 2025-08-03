@@ -1,3 +1,16 @@
+//! Ordinary least squares linear regression.
+//!
+//! ```
+//! use rustframe::compute::models::linreg::LinReg;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 4, 1);
+//! let y = Matrix::from_vec(vec![2.0, 3.0, 4.0, 5.0], 4, 1);
+//! let mut model = LinReg::new(1);
+//! model.fit(&x, &y, 0.01, 100);
+//! let preds = model.predict(&x);
+//! assert_eq!(preds.rows(), 4);
+//! ```
 use crate::matrix::{Matrix, SeriesOps};
 
 pub struct LinReg {

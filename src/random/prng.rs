@@ -1,3 +1,11 @@
+//! A tiny XorShift64-based pseudo random number generator.
+//!
+//! ```
+//! use rustframe::random::{rng, Rng};
+//! let mut rng = rng();
+//! let x = rng.next_u64();
+//! assert!(x >= 0);
+//! ```
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::random::Rng;

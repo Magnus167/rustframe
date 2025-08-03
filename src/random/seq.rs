@@ -1,3 +1,11 @@
+//! Extensions for shuffling slices with a random number generator.
+//!
+//! ```
+//! use rustframe::random::{rng, SliceRandom};
+//! let mut data = [1, 2, 3];
+//! data.shuffle(&mut rng());
+//! assert_eq!(data.len(), 3);
+//! ```
 use crate::random::Rng;
 
 /// Trait for randomizing slices.

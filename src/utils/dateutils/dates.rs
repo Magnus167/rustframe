@@ -1,3 +1,10 @@
+//! Generation and manipulation of calendar date sequences.
+//!
+//! ```
+//! use rustframe::utils::dateutils::dates::{DateFreq, DatesList};
+//! let list = DatesList::new("2024-01-01".into(), "2024-01-03".into(), DateFreq::Daily);
+//! assert_eq!(list.count().unwrap(), 3);
+//! ```
 use chrono::{Datelike, Duration, NaiveDate, Weekday};
 use std::collections::HashMap;
 use std::error::Error;

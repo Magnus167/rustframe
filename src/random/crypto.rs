@@ -1,3 +1,13 @@
+//! Cryptographically secure random number generator.
+//!
+//! On Unix systems this reads from `/dev/urandom`; on Windows it uses the
+//! system's preferred CNG provider.
+//!
+//! ```
+//! use rustframe::random::{crypto_rng, Rng};
+//! let mut rng = crypto_rng();
+//! let _v = rng.next_u64();
+//! ```
 #[cfg(unix)]
 use std::{fs::File, io::Read};
 

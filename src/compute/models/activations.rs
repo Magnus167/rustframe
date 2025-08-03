@@ -1,3 +1,15 @@
+//! Common activation functions used in neural networks.
+//!
+//! Functions operate element-wise on [`Matrix`] values.
+//!
+//! ```
+//! use rustframe::compute::models::activations::sigmoid;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![0.0], 1, 1);
+//! let y = sigmoid(&x);
+//! assert!((y.get(0,0) - 0.5).abs() < 1e-6);
+//! ```
 use crate::matrix::{Matrix, SeriesOps};
 
 pub fn sigmoid(x: &Matrix<f64>) -> Matrix<f64> {

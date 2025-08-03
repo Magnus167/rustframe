@@ -152,7 +152,7 @@ let zipped_matrix = a.zip(&b, |x, y| x + y);
 assert_eq!(zipped_matrix.data(), &[6.0, 8.0, 10.0, 12.0]);
 ```
 
-### More examples
+## More examples
 
 See the [examples](./examples/) directory for some demonstrations of Rustframe's syntax and functionality.
 
@@ -191,7 +191,7 @@ cargo run --example
 
 Each demo runs a couple of mini-scenarios showcasing the APIs.
 
-### Running benchmarks
+## Running benchmarks
 
 To run the benchmarks, use:
 

@@ -1,3 +1,16 @@
+//! Probability distribution functions applied element-wise to matrices.
+//!
+//! Includes approximations for the normal, uniform and gamma distributions as
+//! well as the error function.
+//!
+//! ```
+//! use rustframe::compute::stats::distributions;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![0.0], 1, 1);
+//! let pdf = distributions::normal_pdf(x.clone(), 0.0, 1.0);
+//! assert!((pdf.get(0,0) - 0.3989).abs() < 1e-3);
+//! ```
 use crate::matrix::{Matrix, SeriesOps};
 
 use std::f64::consts::PI;

@@ -1,3 +1,16 @@
+//! Covariance and correlation helpers.
+//!
+//! This module provides routines for measuring the relationship between
+//! columns or rows of matrices.
+//!
+//! ```
+//! use rustframe::compute::stats::correlation;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+//! let cov = correlation::covariance(&x, &x);
+//! assert!((cov - 1.25).abs() < 1e-8);
+//! ```
 use crate::compute::stats::{mean, mean_horizontal, mean_vertical, stddev};
 use crate::matrix::{Axis, Matrix, SeriesOps};
 

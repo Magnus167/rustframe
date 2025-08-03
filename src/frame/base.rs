@@ -1,3 +1,19 @@
+//! Core data-frame structures such as [`Frame`] and [`RowIndex`].
+//!
+//! The [`Frame`] type stores column-labelled data with an optional row index
+//! and builds upon the [`crate::matrix::Matrix`] type.
+//!
+//! # Examples
+//!
+//! ```
+//! use rustframe::frame::{Frame, RowIndex};
+//! use rustframe::matrix::Matrix;
+//!
+//! let data = Matrix::from_cols(vec![vec![1, 2], vec![3, 4]]);
+//! let frame = Frame::new(data, vec!["L", "R"], Some(RowIndex::Int(vec![10, 20])));
+//! assert_eq!(frame.columns(), &["L", "R"]);
+//! assert_eq!(frame.index(), &RowIndex::Int(vec![10, 20]));
+//! ```
 use crate::matrix::Matrix;
 use chrono::NaiveDate;
 use std::collections::HashMap;

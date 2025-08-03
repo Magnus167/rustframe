@@ -1,3 +1,14 @@
+//! Numeric reductions and transformations over matrix axes.
+//!
+//! [`SeriesOps`] provides methods like [`SeriesOps::sum_vertical`] or
+//! [`SeriesOps::map`] that operate on [`FloatMatrix`] values.
+//!
+//! ```
+//! use rustframe::matrix::{Matrix, SeriesOps};
+//!
+//! let m = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
+//! assert_eq!(m.sum_horizontal(), vec![4.0, 6.0]);
+//! ```
 use crate::matrix::{Axis, BoolMatrix, FloatMatrix};
 
 /// "Series-like" helpers that work along a single axis.

@@ -1,3 +1,11 @@
+//! Core traits for random number generators and sampling ranges.
+//!
+//! ```
+//! use rustframe::random::{rng, Rng};
+//! let mut r = rng();
+//! let value: f64 = r.random_range(0.0..1.0);
+//! assert!(value >= 0.0 && value < 1.0);
+//! ```
 use std::f64::consts::PI;
 use std::ops::Range;
 
