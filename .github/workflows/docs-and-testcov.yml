@@ -171,7 +171,7 @@ jobs:
       - name: Build user guide
         run: |
           cargo binstall mdbook
-          bash ./build.sh
+          bash ./docs/build.sh
 
       - name: Copy user guide to output directory
         run: |
