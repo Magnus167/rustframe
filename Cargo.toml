@@ -1,11 +1,12 @@
 [package]
 name = "rustframe"
 authors = ["Palash Tyagi (https://github.com/Magnus167)"]
-version = "0.0.1-a.20250716"
+version = "0.0.1-a.20250804"
 edition = "2021"
 license = "GPL-3.0-or-later"
 readme = "README.md"
-description = "A simple dataframe library"
+description = "A simple dataframe and math toolkit"
+documentation = "https://magnus167.github.io/rustframe/"
 
 [lib]
 name = "rustframe"
