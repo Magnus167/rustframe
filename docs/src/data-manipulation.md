@@ -95,5 +95,63 @@ let equals = data1 == data1.clone();
 assert_eq!(equals, true);
 ```
 
+### Advanced Matrix Operations
+
+Matrices support a variety of advanced operations:
+
+```rust
+# extern crate rustframe;
+use rustframe::matrix::{Matrix, SeriesOps};
+
+// Matrix multiplication (dot product)
+let a = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let b = Matrix::from_vec(vec![5.0, 6.0, 7.0, 8.0], 2, 2);
+let product = a.matrix_mul(&b);
+assert_eq!(product.data(), vec![23.0, 34.0, 31.0, 46.0]);
+
+// Transpose
+let m = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let transposed = m.transpose();
+assert_eq!(transposed.data(), vec![1.0, 3.0, 2.0, 4.0]);
+
+// Map function over all elements
+let m = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let squared = m.map(|x| x * x);
+assert_eq!(squared.data(), vec![1.0, 4.0, 9.0, 16.0]);
+
+// Zip two matrices with a function
+let a = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let b = Matrix::from_vec(vec![5.0, 6.0, 7.0, 8.0], 2, 2);
+let zipped = a.zip(&b, |x, y| x + y);
+assert_eq!(zipped.data(), vec![6.0, 8.0, 10.0, 12.0]);
+```
+
+### Matrix Reductions
+
+Matrices support various reduction operations:
+
+```rust
+# extern crate rustframe;
+use rustframe::matrix::{Matrix, SeriesOps};
+
+let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 3, 2);
+
+// Sum along columns (vertical)
+let col_sums = m.sum_vertical();
+assert_eq!(col_sums, vec![9.0, 12.0]); // [1+3+5, 2+4+6]
+
+// Sum along rows (horizontal)
+let row_sums = m.sum_horizontal();
+assert_eq!(row_sums, vec![3.0, 7.0, 11.0]); // [1+2, 3+4, 5+6]
+
+// Cumulative sum along columns
+let col_cumsum = m.cumsum_vertical();
+assert_eq!(col_cumsum.data(), vec![1.0, 4.0, 9.0, 2.0, 6.0, 12.0]);
+
+// Cumulative sum along rows
+let row_cumsum = m.cumsum_horizontal();
+assert_eq!(row_cumsum.data(), vec![1.0, 3.0, 5.0, 3.0, 7.0, 11.0]);
+```
+
 With the basics covered, continue to the [compute features](./compute.md)
 chapter for statistics and analytics.

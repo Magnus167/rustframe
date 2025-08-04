@@ -72,5 +72,75 @@ let transformed = pca.transform(&data);
 assert_eq!(transformed.cols(), 1);
 ```
 
+### Gaussian Naive Bayes
+
+Gaussian Naive Bayes classifier for continuous features:
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::models::gaussian_nb::GaussianNB;
+use rustframe::matrix::Matrix;
+
+// Training data with 2 features
+let x = Matrix::from_rows_vec(vec![
+    1.0, 2.0,
+    2.0, 3.0,
+    3.0, 4.0,
+    4.0, 5.0
+], 4, 2);
+
+// Class labels (0 or 1)
+let y = Matrix::from_vec(vec![0.0, 0.0, 1.0, 1.0], 4, 1);
+
+// Train the model
+let mut model = GaussianNB::new(1e-9, true);
+model.fit(&x, &y);
+
+// Make predictions
+let predictions = model.predict(&x);
+assert_eq!(predictions.rows(), 4);
+```
+
+### Dense Neural Networks
+
+Simple fully connected neural network:
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::models::dense_nn::{DenseNN, DenseNNConfig, ActivationKind, InitializerKind, LossKind};
+use rustframe::matrix::Matrix;
+
+// Training data with 2 features
+let x = Matrix::from_rows_vec(vec![
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 0.0,
+    1.0, 1.0
+], 4, 2);
+
+// XOR target outputs
+let y = Matrix::from_vec(vec![0.0, 1.0, 1.0, 0.0], 4, 1);
+
+// Create a neural network with 2 hidden layers
+let config = DenseNNConfig {
+    input_size: 2,
+    hidden_layers: vec![4, 4],
+    output_size: 1,
+    activations: vec![ActivationKind::Sigmoid, ActivationKind::Sigmoid, ActivationKind::Sigmoid],
+    initializer: InitializerKind::Uniform(0.5),
+    loss: LossKind::MSE,
+    learning_rate: 0.1,
+    epochs: 1000,
+};
+let mut model = DenseNN::new(config);
+
+// Train the model
+model.train(&x, &y);
+
+// Make predictions
+let predictions = model.predict(&x);
+assert_eq!(predictions.rows(), 4);
+```
+
 For helper functions and upcoming modules, visit the
 [utilities](./utilities.md) section.
