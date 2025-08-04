@@ -1,6 +1,6 @@
 # Introduction
 
-📚 [Docs](https://magnus167.github.io/rustframe/) | 🐙 [GitHub](https://github.com/Magnus167/rustframe) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
+🐙 [GitHub](https://github.com/Magnus167/rustframe) | 📚 [Docs](https://magnus167.github.io/rustframe/) | 📖 [User Guide](https://magnus167.github.io/rustframe/user-guide/) | 🦀 [Crates.io](https://crates.io/crates/rustframe) | 🔖 [docs.rs](https://docs.rs/rustframe/latest/rustframe/)
 
 Welcome to the **Rustframe User Guide**. Rustframe is a lightweight dataframe
 and math toolkit for Rust written in 100% safe Rust. It focuses on keeping the
