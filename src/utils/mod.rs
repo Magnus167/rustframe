@@ -10,6 +10,7 @@
 //! assert_eq!(dates.count().unwrap(), 3);
 //! ```
 pub mod dateutils;
+pub mod spigots;
 
 pub use dateutils::{BDateFreq, BDatesGenerator, BDatesList};
 pub use dateutils::{DateFreq, DatesGenerator, DatesList};
