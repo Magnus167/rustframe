@@ -78,3 +78,8 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Test build user guide
+        run: |
+          cargo binstall mdbook
+          bash ./docs/build.sh
