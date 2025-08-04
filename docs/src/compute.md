@@ -70,6 +70,77 @@ assert!((corr - 1.0).abs() < 1e-8);
 assert!((cov - 2.5).abs() < 1e-8);
 ```
 
+## Covariance
+
+### `covariance`
+
+Computes the population covariance between two equally sized matrices by flattening
+their values.
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::stats::covariance;
+use rustframe::matrix::Matrix;
+
+let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let y = Matrix::from_vec(vec![2.0, 4.0, 6.0, 8.0], 2, 2);
+let cov = covariance(&x, &y);
+assert!((cov - 2.5).abs() < 1e-8);
+```
+
+### `covariance_vertical`
+
+Evaluates covariance between columns (i.e. across rows) and returns a matrix of
+column pair covariances.
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::stats::covariance_vertical;
+use rustframe::matrix::Matrix;
+
+let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let cov = covariance_vertical(&m);
+assert_eq!(cov.shape(), (2, 2));
+assert!(cov.data().iter().all(|&v| (v - 1.0).abs() < 1e-8));
+```
+
+### `covariance_horizontal`
+
+Computes covariance between rows (i.e. across columns) returning a matrix that
+describes how each pair of rows varies together.
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::stats::covariance_horizontal;
+use rustframe::matrix::Matrix;
+
+let m = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let cov = covariance_horizontal(&m);
+assert_eq!(cov.shape(), (2, 2));
+assert!(cov.data().iter().all(|&v| (v - 0.25).abs() < 1e-8));
+```
+
+### `covariance_matrix`
+
+Builds a covariance matrix either between columns (`Axis::Col`) or rows
+(`Axis::Row`). Each entry represents how two series co-vary.
+
+```rust
+# extern crate rustframe;
+use rustframe::compute::stats::covariance_matrix;
+use rustframe::matrix::{Axis, Matrix};
+
+let data = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+
+// Covariance between columns
+let cov_cols = covariance_matrix(&data, Axis::Col);
+assert!((cov_cols.get(0, 0) - 2.0).abs() < 1e-8);
+
+// Covariance between rows
+let cov_rows = covariance_matrix(&data, Axis::Row);
+assert!((cov_rows.get(0, 1) + 0.5).abs() < 1e-8);
+```
+
 ## Distributions
 
 Probability distribution helpers are available for common PDFs and CDFs.
