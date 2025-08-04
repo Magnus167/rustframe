@@ -35,6 +35,25 @@ let v2 = rng.next_u64();
 assert_ne!(v1, v2);
 ```
 
+## Stats Functions
+
+```rust
+# extern crate rustframe;
+use rustframe::matrix::Matrix;
+use rustframe::compute::stats::descriptive::{mean, median, stddev};
+
+let data = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0], 1, 5);
+
+let mean_value = mean(&data);
+assert_eq!(mean_value, 3.0);
+
+let median_value = median(&data);
+assert_eq!(median_value, 3.0);
+
+let std_value = stddev(&data);
+assert_eq!(std_value, 2.0_f64.sqrt());
+```
+
 Upcoming utilities will cover:
 
 - Data import/export helpers

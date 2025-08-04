@@ -73,5 +73,27 @@ assert_eq!(frame.sum_vertical(), vec![3.0, 7.0]);
 assert_eq!(frame.sum_horizontal(), vec![4.0, 6.0]);
 ```
 
+## Matrix Operations
+
+```rust
+# extern crate rustframe;
+use rustframe::matrix::Matrix;
+
+let data1 = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+let data2 = Matrix::from_vec(vec![5.0, 6.0, 7.0, 8.0], 2, 2);
+
+let sum = data1.clone() + data2.clone();
+assert_eq!(sum.data(), vec![6.0, 8.0, 10.0, 12.0]);
+
+let product = data1.clone() * data2.clone();
+assert_eq!(product.data(), vec![5.0, 12.0, 21.0, 32.0]);
+
+let scalar_product = data1.clone() * 2.0;
+assert_eq!(scalar_product.data(), vec![2.0, 4.0, 6.0, 8.0]);
+
+let equals = data1 == data1.clone();
+assert_eq!(equals, true);
+```
+
 With the basics covered, continue to the [compute features](./compute.md)
 chapter for statistics and analytics.
