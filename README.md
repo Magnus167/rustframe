@@ -50,12 +50,6 @@ The `compute` module provides implementations for various statistical computatio
 - Logistic Regression
 - Principal Component Analysis
 
-### Coming soon
-
-- **CSV I/O** - read/write CSV files with a simple API.
-- **Date Utils** - date math, calendar slicing, indexing, and more.
-- **More math** - more math functions and aggregations.
-
 ### Heads up
 
 - **Not memory‑efficient (yet)** - footprint needs work.
@@ -65,7 +59,6 @@ The `compute` module provides implementations for various statistical computatio
 
 - Optional GPU acceleration (Vulkan or similar) for heavier workloads.
 - Straightforward Python bindings using `pyo3`.
-- Integration with common ML libraries, or introduce simple ML features.
 
 ---
 
