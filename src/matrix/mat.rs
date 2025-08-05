@@ -63,6 +63,19 @@ impl<T: Clone> Matrix<T> {
         Matrix { rows, cols, data }
     }
 
+    /// Build from a flat Vec, assuming row-major order.
+    pub fn from_rows_vec(data: Vec<T>, rows: usize, cols: usize) -> Self {
+        let mut new_vec = Vec::with_capacity(rows * cols);
+
+        for c in 0..cols {
+            for r in 0..rows {
+                new_vec.push(data[r * cols + c].clone());
+            }
+        }
+
+        Matrix::from_vec(new_vec, rows, cols)
+    }
+
     pub fn data(&self) -> &[T] {
         &self.data
     }
@@ -87,6 +100,10 @@ impl<T: Clone> Matrix<T> {
 
     pub fn cols(&self) -> usize {
         self.cols
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        (self.rows, self.cols)
     }
 
     /// Get element reference (immutable). Panics on out-of-bounds.
@@ -177,6 +194,40 @@ impl<T: Clone> Matrix<T> {
         let start = col * self.rows;
         self.data.drain(start..start + self.rows); // Efficient removal
         self.cols -= 1;
+    }
+
+    #[inline]
+    pub fn row(&self, r: usize) -> Vec<T> {
+        assert!(
+            r < self.rows,
+            "row index {} out of bounds for {} rows",
+            r,
+            self.rows
+        );
+        let mut row_data = Vec::with_capacity(self.cols);
+        for c in 0..self.cols {
+            row_data.push(self[(r, c)].clone()); // Clone each element
+        }
+        row_data
+    }
+    pub fn row_copy_from_slice(&mut self, r: usize, values: &[T]) {
+        assert!(
+            r < self.rows,
+            "row index {} out of bounds for {} rows",
+            r,
+            self.rows
+        );
+        assert!(
+            values.len() == self.cols,
+            "input slice length {} does not match number of columns {}",
+            values.len(),
+            self.cols
+        );
+
+        for (c, value) in values.iter().enumerate() {
+            let idx = r + c * self.rows; // column-major index
+            self.data[idx] = value.clone();
+        }
     }
 
     /// Deletes a row from the matrix. Panics on out-of-bounds.
@@ -307,6 +358,82 @@ impl<T: Clone> Matrix<T> {
         }
         self.data = new_data;
         self.rows = new_rows;
+    }
+
+    /// Return a new matrix where row 0 of `self` is repeated `n` times.
+    pub fn repeat_rows(&self, n: usize) -> Matrix<T>
+    where
+        T: Clone,
+    {
+        let mut data = Vec::with_capacity(n * self.cols());
+        let zeroth_row = self.row(0);
+        for value in &zeroth_row {
+            for _ in 0..n {
+                data.push(value.clone()); // Clone each element
+            }
+        }
+        Matrix::from_vec(data, n, self.cols)
+    }
+
+    /// Creates a new matrix filled with a specific value of the specified size.
+    pub fn filled(rows: usize, cols: usize, value: T) -> Self {
+        Matrix {
+            rows,
+            cols,
+            data: vec![value; rows * cols], // Fill with the specified value
+        }
+    }
+
+    /// Creates a new matrix by broadcasting a 1-row matrix to a target shape.
+    /// Panics if `self` is not a 1-row matrix or if `self.cols()` does not match `target_cols`.
+    pub fn broadcast_row_to_target_shape(
+        &self,
+        target_rows: usize,
+        target_cols: usize,
+    ) -> Matrix<T> {
+        assert_eq!(
+            self.rows(),
+            1,
+            "broadcast_row_to_target_shape can only be called on a 1-row matrix."
+        );
+        assert_eq!(
+            self.cols(),
+            target_cols,
+            "Column count mismatch for broadcasting: source has {} columns, target has {} columns.",
+            self.cols(),
+            target_cols
+        );
+
+        let mut data = Vec::with_capacity(target_rows * target_cols);
+        let original_row_data = self.row(0); // Get the single row data
+
+        for _ in 0..target_rows {
+            // Repeat 'target_rows' times
+            for value in &original_row_data {
+                // Iterate over elements of the row
+                data.push(value.clone());
+            }
+        }
+        // The data is now in row-major order for the new matrix.
+        // We need to convert it to column-major for Matrix::from_vec.
+        Matrix::from_rows_vec(data, target_rows, target_cols)
+    }
+}
+
+impl Matrix<f64> {
+    /// Creates a new matrix filled with zeros of the specified size.
+    pub fn zeros(rows: usize, cols: usize) -> Self {
+        Matrix::filled(rows, cols, 0.0)
+    }
+
+    /// Creates a new matrix filled with ones of the specified size.
+    pub fn ones(rows: usize, cols: usize) -> Self {
+        Matrix::filled(rows, cols, 1.0)
+    }
+
+    /// Creates a new matrix filled with NaN values of the specified size.
+    pub fn nan(rows: usize, cols: usize) -> Matrix<f64> {
+        Matrix::filled(rows, cols, f64::NAN)
     }
 }
 
@@ -899,21 +1026,28 @@ mod tests {
         assert_eq!(m.to_vec(), vec![1.0, 3.0, 2.0, 4.0]);
     }
 
+    #[test]
+    fn test_from_rows_vec() {
+        // Matrix with rows [1, 2, 3] and [4, 5, 6]
+        let rows_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let matrix = Matrix::from_rows_vec(rows_data, 2, 3);
+
+        let data = vec![1.0, 4.0, 2.0, 5.0, 3.0, 6.0]; // Column-major
+        let expected = Matrix::from_vec(data, 2, 3);
+
+        assert_eq!(matrix, expected);
+    }
+
     // Helper function to create a basic Matrix for testing
     fn static_test_matrix() -> Matrix<i32> {
-        // Column-major data:
-        // 1 4 7
-        // 2 5 8
-        // 3 6 9
+        // Column-major data representing a 3x3 matrix of sequential integers
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
         Matrix::from_vec(data, 3, 3)
     }
 
     // Another helper for a different size
     fn static_test_matrix_2x4() -> Matrix<i32> {
-        // Column-major data:
-        // 1 3 5 7
-        // 2 4 6 8
+        // Column-major data representing a 2x4 matrix of sequential integers
         let data = vec![1, 2, 3, 4, 5, 6, 7, 8];
         Matrix::from_vec(data, 2, 4)
     }
@@ -991,10 +1125,7 @@ mod tests {
 
     #[test]
     fn test_from_cols_basic() {
-        // Representing:
-        // 1 4 7
-        // 2 5 8
-        // 3 6 9
+        // Matrix with columns forming a 3x3 sequence
         let cols_data = vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]];
         let matrix = Matrix::from_cols(cols_data);
 
@@ -1108,6 +1239,70 @@ mod tests {
     fn test_index_mut_out_of_bounds_col() {
         let mut matrix = static_test_matrix();
         matrix[(0, 3)] = 99;
+    }
+
+    #[test]
+    fn test_row() {
+        let ma = static_test_matrix();
+        assert_eq!(ma.row(0), &[1, 4, 7]);
+        assert_eq!(ma.row(1), &[2, 5, 8]);
+        assert_eq!(ma.row(2), &[3, 6, 9]);
+    }
+
+    #[test]
+    fn test_row_copy_from_slice() {
+        let mut ma = static_test_matrix();
+        let new_row = vec![10, 20, 30];
+        ma.row_copy_from_slice(1, &new_row);
+        assert_eq!(ma.row(1), &[10, 20, 30]);
+    }
+    #[test]
+    #[should_panic(expected = "row index 4 out of bounds for 3 rows")]
+    fn test_row_copy_from_slice_out_of_bounds() {
+        let mut ma = static_test_matrix();
+        let new_row = vec![10, 20, 30];
+        ma.row_copy_from_slice(4, &new_row);
+    }
+
+    #[test]
+    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
+    fn test_row_out_of_bounds_index() {
+        let ma = static_test_matrix();
+        ma.row(3);
+    }
+
+    #[test]
+    #[should_panic(expected = "input slice length 2 does not match number of columns 3")]
+    fn test_row_copy_from_slice_wrong_length() {
+        let mut ma = static_test_matrix();
+        let new_row = vec![10, 20]; // Only 2 elements, but row length is 3
+        ma.row_copy_from_slice(1, &new_row);
+    }
+
+    #[test]
+    fn test_shape() {
+        let ma = static_test_matrix_2x4();
+        assert_eq!(ma.shape(), (2, 4));
+        assert_eq!(ma.rows(), 2);
+        assert_eq!(ma.cols(), 4);
+    }
+
+    #[test]
+    fn test_repeat_rows() {
+        let ma = static_test_matrix();
+        // Returns a new matrix where row 0 of `self` is repeated `n` times.
+        let repeated = ma.repeat_rows(3);
+        // assert all rows are equal to the first row
+        for r in 0..repeated.rows() {
+            assert_eq!(repeated.row(r), ma.row(0));
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "row index 3 out of bounds for 3 rows")]
+    fn test_row_out_of_bounds() {
+        let ma = static_test_matrix();
+        ma.row(3);
     }
 
     #[test]
@@ -1307,8 +1502,7 @@ mod tests {
 
         // Delete the first row
         matrix.delete_row(0);
-        // Should be:
-        // 3 6 9
+        // Resulting data should be [3, 6, 9]
         assert_eq!(matrix.rows(), 1);
         assert_eq!(matrix.cols(), 3);
         assert_eq!(matrix.data(), &[3, 6, 9]);
@@ -1793,5 +1987,87 @@ mod tests {
                 assert_eq!(result2[(i, j)], matrix[(i, j)] / 2);
             }
         }
+    }
+
+    #[test]
+    fn test_matrix_zeros_ones_filled() {
+        // Test zeros
+        let m = Matrix::<f64>::zeros(2, 3);
+        assert_eq!(m.rows(), 2);
+        assert_eq!(m.cols(), 3);
+        assert_eq!(m.data(), &[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+
+        // Test ones
+        let m = Matrix::<f64>::ones(3, 2);
+        assert_eq!(m.rows(), 3);
+        assert_eq!(m.cols(), 2);
+        assert_eq!(m.data(), &[1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+
+        // Test filled
+        let m = Matrix::<f64>::filled(2, 2, 42.5);
+        assert_eq!(m.rows(), 2);
+        assert_eq!(m.cols(), 2);
+        assert_eq!(m.data(), &[42.5, 42.5, 42.5, 42.5]);
+
+        // test with an integer matrix
+        let m = Matrix::<i32>::filled(2, 3, 7);
+        assert_eq!(m.rows(), 2);
+        assert_eq!(m.cols(), 3);
+        assert_eq!(m.data(), &[7, 7, 7, 7, 7, 7]);
+
+        // test with nans
+        let m = Matrix::nan(3, 3);
+        assert_eq!(m.rows(), 3);
+        assert_eq!(m.cols(), 3);
+        for &value in m.data() {
+            assert!(value.is_nan(), "Expected NaN, got {}", value);
+        }
+    }
+
+    #[test]
+    fn test_broadcast_row_to_target_shape_basic() {
+        let single_row_matrix = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0], 1, 3);
+        let target_rows = 5;
+        let target_cols = 3;
+
+        let broadcasted = single_row_matrix.broadcast_row_to_target_shape(target_rows, target_cols);
+
+        assert_eq!(broadcasted.rows(), target_rows);
+        assert_eq!(broadcasted.cols(), target_cols);
+
+        for r in 0..target_rows {
+            assert_eq!(broadcasted.row(r), vec![1.0, 2.0, 3.0]);
+        }
+    }
+
+    #[test]
+    fn test_broadcast_row_to_target_shape_single_row() {
+        let single_row_matrix = Matrix::from_rows_vec(vec![10.0, 20.0], 1, 2);
+        let target_rows = 1;
+        let target_cols = 2;
+
+        let broadcasted = single_row_matrix.broadcast_row_to_target_shape(target_rows, target_cols);
+
+        assert_eq!(broadcasted.rows(), target_rows);
+        assert_eq!(broadcasted.cols(), target_cols);
+        assert_eq!(broadcasted.row(0), vec![10.0, 20.0]);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "broadcast_row_to_target_shape can only be called on a 1-row matrix."
+    )]
+    fn test_broadcast_row_to_target_shape_panic_not_1_row() {
+        let multi_row_matrix = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0, 4.0], 2, 2);
+        multi_row_matrix.broadcast_row_to_target_shape(3, 2);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Column count mismatch for broadcasting: source has 3 columns, target has 4 columns."
+    )]
+    fn test_broadcast_row_to_target_shape_panic_col_mismatch() {
+        let single_row_matrix = Matrix::from_rows_vec(vec![1.0, 2.0, 3.0], 1, 3);
+        single_row_matrix.broadcast_row_to_target_shape(5, 4);
     }
 }

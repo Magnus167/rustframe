@@ -1,10 +1,12 @@
 [package]
 name = "rustframe"
-version = "0.0.1-a.0"
+authors = ["Palash Tyagi (https://github.com/Magnus167)"]
+version = "0.0.1-a.20250805"
 edition = "2021"
 license = "GPL-3.0-or-later"
 readme = "README.md"
-description = "A simple dataframe library"
+description = "A simple dataframe and math toolkit"
+documentation = "https://magnus167.github.io/rustframe/"
 
 [lib]
 name = "rustframe"
@@ -15,14 +17,8 @@ crate-type = ["cdylib", "lib"]
 chrono = "^0.4.10"
 criterion = { version = "0.5", features = ["html_reports"], optional = true }
 
-[dev-dependencies]
-rand = "^0.9.1"
-
 [features]
 bench = ["dep:criterion"]
-
-# [dev-dependencies]
-# criterion = { version = "0.5", features = ["html_reports"], optional = true }
 
 [[bench]]
 name = "benchmarks"

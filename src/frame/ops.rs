@@ -1,3 +1,16 @@
+//! Trait implementations that allow [`Frame`] to reuse matrix operations.
+//!
+//! These modules forward numeric and boolean aggregation methods from the
+//! underlying [`Matrix`](crate::matrix::Matrix) type so that they can be called
+//! directly on a [`Frame`].
+//!
+//! ```
+//! use rustframe::frame::Frame;
+//! use rustframe::matrix::{Matrix, SeriesOps};
+//!
+//! let frame = Frame::new(Matrix::from_cols(vec![vec![1.0, 2.0]]), vec!["A"], None);
+//! assert_eq!(frame.sum_vertical(), vec![3.0]);
+//! ```
 use crate::frame::Frame;
 use crate::matrix::{Axis, BoolMatrix, BoolOps, FloatMatrix, SeriesOps};
 

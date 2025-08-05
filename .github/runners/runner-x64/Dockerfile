@@ -7,7 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update -y && apt upgrade -y && useradd -m docker
 RUN apt install -y --no-install-recommends \
-    curl jq git unzip \
+    curl jq git zip unzip \
     # dev dependencies
     build-essential libssl-dev libffi-dev python3 python3-venv python3-dev python3-pip \
     # dot net core dependencies

@@ -1,3 +1,14 @@
+//! Numeric reductions and transformations over matrix axes.
+//!
+//! [`SeriesOps`] provides methods like [`SeriesOps::sum_vertical`] or
+//! [`SeriesOps::map`] that operate on [`FloatMatrix`] values.
+//!
+//! ```
+//! use rustframe::matrix::{Matrix, SeriesOps};
+//!
+//! let m = Matrix::from_cols(vec![vec![1.0, 2.0], vec![3.0, 4.0]]);
+//! assert_eq!(m.sum_horizontal(), vec![4.0, 6.0]);
+//! ```
 use crate::matrix::{Axis, BoolMatrix, FloatMatrix};
 
 /// "Series-like" helpers that work along a single axis.
@@ -215,20 +226,13 @@ mod tests {
 
     // Helper function to create a FloatMatrix for SeriesOps testing
     fn create_float_test_matrix() -> FloatMatrix {
-        // 3x3 matrix (column-major) with some NaNs
-        // 1.0  4.0  7.0
-        // 2.0  NaN  8.0
-        // 3.0  6.0  NaN
+        // 3x3 column-major matrix containing a few NaN values
         let data = vec![1.0, 2.0, 3.0, 4.0, f64::NAN, 6.0, 7.0, 8.0, f64::NAN];
         FloatMatrix::from_vec(data, 3, 3)
     }
 
     fn create_float_test_matrix_4x4() -> FloatMatrix {
-        // 4x4 matrix (column-major) with some NaNs
-        // 1.0  5.0  9.0  13.0
-        // 2.0  NaN  10.0 NaN
-        // 3.0  6.0  NaN  14.0
-        // NaN  7.0  11.0 NaN
+        // 4x4 column-major matrix with NaNs inserted at positions where index % 5 == 0
         // first make array with 16 elements
         FloatMatrix::from_vec(
             (0..16)
