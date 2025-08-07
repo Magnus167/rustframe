@@ -14,3 +14,6 @@ pub mod compute;
 
 /// Documentation for the [`crate::random`] module.
 pub mod random;
+
+/// Documentation for the [`crate::csv`] module.
+pub mod csv;
