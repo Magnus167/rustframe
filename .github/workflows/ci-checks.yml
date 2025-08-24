@@ -7,13 +7,14 @@ concurrency:
 on:
   push:
     branches: [main]
-  # pull_request:
-  #   branches: [main]
+  pull_request:
+    types: [review_requested, ready_for_review, synchronize, opened, reopened]
+    branches:
+      - main
+      - test
+      - develop
+
   workflow_dispatch:
-  workflow_run:
-    workflows: ["run-benchmarks"]
-    types:
-      - completed
 
 permissions:
   contents: read
@@ -33,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-            uv pip install requests
+          uv pip install requests
       - name: Run CI checks
         run: |
           python .github/scripts/ci_checks.py
