@@ -1,3 +1,14 @@
+//! Logical reductions for boolean matrices.
+//!
+//! The [`BoolOps`] trait mirrors common boolean aggregations such as `any` and
+//! `all` over rows or columns of a [`BoolMatrix`].
+//!
+//! ```
+//! use rustframe::matrix::{BoolMatrix, BoolOps};
+//!
+//! let m = BoolMatrix::from_vec(vec![true, false], 2, 1);
+//! assert!(m.any());
+//! ```
 use crate::matrix::{Axis, BoolMatrix};
 
 /// Boolean operations on `Matrix<bool>`

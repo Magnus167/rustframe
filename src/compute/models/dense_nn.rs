@@ -1,6 +1,33 @@
+//! A minimal dense neural network implementation for educational purposes.
+//!
+//! Layers operate on [`Matrix`] values and support ReLU and Sigmoid
+//! activations. This is not meant to be a performant deep‑learning framework
+//! but rather a small example of how the surrounding matrix utilities can be
+//! composed.
+//!
+//! ```
+//! use rustframe::compute::models::dense_nn::{ActivationKind, DenseNN, DenseNNConfig, InitializerKind, LossKind};
+//! use rustframe::matrix::Matrix;
+//!
+//! // Tiny network with one input and one output neuron.
+//! let config = DenseNNConfig {
+//!     input_size: 1,
+//!     hidden_layers: vec![],
+//!     output_size: 1,
+//!     activations: vec![ActivationKind::Relu],
+//!     initializer: InitializerKind::Uniform(0.5),
+//!     loss: LossKind::MSE,
+//!     learning_rate: 0.1,
+//!     epochs: 1,
+//! };
+//! let mut nn = DenseNN::new(config);
+//! let x = Matrix::from_vec(vec![1.0, 2.0], 2, 1);
+//! let y = Matrix::from_vec(vec![2.0, 3.0], 2, 1);
+//! nn.train(&x, &y);
+//! ```
 use crate::compute::models::activations::{drelu, relu, sigmoid};
 use crate::matrix::{Matrix, SeriesOps};
-use rand::prelude::*;
+use crate::random::prelude::*;
 
 /// Supported activation functions
 #[derive(Clone)]
@@ -46,7 +73,7 @@ pub enum InitializerKind {
 
 impl InitializerKind {
     pub fn initialize(&self, rows: usize, cols: usize) -> Matrix<f64> {
-        let mut rng = rand::rng();
+        let mut rng = rng();
         let fan_in = rows;
         let fan_out = cols;
         let limit = match self {

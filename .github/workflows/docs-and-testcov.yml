@@ -151,7 +151,8 @@ jobs:
           mkdir -p target/doc/docs
           mv target/doc/rustframe/* target/doc/docs/
 
-          mkdir output
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=../docs/index.html\">" > target/doc/rustframe/index.html
+
           cp tarpaulin-report.html target/doc/docs/
           cp tarpaulin-report.json target/doc/docs/
           cp tarpaulin-badge.json target/doc/docs/
@@ -164,16 +165,30 @@ jobs:
           # copy the benchmark report to the output directory
           cp -r benchmark-report target/doc/
 
+          mkdir output
+          cp -r target/doc/* output/
+
+      - name: Build user guide
+        run: |
+          cargo binstall mdbook
+          bash ./docs/build.sh
+
+      - name: Copy user guide to output directory
+        run: |
+          mkdir output/user-guide
+          cp -r docs/book/* output/user-guide/
+
       - name: Add index.html to output directory
         run: |
-          cp .github/htmldocs/index.html target/doc/index.html
-          cp .github/rustframe_logo.png target/doc/rustframe_logo.png
+          cp .github/htmldocs/index.html output/index.html
+          cp .github/rustframe_logo.png output/rustframe_logo.png
 
       - name: Upload Pages artifact
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: target/doc/
+          # path: target/doc/
+          path: output/
 
       - name: Deploy to GitHub Pages
         # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

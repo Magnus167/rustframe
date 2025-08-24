@@ -1,3 +1,16 @@
+//! Gaussian Naive Bayes classifier for dense matrices.
+//!
+//! ```
+//! use rustframe::compute::models::gaussian_nb::GaussianNB;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![1.0, 2.0, 1.0, 2.0], 2, 2); // two samples
+//! let y = Matrix::from_vec(vec![0.0, 1.0], 2, 1);
+//! let mut model = GaussianNB::new(1e-9, false);
+//! model.fit(&x, &y);
+//! let preds = model.predict(&x);
+//! assert_eq!(preds.rows(), 2);
+//! ```
 use crate::matrix::Matrix;
 use std::collections::HashMap;
 

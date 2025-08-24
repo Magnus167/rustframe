@@ -1,7 +1,17 @@
+//! Simple k-means clustering working on [`Matrix`] data.
+//!
+//! ```
+//! use rustframe::compute::models::k_means::KMeans;
+//! use rustframe::matrix::Matrix;
+//!
+//! let data = Matrix::from_vec(vec![1.0, 1.0, 5.0, 5.0], 2, 2);
+//! let (model, labels) = KMeans::fit(&data, 2, 10, 1e-4);
+//! assert_eq!(model.centroids.rows(), 2);
+//! assert_eq!(labels.len(), 2);
+//! ```
 use crate::compute::stats::mean_vertical;
 use crate::matrix::Matrix;
-use rand::rng;
-use rand::seq::SliceRandom;
+use crate::random::prelude::*;
 
 pub struct KMeans {
     pub centroids: Matrix<f64>, // (k, n_features)
@@ -193,7 +203,8 @@ mod tests {
                                 break;
                             }
                         }
-                        assert!(matches_data_point, "Centroid {} (empty cluster) does not match any data point", c);
+                        // "Centroid {} (empty cluster) does not match any data point",c
+                        assert!(matches_data_point);
                     }
                 }
                 break;
@@ -360,5 +371,4 @@ mod tests {
         assert_eq!(predicted_label.len(), 1);
         assert!(predicted_label[0] < k);
     }
-
 }

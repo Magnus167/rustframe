@@ -17,3 +17,5 @@ data/
 tarpaulin-report.*
 
 .github/htmldocs/rustframe_logo.png
+
+docs/book/

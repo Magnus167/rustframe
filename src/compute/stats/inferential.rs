@@ -1,3 +1,14 @@
+//! Basic inferential statistics such as t‑tests and chi‑square tests.
+//!
+//! ```
+//! use rustframe::compute::stats::inferential;
+//! use rustframe::matrix::Matrix;
+//!
+//! let a = Matrix::from_vec(vec![1.0, 2.0], 2, 1);
+//! let b = Matrix::from_vec(vec![1.1, 1.9], 2, 1);
+//! let (t, _p) = inferential::t_test(&a, &b);
+//! assert!(t.abs() < 1.0);
+//! ```
 use crate::matrix::{Matrix, SeriesOps};
 
 use crate::compute::stats::{gamma_cdf, mean, sample_variance};

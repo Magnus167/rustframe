@@ -1,13 +1,26 @@
-use rand::{self, Rng};
+//! Conway's Game of Life Example
+//! This example implements Conway's Game of Life using a `BoolMatrix` to represent the game board.
+//! It demonstrates matrix operations like shifting, counting neighbors, and applying game rules.
+//! The game runs in a loop, updating the board state and printing it to the console.
+//! To modify the behaviour of the example, please change the constants at the top of this file.
+
+
 use rustframe::matrix::{BoolMatrix, BoolOps, IntMatrix, Matrix};
+use rustframe::random::{rng, Rng};
 use std::{thread, time};
 
-const BOARD_SIZE: usize = 50; // Size of the board (50x50)
-const TICK_DURATION_MS: u64 = 10; // Milliseconds per frame
+const BOARD_SIZE: usize = 20; // Size of the board (50x50)
+const MAX_FRAMES: u32 = 1000;
+
+const TICK_DURATION_MS: u64 = 0; // Milliseconds per frame
+const SKIP_FRAMES: u32 = 1;
+const PRINT_BOARD: bool = true; // Set to false to disable printing the board
 
 fn main() {
-    // Initialize the game board.
-    // This demonstrates `BoolMatrix::from_vec`.
+    let args = std::env::args().collect::<Vec<String>>();
+    let debug_mode = args.contains(&"--debug".to_string());
+    let print_mode = if debug_mode { false } else { PRINT_BOARD };
+
     let mut current_board =
         BoolMatrix::from_vec(vec![false; BOARD_SIZE * BOARD_SIZE], BOARD_SIZE, BOARD_SIZE);
 
@@ -16,31 +29,18 @@ fn main() {
     add_simulated_activity(&mut current_board, BOARD_SIZE);
 
     let mut generation_count: u32 = 0;
-    // `previous_board_state` will store a clone of the board.
-    // This demonstrates `Matrix::clone()` and later `PartialEq` for `Matrix`.
     let mut previous_board_state: Option<BoolMatrix> = None;
     let mut board_hashes = Vec::new();
-    // let mut print_board_bool = true;
     let mut print_bool_int = 0;
 
     loop {
-        // print!("{}[2J", 27 as char); // Clear screen and move cursor to top-left
+        if print_bool_int % SKIP_FRAMES == 0 {
+            print_board(&current_board, generation_count, print_mode);
 
-        // if print_board_bool {
-        if print_bool_int % 10 == 0 {
-            print!("{}[2J", 27 as char);
-            println!("Conway's Game of Life - Generation: {}", generation_count);
-
-            print_board(&current_board);
-            println!("Alive cells: {}", &current_board.count());
-
-            // print_board_bool = false;
             print_bool_int = 0;
         } else {
-            // print_board_bool = true;
             print_bool_int += 1;
         }
-        // `current_board.count()` demonstrates a method from `BoolOps`.
         board_hashes.push(hash_board(&current_board, primes.clone()));
         if detect_stable_state(&current_board, &previous_board_state) {
             println!(
@@ -61,20 +61,18 @@ fn main() {
             add_simulated_activity(&mut current_board, BOARD_SIZE);
         }
 
-        // `current_board.clone()` demonstrates `Clone` for `Matrix`.
         previous_board_state = Some(current_board.clone());
 
-        // This is the core call to your game logic.
         let next_board = game_of_life_next_frame(&current_board);
         current_board = next_board;
 
         generation_count += 1;
         thread::sleep(time::Duration::from_millis(TICK_DURATION_MS));
 
-        // if generation_count > 500 { // Optional limit
-        //     println!("\nReached generation limit.");
-        //     break;
-        // }
+        if (MAX_FRAMES > 0) && (generation_count > MAX_FRAMES) {
+            println!("\nReached generation limit.");
+            break;
+        }
     }
 }
 
@@ -82,7 +80,13 @@ fn main() {
 ///
 /// - `board`: A reference to the `BoolMatrix` representing the current game state.
 /// This function demonstrates `board.rows()`, `board.cols()`, and `board[(r, c)]` (Index trait).
-fn print_board(board: &BoolMatrix) {
+fn print_board(board: &BoolMatrix, generation_count: u32, print_mode: bool) {
+    if !print_mode {
+        return;
+    }
+
+    print!("{}[2J", 27 as char);
+    println!("Conway's Game of Life - Generation: {}", generation_count);
     let mut print_str = String::new();
     print_str.push_str("+");
     for _ in 0..board.cols() {
@@ -93,7 +97,6 @@ fn print_board(board: &BoolMatrix) {
         print_str.push_str("| ");
         for c in 0..board.cols() {
             if board[(r, c)] {
-                // Using Index trait for Matrix<bool>
                 print_str.push_str("██");
             } else {
                 print_str.push_str("  ");
@@ -107,6 +110,8 @@ fn print_board(board: &BoolMatrix) {
     }
     print_str.push_str("+\n\n");
     print!("{}", print_str);
+
+    println!("Alive cells: {}", board.count());
 }
 
 /// Helper function to create a shifted version of the game board.
@@ -173,74 +178,38 @@ pub fn game_of_life_next_frame(current_game: &BoolMatrix) -> BoolMatrix {
     if rows == 0 && cols == 0 {
         return BoolMatrix::from_vec(vec![], 0, 0); // Return an empty BoolMatrix
     }
-    // Assuming valid non-empty dimensions (e.g., 25x25) as per typical GOL.
-    // Your Matrix::from_vec would panic for other invalid 0-dim cases.
-
     // Define the 8 neighbor offsets (row_delta, col_delta)
     let neighbor_offsets: [(isize, isize); 8] = [
         (-1, -1),
         (-1, 0),
-        (-1, 1), // Top row (NW, N, NE)
+        (-1, 1),
         (0, -1),
-        (0, 1), // Middle row (W, E)
+        (0, 1),
         (1, -1),
         (1, 0),
-        (1, 1), // Bottom row (SW, S, SE)
+        (1, 1),
     ];
 
-    // 1. Initialize `neighbor_counts` with the first shifted layer.
-    //    This demonstrates creating an IntMatrix from a function and using it as a base.
     let (first_dr, first_dc) = neighbor_offsets[0];
     let mut neighbor_counts = get_shifted_neighbor_layer(current_game, first_dr, first_dc);
 
-    // 2. Add the remaining 7 neighbor layers.
-    //    This demonstrates element-wise addition of matrices (`Matrix + Matrix`).
     for i in 1..neighbor_offsets.len() {
         let (dr, dc) = neighbor_offsets[i];
         let next_neighbor_layer = get_shifted_neighbor_layer(current_game, dr, dc);
-        // `neighbor_counts` (owned IntMatrix) + `next_neighbor_layer` (owned IntMatrix)
-        // uses `impl Add for Matrix`, consumes both, returns new owned `IntMatrix`.
         neighbor_counts = neighbor_counts + next_neighbor_layer;
     }
 
-    // 3. Apply Game of Life rules using element-wise operations.
-
-    // Rule: Survival or Birth based on neighbor counts.
-    // A cell is alive in the next generation if:
-    //   (it's currently alive AND has 2 or 3 neighbors) OR
-    //   (it's currently dead AND has exactly 3 neighbors)
-
-    // `neighbor_counts.eq_elem(scalar)`:
-    //   Demonstrates element-wise comparison of a Matrix with a scalar (broadcast).
-    //   Returns an owned `BoolMatrix`.
     let has_2_neighbors = neighbor_counts.eq_elem(2);
-    let has_3_neighbors = neighbor_counts.eq_elem(3); // This will be reused
+    let has_3_neighbors = neighbor_counts.eq_elem(3);
 
-    // `has_2_neighbors | has_3_neighbors`:
-    //   Demonstrates element-wise OR (`Matrix<bool> | Matrix<bool>`).
-    //   Consumes both operands, returns an owned `BoolMatrix`.
-    let has_2_or_3_neighbors = has_2_neighbors | has_3_neighbors.clone(); // Clone has_3_neighbors as it's used again
+    let has_2_or_3_neighbors = has_2_neighbors | has_3_neighbors.clone();
 
-    // `current_game & &has_2_or_3_neighbors`:
-    //   `current_game` is `&BoolMatrix`. `has_2_or_3_neighbors` is owned.
-    //   Demonstrates element-wise AND (`&Matrix<bool> & &Matrix<bool>`).
-    //   Borrows both operands, returns an owned `BoolMatrix`.
     let survives = current_game & &has_2_or_3_neighbors;
 
-    // `!current_game`:
-    //   Demonstrates element-wise NOT (`!&Matrix<bool>`).
-    //   Borrows operand, returns an owned `BoolMatrix`.
     let is_dead = !current_game;
 
-    // `is_dead & &has_3_neighbors`:
-    //   `is_dead` is owned. `has_3_neighbors` is owned.
-    //   Demonstrates element-wise AND (`Matrix<bool> & &Matrix<bool>`).
-    //   Consumes `is_dead`, borrows `has_3_neighbors`, returns an owned `BoolMatrix`.
     let births = is_dead & &has_3_neighbors;
 
-    // `survives | births`:
-    //   Demonstrates element-wise OR (`Matrix<bool> | Matrix<bool>`).
-    //   Consumes both operands, returns an owned `BoolMatrix`.
     let next_frame_game = survives | births;
 
     next_frame_game
@@ -250,7 +219,7 @@ pub fn generate_glider(board: &mut BoolMatrix, board_size: usize) {
     // Initialize with a Glider pattern.
     // It demonstrates how to set specific cells in the matrix.
     // This demonstrates `IndexMut` for `current_board[(r, c)] = true;`.
-    let mut rng = rand::rng();
+    let mut rng = rng();
     let r_offset = rng.random_range(0..(board_size - 3));
     let c_offset = rng.random_range(0..(board_size - 3));
     if board.rows() >= r_offset + 3 && board.cols() >= c_offset + 3 {
@@ -266,7 +235,7 @@ pub fn generate_pulsar(board: &mut BoolMatrix, board_size: usize) {
     // Initialize with a Pulsar pattern.
     // This demonstrates how to set specific cells in the matrix.
     // This demonstrates `IndexMut` for `current_board[(r, c)] = true;`.
-    let mut rng = rand::rng();
+    let mut rng = rng();
     let r_offset = rng.random_range(0..(board_size - 17));
     let c_offset = rng.random_range(0..(board_size - 17));
     if board.rows() >= r_offset + 17 && board.cols() >= c_offset + 17 {

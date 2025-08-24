@@ -1,3 +1,16 @@
+//! Binary logistic regression classifier.
+//!
+//! ```
+//! use rustframe::compute::models::logreg::LogReg;
+//! use rustframe::matrix::Matrix;
+//!
+//! let x = Matrix::from_vec(vec![1.0, 2.0, 3.0, 4.0], 4, 1);
+//! let y = Matrix::from_vec(vec![0.0, 0.0, 1.0, 1.0], 4, 1);
+//! let mut model = LogReg::new(1);
+//! model.fit(&x, &y, 0.1, 100);
+//! let preds = model.predict(&x);
+//! assert_eq!(preds[(0,0)], 0.0);
+//! ```
 use crate::compute::models::activations::sigmoid;
 use crate::matrix::{Matrix, SeriesOps};
 
