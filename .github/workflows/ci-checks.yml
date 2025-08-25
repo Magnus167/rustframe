@@ -38,4 +38,4 @@ jobs:
           uv pip install requests
       - name: Run CI checks
         run: |
-          python .github/scripts/ci_checks.py
+          uv run .github/scripts/ci_checks.py
