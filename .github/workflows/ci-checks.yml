@@ -1,4 +1,4 @@
-name: docs-and-testcov
+name: ci-checks
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
