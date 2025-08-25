@@ -53,8 +53,8 @@ def check_version() -> None:
     current_version = get_current_version()
     current_version_tuple = packaging.version.parse(current_version)
 
-    # if the current version is >= latest, exit 1
     if latest_version_tuple >= current_version_tuple:
+        print(f"Current version {current_version_tuple} is less than or equal to latest version {latest_version_tuple} on crates.io.")
         sys.exit(1)
 
     print(f"Current version: {current_version_tuple}")
