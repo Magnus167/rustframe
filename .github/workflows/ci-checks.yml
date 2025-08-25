@@ -34,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          uv pip install requests
+          uv pip install requests --system
       - name: Run CI checks
         run: |
           python .github/scripts/ci_checks.py
