@@ -5,6 +5,8 @@ on:
     types: [review_requested, ready_for_review, synchronize, opened, reopened]
     branches:
       - main
+      - test
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

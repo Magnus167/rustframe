@@ -2,9 +2,12 @@ name: run-benchmarks
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
       - main
+  push:
+    branches:
+      - test
 
 jobs:
   pick-runner:
@@ -34,9 +37,9 @@ jobs:
           toolchain: stable
 
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
       - name: Setup venv
         run: |
           uv venv
