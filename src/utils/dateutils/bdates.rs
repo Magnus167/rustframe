@@ -1183,4 +1183,41 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    /// Tests `find_next_bdate` always advances strictly forward to the next
+    /// business date, skipping weekends, regardless of frequency.
+    fn test_find_next_bdate() {
+        // Daily: Friday -> next business day is the following Monday (skips weekend).
+        assert_eq!(
+            find_next_bdate(date(2023, 11, 10), DateFreq::Daily), // Fri
+            date(2023, 11, 13)                                    // Mon
+        );
+
+        // MonthEnd: uses forward roll regardless of frequency type.
+        // From Nov 1, the next month-end resolves forward to a business day.
+        assert_eq!(
+            find_next_bdate(date(2023, 11, 1), DateFreq::MonthEnd),
+            date(2024, 1, 1) // Mon
+        );
+    }
+
+    #[test]
+    /// Tests `find_first_bdate_on_or_after`: returns the input unchanged when it
+    /// already qualifies, and adjusts to a business date otherwise. For End-type
+    /// frequencies the adjustment rolls backward to the prior business day.
+    fn test_find_first_bdate_on_or_after() {
+        // Daily: input is already a business day -> returned unchanged ("on or").
+        assert_eq!(
+            find_first_bdate_on_or_after(date(2023, 11, 1), DateFreq::Daily), // Wed
+            date(2023, 11, 1)
+        );
+
+        // MonthEnd: Dec 31 2023 is a Sunday; End-type frequency rolls *backward*
+        // to the prior business day, Fri Dec 29.
+        assert_eq!(
+            find_first_bdate_on_or_after(date(2023, 12, 31), DateFreq::MonthEnd), // Sun
+            date(2023, 12, 29)                                                    // Fri
+        );
+    }
 }
